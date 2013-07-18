@@ -1,5 +1,5 @@
 
-#the most advanced shell binary build, for lazy ass developers.
+#the most advanced shell binary, built for lazy ass developers.
 #only suitable for systems that contains multi-call binary, for example: a busybox.
 
 #Copyright (C) 2013  LENAROX@xda
