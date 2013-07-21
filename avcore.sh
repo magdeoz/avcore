@@ -93,33 +93,44 @@ echo "Usage: $i -hx -p [VALUE]
 while [ "$1" ]; do
 case $1 in
 -p* | --priority* )
+if [ "$(echo $1 | grep "^-p")" ]; then
+mode="-p"
+else
+mode="--priority"
+fi
 if [ "$opt_p" -gt 0 ]; then
-echo "$1": same operation not supported
+echo "$mode": same operation not supported
 usage
 return 1
 fi
 opt_p=$(($opt_p+1))
-if [ ! "$(echo $1 | sed 's/^-p//')" ]; then
+if [ ! "$(echo $1 | sed 's/^'"$mode"'//')" ]; then
+if [ "$2" ]; then
 opt_p_val=$2
+else
+echo "$mode": requires a value
+usage
+return 1
+fi
 if [ "$(echo $opt_p_val | grep "^-")" ]; then
-echo "$1": requires a value
+echo "$mode": requires a value
 usage
 return 1
 else
 if [ "$(echo $opt_p_val | tr -d "0-9")" ]; then
-echo "$1": requires an integer number as a value
+echo "$mode": requires an integer number as a value
 usage
 return 1
 fi
 fi
 shift
 else
-if [ "$(echo $1 | sed 's/^-p//' | tr -d "0-9")" ]; then
-echo "$1": requires an integer number as a value
+if [ "$(echo $1 | sed 's/^'"$mode"'//' | tr -d "0-9")" ]; then
+echo "$mode": requires an integer number as a value
 usage
 return 1
 fi
-opt_p_val=$(echo $1 | sed 's/^-p//')
+opt_p_val=$(echo $1 | sed 's/^'"$mode"'//')
 fi
 ;;
 * )
@@ -138,24 +149,28 @@ done
 if [ "$n" -eq 1 ]; then
 if [ ! "$(echo $1 | sed 's/^-//' | tr -d "0-9")" ]; then
 if [ "$opt_p" -gt 0 ]; then
-echo "$1": same operation not supported
+if [ "$mode" ]; then
+echo "$mode": same operation not supported
+else
+echo "-p": same operation not supported
+fi
 usage
 return 1
 fi
 opt_p=$(($opt_p+1))
 opt_p_val=$(echo $1 | sed 's/^-//')
-fi
+else
 for i in $(echo $1 | sed 's/^-//' | sed 's/.\{1\}/& /g'); do
 if [ "$i" == x ]; then
 if [ "$opt_x" -gt 0 ]; then
-echo "$1": same operation not supported
+echo "-x": same operation not supported
 usage
 return 1
 fi
 opt_x=$(($opt_x+1))
 elif [ "$i" == h ]; then
 if [ "$opt_h" -gt 0 ]; then
-echo "$1": same operation not supported
+echo "-h": same operation not supported
 usage
 return 1
 fi
@@ -166,18 +181,19 @@ usage
 return 1
 fi
 done
+fi
 elif [ "$n" -eq 2 ]; then
 for i in $(echo $1 | sed 's/^--//'); do
 if [ "$i" == exit ]; then
 if [ "$opt_x" -gt 0 ]; then
-echo "$1": same operation not supported
+echo "--exit": same operation not supported
 usage
 return 1
 fi
 opt_x=$(($opt_x+1))
 elif [ "$i" == help ]; then
 if [ "$opt_h" -gt 0 ]; then
-echo "$1": same operation not supported
+echo "--help": same operation not supported
 usage
 return 1
 fi
