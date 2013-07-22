@@ -1,6 +1,4 @@
 
-#ONLY suitable for systems which contains latest versions of busybox.(You can still edit BAG2.0 for compatibility.)
-
 #Copyright (C) 2013  LENAROX@xda
 #
 #This program is free software: you can redistribute it and/or modify
@@ -20,15 +18,24 @@ set +e
 #Un-comment out the following line to enable debugging.
 #set -x
 
-#BAG2.0 options
-#You can type in any commands you would want it to check.
-#It will start by checking from cmd1, and its limited up to cmd199.
-cmd1=renice
-cmd2=tr
-cmd3=ionice
+#Custom settings for binary behaviour: say 'yes' to enable, 'no' to disable.
+#Busybox Applet Generator(BAG) 2.1
+run_BAG=yes
+#Check Superuser.
+run_Superuser=yes
 
-#Busybox Applet Generator(BAG) 2.0
+
+#BAG2.1 options
+#You can type in any commands you would want it to check.
+#It will start by checking from cmd1, and its limit is up to cmd224.
+cmd1=renice
+cmd2=ionice
+cmd3=tr
+
+#Busybox Applet Generator(BAG) 2.1
 #This might not be compatible with some other multi-call binaries.
+BAG()
+{
 if [ ! "$(busybox --list)" ]; then
 	echo "Failed to locate busybox!"
 	return 1
@@ -54,7 +61,7 @@ else
 	if [ "$cmd" -lt 0 ]; then
 		cmd=0
 	fi
-	for i in $(seq -s ' $cmd' 0 199 | sed 's/^0//'); do
+	for i in $(seq -s ' $cmd' 0 224 | sed 's/^0//'); do
 		v=$(eval echo $i)
 		if [ "$v" ]; then
 			if [ ! "$(busybox --list | grep $v)" ]; then
@@ -73,11 +80,23 @@ else
 		fi
 	done
 fi 2>/dev/null
+}
 
 #Check Superuser.
+Superuser()
+{
 if [ "$(id -u)" != 0 ] && [ "$(id -u)" != root ]; then
 	echo "Permission denied, are you root?"
 	return 1
+fi
+}
+
+#Behaviour script
+if [ "$run_BAG" ] && [ "$run_BAG" == yes ]; then
+	BAG
+fi
+if [ "$run_Superuser" ] && [ "$run_Superuser" == yes ]; then
+	Superuser
 fi
 
 ################################USER EDITABLE AREA################################
