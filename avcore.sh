@@ -1,6 +1,5 @@
 
-#the most advanced shell binary, built for lazy ass developers.
-#only suitable for systems that contains multi-call binary, for example: a busybox.
+#ONLY suitable for systems which contains latest versions of busybox.(You may still edit BAG2.0 for better compatibility.)
 
 #Copyright (C) 2013  LENAROX@xda
 #
@@ -18,15 +17,16 @@
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 set +e
-#debugger
+#Debugger
 #set -x
 
-#start with cmd1.
+#BAG2.0 options
 cmd1=renice
 cmd2=tr
-cmd=2
+cmd3=ionice
+cmd=3
 
-#start busybox applet generator 2.0
+#Busybox Applet Generator 2.0
 if [ ! "$(busybox --list)" ]; then
 echo "busybox: not found, damnit."
 return 1
@@ -49,7 +49,7 @@ echo -n ":$v"
 fi
 done)
 fi
-#it'll work just fine if your busybox isn't that much of a crap and all.
+#You might not be able to run this with other multi-call binaries.
 if [ "$cmd" -lt 0 ]; then
 cmd=0
 fi
@@ -69,13 +69,8 @@ fi
 done
 fi 2>/dev/null
 
-#preserved values
-opt_p=0
-opt_p_val=0
-opt_x=0
-opt_h=0
-
-usage()
+#Help must be universal to all parties.
+Usage()
 {
 for i in $(echo $0 | sed 's/\// /g'); do
 done
@@ -89,7 +84,13 @@ echo "Usage: $i -hx -p [VALUE]
 "
 }
 
-#check syntax
+#Mad Logic Checker 1.0
+Magic_Check()
+{
+opt_p=0
+opt_p_val=0
+opt_x=0
+opt_h=0
 while [ "$1" ]; do
 case $1 in
 -p* | --priority* )
@@ -99,8 +100,8 @@ else
 mode="--priority"
 fi
 if [ "$opt_p" -gt 0 ]; then
-echo "$mode": same operation not supported
-usage
+echo "$mode": same operation not permitted
+Usage
 return 1
 fi
 opt_p=$(($opt_p+1))
@@ -109,17 +110,17 @@ if [ "$2" ]; then
 opt_p_val=$2
 else
 echo "$mode": requires a value
-usage
+Usage
 return 1
 fi
 if [ "$(echo $opt_p_val | grep "^-")" ]; then
 echo "$mode": requires a value
-usage
+Usage
 return 1
 else
 if [ "$(echo $opt_p_val | tr -d "0-9")" ]; then
 echo "$mode": requires an integer number as a value
-usage
+Usage
 return 1
 fi
 fi
@@ -127,7 +128,7 @@ shift
 else
 if [ "$(echo $1 | sed 's/^'"$mode"'//' | tr -d "0-9")" ]; then
 echo "$mode": requires an integer number as a value
-usage
+Usage
 return 1
 fi
 opt_p_val=$(echo $1 | sed 's/^'"$mode"'//')
@@ -136,7 +137,7 @@ fi
 * )
 if [ ! "$(echo $1 | sed 's/^-//')" ]; then
 echo "$1": invalid argument
-usage
+Usage
 return 1
 fi
 n=0
@@ -150,11 +151,11 @@ if [ "$n" -eq 1 ]; then
 if [ ! "$(echo $1 | sed 's/^-//' | tr -d "0-9")" ]; then
 if [ "$opt_p" -gt 0 ]; then
 if [ "$mode" ]; then
-echo "$mode": same operation not supported
+echo "$mode": same operation not permitted
 else
-echo "-p": same operation not supported
+echo "-p": same operation not permitted
 fi
-usage
+Usage
 return 1
 fi
 opt_p=$(($opt_p+1))
@@ -163,21 +164,21 @@ else
 for i in $(echo $1 | sed 's/^-//' | sed 's/.\{1\}/& /g'); do
 if [ "$i" == x ]; then
 if [ "$opt_x" -gt 0 ]; then
-echo "-x": same operation not supported
-usage
+echo "-x": same operation not permitted
+Usage
 return 1
 fi
 opt_x=$(($opt_x+1))
 elif [ "$i" == h ]; then
 if [ "$opt_h" -gt 0 ]; then
-echo "-h": same operation not supported
-usage
+echo "-h": same operation not permitted
+Usage
 return 1
 fi
 opt_h=$(($opt_h+1))
 else
 echo "$1": invalid argument
-usage
+Usage
 return 1
 fi
 done
@@ -186,35 +187,38 @@ elif [ "$n" -eq 2 ]; then
 for i in $(echo $1 | sed 's/^--//'); do
 if [ "$i" == exit ]; then
 if [ "$opt_x" -gt 0 ]; then
-echo "--exit": same operation not supported
-usage
+echo "--exit": same operation not permitted
+Usage
 return 1
 fi
 opt_x=$(($opt_x+1))
 elif [ "$i" == help ]; then
 if [ "$opt_h" -gt 0 ]; then
-echo "--help": same operation not supported
-usage
+echo "--help": same operation not permitted
+Usage
 return 1
 fi
 opt_h=$(($opt_h+1))
 else
 echo "$1": invalid argument
-usage
+Usage
 return 1
 fi
 done
 else
 echo "$1": invalid argument
-usage
+Usage
 return 1
 fi
 ;;
 esac
 shift
 done
+}
 
-#show results
+#Final results
+Roll_Up()
+{
 if [ "$opt_p" -eq 1 ]; then
 echo "priority: $opt_p_val" 
 fi
@@ -222,8 +226,13 @@ if [ "$opt_x" -eq 1 ]; then
 echo test confirmed
 fi
 if [ "$opt_h" -eq 1 ]; then
-usage
+Usage
 fi
+}
 
-#end session
+#Main script
+Magic_Check $@
+Roll_Up
+
+#End session
 return 0
