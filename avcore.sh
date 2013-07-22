@@ -1,4 +1,3 @@
-
 #Copyright (C) 2013  LENAROX@xda
 #
 #This program is free software: you can redistribute it and/or modify
@@ -23,7 +22,6 @@ set +e
 run_BAG=yes
 #Check Superuser.
 run_Superuser=yes
-
 
 #BAG2.1 options
 #You can type in any commands you would want it to check.
@@ -100,7 +98,6 @@ if [ "$run_Superuser" ] && [ "$run_Superuser" == yes ]; then
 fi
 
 ################################USER EDITABLE AREA################################
-
 #Put your engine stuffs here.
 Roll_Up()
 {
@@ -255,7 +252,6 @@ Usage()
 #And, you're good to go!
 
 ##########IMPORTANT##########DO NOT CROSS THE LINE!!!############STUFF############
-
 #Main script
 Magic_Parser $@
 Roll_Up
