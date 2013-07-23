@@ -12,26 +12,23 @@
 #
 #You should have received a copy of the GNU General Public License
 #along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 set +e
 #Un-comment out the following line to enable debugging.
 #set -x
 
-#Custom settings for binary behaviour: say 'yes' to enable, 'no' to disable.
+#Custom settings for session behaviour: say 'yes' to enable, 'no' to disable.
 #Busybox Applet Generator(BAG) 2.1
 run_BAG=yes
 #Check Superuser.
 run_Superuser=yes
 
-#BAG2.1 options
+#Busybox Applet Generator(BAG) 2.1
 #You can type in any commands you would want it to check.
 #It will start by checking from cmd1, and its limit is up to cmd224.
 cmd1=renice
 cmd2=ionice
 cmd3=tr
-
-#Busybox Applet Generator(BAG) 2.1
-#This might not be compatible with some other multi-call binaries.
+#This feature might not be compatible with some other multi-call binaries.
 BAG()
 {
 if [ ! "$(busybox --list)" ]; then
@@ -83,21 +80,28 @@ fi 2>/dev/null
 #Check Superuser.
 Superuser()
 {
-if [ "$(id -u)" != 0 ] && [ "$(id -u)" != root ]; then
-	echo "Permission denied, are you root?"
-	return 1
-fi
+	if [ "$(id -u)" != 0 ] && [ "$(id -u)" != root ]; then
+		echo "Permission denied, are you root?"
+		return 1
+	fi
 }
 
-#Behaviour script
-if [ "$run_BAG" ] && [ "$run_BAG" == yes ]; then
-	BAG
-fi
-if [ "$run_Superuser" ] && [ "$run_Superuser" == yes ]; then
-	Superuser
-fi
+#Session behaviour
+Roll_Down()
+{
+	if [ "$run_BAG" ] && [ "$run_BAG" == yes ]; then
+		BAG
+	fi
+	if [ "$run_Superuser" ] && [ "$run_Superuser" == yes ]; then
+		Superuser
+	fi
+	if [ "$?" -ne 0 ]; then
+		exit $?
+	fi
+}
 
-################################USER EDITABLE AREA################################
+##Following is a user editable area.
+
 #Put your engine stuffs here.
 Roll_Up()
 {
@@ -249,10 +253,13 @@ Usage()
 "
 }
 
-#And, you're good to go!
+##Aaand, you're good to go!
 
-##########IMPORTANT##########DO NOT CROSS THE LINE!!!############STUFF############
 #Main script
+Roll_Down
 Magic_Parser $@
 Roll_Up
+
+#End session.
+exit $?
 
