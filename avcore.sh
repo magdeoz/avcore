@@ -240,14 +240,15 @@ Magic_Parser()
 # Customize Usage for your own needs.
 Usage()
 {
-	echo "Usage: $(basename $0) -hx -p [VALUE]
+	cat <<EOF
+Usage: $(basename $0) -hx -p [VALUE]
 	-p turns on options to set priority manually. defaulted to 19.
 	-x ends the process already running in background.
 	-h views this message.
 	--priority does the same thing as -p.
 	--exit does the same thing as -x.
 	--help does the same thing as -h.
-"
+EOF
 }
 
 ## Aaand, you're good to go!
