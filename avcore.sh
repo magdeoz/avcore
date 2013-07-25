@@ -248,6 +248,7 @@ Usage: $(basename $0) -hx -p [VALUE]
 	--priority does the same thing as -p.
 	--exit does the same thing as -x.
 	--help does the same thing as -h.
+
 EOF
 }
 
