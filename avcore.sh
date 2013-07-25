@@ -1,34 +1,33 @@
-#Copyright (C) 2013  LENAROX@xda
+# Copyright (C) 2013  LENAROX@xda
 #
-#This program is free software: you can redistribute it and/or modify
-#it under the terms of the GNU General Public License as published by
-#the Free Software Foundation, either version 3 of the License, or
-#(at your option) any later version.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#This program is distributed in the hope that it will be useful,
-#but WITHOUT ANY WARRANTY; without even the implied warranty of
-#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#You should have received a copy of the GNU General Public License
-#along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 set +e
-#Un-comment out the following line to enable debugging.
+# Un-comment out the following line to enable debugging.
 #set -x
 
-#Custom settings for session behaviour: say 'yes' to enable, 'no' to disable.
-#Busybox Applet Generator(BAG) 2.1
+# Custom settings for session behaviour: say 'yes' to enable, 'no' to disable.
+# Busybox Applet Generator(BAG) 2.1(important for Android devices)
 run_BAG=yes
-#Check Superuser.
+# Check Superuser.
 run_Superuser=yes
 
-#Busybox Applet Generator(BAG) 2.1
-#You can type in any commands you would want it to check.
-#It will start by checking from cmd1, and its limit is up to cmd224.
+# Busybox Applet Generator(BAG) 2.1
+# You can type in any commands you would want it to check.
+# It will start by checking from cmd1, and its limit is up to cmd224.
 cmd1=renice
 cmd2=ionice
-cmd3=tr
-#This feature might not be compatible with some other multi-call binaries.
+# This feature might not be compatible with some other multi-call binaries.
 BAG()
 {
 if [ ! "$(busybox --list)" ]; then
@@ -77,7 +76,7 @@ else
 fi 2>/dev/null
 }
 
-#Check Superuser.
+# Check Superuser.
 Superuser()
 {
 	if [ "$(id -u)" != 0 ] && [ "$(id -u)" != root ]; then
@@ -86,7 +85,7 @@ Superuser()
 	fi
 }
 
-#Session behaviour
+# Session behaviour
 Roll_Down()
 {
 	if [ "$run_BAG" ] && [ "$run_BAG" == yes ]; then
@@ -100,9 +99,9 @@ Roll_Down()
 	fi
 }
 
-##Following is a user editable area.
+## Following is a user editable area.
 
-#Put your engine stuffs here.
+# Put your engine stuffs here.
 Roll_Up()
 {
 	if [ "$?" -eq 0 ]; then
@@ -120,7 +119,7 @@ Roll_Up()
 	fi
 }
 
-#Put your extra options for your engine here.
+# Put your extra options for your engine here.
 Magic_Parser()
 {
 	opt_p=0
@@ -238,7 +237,7 @@ Magic_Parser()
 	done
 }
 
-#Customize Usage for your own needs.
+# Customize Usage for your own needs.
 Usage()
 {
 	echo "Usage: $(basename $0) -hx -p [VALUE]
@@ -251,13 +250,12 @@ Usage()
 "
 }
 
-##Aaand, you're good to go!
+## Aaand, you're good to go!
 
-#Main script
+# Main script
 Roll_Down
 Magic_Parser $@
 Roll_Up
 
-#End session.
+# End session.
 exit $?
-
