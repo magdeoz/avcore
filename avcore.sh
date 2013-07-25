@@ -241,9 +241,7 @@ Magic_Parser()
 #Customize Usage for your own needs.
 Usage()
 {
-	for i in $(echo $0 | sed 's/\// /g'); do
-	done
-	echo "Usage: $i -hx -p [VALUE]
+	echo "Usage: $(basename $0) -hx -p [VALUE]
 	-p turns on options to set priority manually. defaulted to 19.
 	-x ends the process already running in background.
 	-h views this message.
