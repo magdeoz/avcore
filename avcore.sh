@@ -16,9 +16,6 @@ set +e
 # Un-comment out the following line to enable debugging.
 #set -x
 
-# Return error preset
-return=0
-
 # Custom settings for session behaviour: say 'yes' to enable, 'no' to disable.
 # Busybox Applet Generator(BAG) 2.1(important for Android devices)
 run_BAG=yes
@@ -35,7 +32,7 @@ BAG()
 {
 if [ ! "$(busybox --list)" ]; then
 	echo "Failed to locate busybox!"
-	return=1
+	return 1
 else
 	busyboxloc=$(dirname $(which busybox))
 	n=0
@@ -63,7 +60,7 @@ else
 		if [ "$v" ]; then
 			if [ ! "$(busybox --list | grep $v)" ]; then
 				echo "Required applets are missing!"
-				return=1
+				return 1
 			fi
 			n=0
 			if [ -e "$busyboxloc"/"$v" ]; then
@@ -84,7 +81,7 @@ Superuser()
 {
 	if [ "$(id -u)" != 0 ] && [ "$(id -u)" != root ]; then
 		echo "Permission denied, are you root?"
-		return=1
+		return 1
 	fi
 }
 
@@ -97,8 +94,8 @@ Roll_Down()
 	if [ "$run_Superuser" ] && [ "$run_Superuser" == yes ]; then
 		Superuser
 	fi
-	if [ "$return" -ne 0 ]; then
-		exit $return
+	if [ "$?" -ne 0 ]; then
+		exit 1
 	fi
 }
 
@@ -119,6 +116,7 @@ Roll_Up()
 		fi
 	else
 		Usage
+		return 1
 	fi
 }
 
@@ -139,7 +137,7 @@ Magic_Parser()
 				fi
 				if [ "$opt_p" -gt 0 ]; then
 					echo "$mode": same operation not permitted
-					return=1
+					return 1
 				fi
 				opt_p=$(($opt_p+1))
 				if [ ! "$(echo $1 | sed 's/^'"$mode"'//')" ]; then
@@ -147,22 +145,22 @@ Magic_Parser()
 						opt_p_val=$2
 					else
 						echo "$mode": requires a value
-						return=1
+						return 1
 					fi
 					if [ "$(echo $opt_p_val | grep "^-")" ]; then
 						echo "$mode": requires a value
-						return=1
+						return 1
 					else
 						if [ "$(echo $opt_p_val | tr -d "0-9")" ]; then
 							echo "$mode": requires an integer number as a value
-							return=1
+							return 1
 						fi
 					fi
 					shift
 				else
 					if [ "$(echo $1 | sed 's/^'"$mode"'//' | tr -d "0-9")" ]; then
 						echo "$mode": requires an integer number as a value
-						return=1
+						return 1
 					fi
 					opt_p_val=$(echo $1 | sed 's/^'"$mode"'//')
 				fi
@@ -170,7 +168,7 @@ Magic_Parser()
 			* )
 				if [ ! "$(echo $1 | sed 's/^-//')" ]; then
 					echo "$1": invalid argument
-					return=1
+					return 1
 				fi
 				n=0
 				for i in $(echo $1 | sed 's/.\{1\}/& /g'); do
@@ -187,7 +185,7 @@ Magic_Parser()
 							else
 								echo "-p": same operation not permitted
 							fi
-							return=1
+							return 1
 						fi
 						opt_p=$(($opt_p+1))
 						opt_p_val=$(echo $1 | sed 's/^-//')
@@ -196,18 +194,18 @@ Magic_Parser()
 							if [ "$i" == x ]; then
 								if [ "$opt_x" -gt 0 ]; then
 									echo "-x": same operation not permitted
-									return=1
+									return 1
 								fi
 								opt_x=$(($opt_x+1))
 							elif [ "$i" == h ]; then
 								if [ "$opt_h" -gt 0 ]; then
 									echo "-h": same operation not permitted
-									return=1
+									return 1
 								fi
 								opt_h=$(($opt_h+1))
 							else
 								echo "$1": invalid argument
-								return=1
+								return 1
 							fi
 						done
 					fi
@@ -216,23 +214,23 @@ Magic_Parser()
 						if [ "$i" == exit ]; then
 							if [ "$opt_x" -gt 0 ]; then
 								echo "--exit": same operation not permitted
-								return=1
+								return 1
 							fi
 							opt_x=$(($opt_x+1))
 						elif [ "$i" == help ]; then
 							if [ "$opt_h" -gt 0 ]; then
 								echo "--help": same operation not permitted
-								return=1
+								return 1
 							fi
 							opt_h=$(($opt_h+1))
 						else
 							echo "$1": invalid argument
-							return=1
+							return 1
 						fi
 					done
 				else
 					echo "$1": invalid argument
-					return=1
+					return 1
 				fi
 			;;
 		esac
@@ -262,5 +260,5 @@ Magic_Parser $@
 Roll_Up
 
 # End session.
-exit $return
+exit $?
 
