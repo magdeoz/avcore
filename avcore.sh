@@ -17,22 +17,28 @@ set +e
 #set -x
 
 # Custom settings for session behaviour: say 'yes' to enable, 'no' to disable.
-# Busybox Applet Generator(BAG) 2.1(important for Android devices)
+# Busybox Applet Generator(BAG) 2.2(important for Android devices)
 run_BAG=yes
 # Check Superuser.
 run_Superuser=yes
 
-# Busybox Applet Generator(BAG) 2.1
+# Busybox Applet Generator(BAG) 2.2
 # You can type in any commands you would want it to check.
 # It will start by checking from cmd1, and its limit is up to cmd224.
 cmd1=renice
 cmd2=ionice
+cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 # This feature might not be compatible with some other multi-call binaries.
 BAG()
 {
 if [ ! "$(busybox --list)" ]; then
-	echo "Failed to locate busybox!"
-	return 1
+	if [ "$(busybox)" ]; then
+		echo "Your busybox is outdated!"
+		return 1
+	else
+		echo "Failed to locate busybox!"
+		return 1
+	fi
 else
 	busyboxloc=$(dirname $(which busybox))
 	n=0
@@ -52,21 +58,21 @@ else
 			fi
 		done)
 	fi
-	if [ "$cmd" -lt 0 ]; then
-		cmd=0
+	if [ "$cmd" ]; then
+		if [ "$cmd" -lt 0 ]; then
+			cmd=0
+		fi
+	else
+		cmd=224
 	fi
-	for i in $(seq -s ' $cmd' 0 224 | sed 's/^0//'); do
+	for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
 		v=$(eval echo $i)
 		if [ "$v" ]; then
 			if [ ! "$(busybox --list | grep $v)" ]; then
 				echo "Required applets are missing!"
 				return 1
 			fi
-			n=0
-			if [ -e "$busyboxloc"/"$v" ]; then
-				n=$(($n+1))
-			fi
-			if [ "$n" -eq 0 ]; then
+			if [ ! -e "$busyboxloc"/"$v" ]; then
 				alias $i="busybox $i"
 			fi
 		else
@@ -249,7 +255,7 @@ Usage: $(basename $0) -hx -p [VALUE]
 	--priority does the same thing as -p.
 	--exit does the same thing as -x.
 	--help does the same thing as -h.
-
+	
 EOF
 }
 
