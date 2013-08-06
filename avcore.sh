@@ -157,14 +157,14 @@ Magic_Parser()
 						echo "$mode": requires a value
 						return 1
 					else
-						if [ "$(echo $opt_p_val | tr -d "0-9")" ]; then
+						if [ "$(echo $opt_p_val | tr -d [0-9])" ]; then
 							echo "$mode": requires an integer number as a value
 							return 1
 						fi
 					fi
 					shift
 				else
-					if [ "$(echo $1 | sed 's/^'"$mode"'//' | tr -d "0-9")" ]; then
+					if [ "$(echo $1 | sed 's/^'"$mode"'//' | tr -d [0-9])" ]; then
 						echo "$mode": requires an integer number as a value
 						return 1
 					fi
@@ -184,7 +184,7 @@ Magic_Parser()
 					n=$(($n+1))
 				done
 				if [ "$n" -eq 1 ]; then
-					if [ ! "$(echo $1 | sed 's/^-//' | tr -d "0-9")" ]; then
+					if [ ! "$(echo $1 | sed 's/^-//' | tr -d [0-9])" ]; then
 						if [ "$opt_p" -gt 0 ]; then
 							if [ "$mode" ]; then
 								echo "$mode": same operation not permitted
