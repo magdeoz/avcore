@@ -1,3 +1,4 @@
+CLIPPER_VERSION=0.0.1
 # Copyright (C) 2013  LENAROX@xda
 #
 # This program is free software: you can redistribute it and/or modify
@@ -110,16 +111,224 @@ Roll_Down()
 # Put your engine stuffs here.
 Roll_Up()
 {
-	if [ "$?" -eq 0 ]; then
-		if [ "$opt_p" -eq 1 ]; then
-			echo "priority: $opt_p_val" 
+	# Information deck
+	Priority_Info()
+	{
+		echo -n "cpulimit was set to "
+		if [ "$default" -eq 1 ]; then
+			echo "default by $priority%"
+		else
+			echo "$priority%"
 		fi
-		if [ "$opt_x" -eq 1 ]; then
-			echo test confirmed
+	}
+	if [ "$?" -eq 0 ]; then
+		return=0
+		if [ "$opt_p" -eq 1 ]; then
+			count=0
+			for i in $(env | grep "^opt.*"); do
+				if [ "${i#*=}" == 1 ]; then
+					count=$((count+1))
+				fi
+			done
+			if [ "$count" -eq 0 ]; then
+				echo "-p: none of the additions were selected for action."
+				Usage
+				return=1
+			fi
 		fi
 		if [ "$opt_h" -eq 1 ]; then
-			Usage
+			cat <<EOF
+SOME BASIC STUFF THAT YOU SHOULD KNOW:
+	-h or --help views this message.
+	-x or --exit does not work in this current version.
+	more options are coming soon to later versions.
+
+HOW TO USE -p:
+	-p or --priority is a master priority set.
+	it is only used for setting a custom value on options such as -k and -g.
+	so, if -p is not entered while running them, don't worry.
+	they use their own default settings built in.;)
+	custom values are limited from 0% to 200%.(percentage)
+
+	for example, if you want to set 84 as a custom value,
+	you can type: -p 84, -p84, --priority 84, --priority84, or even -84.
+	unlike -k or -g, -p option needs to be written independently
+	from other options like so: -p84 -hxkgm, or -h -k -p84 -g -x -m.
+	this will not work: -hxkgmp84, or -hxkgpm84.
+
+OTHER INSTRUCTIONS:
+	-k or --kernel is a kernel driver management utility.
+	it will tune your kernel driver processes to save more resources,
+	and try to give more of those resources to the poor.
+
+	-g or --grouping is a AMS process grouping utility.
+	AMS stands for: Activity Manager Service.
+	its an unfinished product, therefore no more documentation.
+
+	-m or -mediaserver lets you to control the resource usage of media scanner.
+	this 'media scanner' process is your primary source of all lags and battery drains.
+	so why not control this thing for our benefits?
+
+$(echo $(basename $0) | sed 's/\b\(.\)/\u\1/g') Version $CLIPPER_VERSION
+Copyright (C) 2013  LENAROX@xda
+
+EOF
 		fi
+		if [ "$opt_x" -eq 1 ]; then
+			echo "not available."
+			return=1
+		fi
+		if [ "$opt_k" -eq 1 ]; then
+			default=0
+			kernel_priority=100
+			driver_priority=$opt_p_val
+			if [ "$driver_priority" ]; then
+				if [ "$driver_priority" -gt 200 ]; then
+					driver_priority=200
+				elif [ "$driver_priority" -lt 5 ]; then
+					driver_priority=5
+				fi
+			else
+				default=1
+				driver_priority=50
+			fi
+			noerror=0
+			error=0
+			renice_val=$(echo $kernel_priority | awk '{printf "%.0f\n", 20-$1/5}')
+			renice_val2=$(echo $driver_priority | awk '{printf "%.0f\n", 20-$1/5}')
+			echo "checking for kernel drivers..."
+			for i in $(pgrep ""); do
+				if [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^2$")" ]; then
+					if [ "$(grep "^worker_thread$" /proc/$i/wchan)" ]; then
+						renice $renice_val $i
+					fi
+				elif [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^1$")" ]; then
+					if [ ! "$(grep "^binder_thread_read$" /proc/$i/wchan)" ] && [ ! "$(grep "^poll_schedule_timeout$" /proc/$i/wchan)" ]; then
+						renice $renice_val2 $i
+					fi
+				fi
+			done
+			echo "final looping..."
+			for i in $(pgrep ""); do
+				if [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^2$")" ]; then
+					if [ "$(grep "^worker_thread$" /proc/$i/wchan)" ]; then
+						if [ "$(cut -d "" -f 19 /proc/$i/stat)" -eq "$renice_val" ]; then
+							noerror=$(($noerror+1))
+						else
+							error=$(($error+1))
+						fi
+					fi
+				elif [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^1$")" ]; then
+					if [ ! "$(grep "^binder_thread_read$" /proc/$i/wchan)" ] && [ ! "$(grep "^poll_schedule_timeout$" /proc/$i/wchan)" ]; then
+						if [ "$(cut -d "" -f 19 /proc/$i/stat)" -eq "$renice_val2" ]; then
+							noerror=$(($noerror+1))
+						else
+							error=$(($error+1))
+						fi
+					fi
+				fi
+			done
+			if [ "$error" -ne 0 ]; then
+				if [ "$noerror" -ne 0 ]; then
+					echo "$noerror kernel drivers have been successfully modified."
+				fi
+				echo "$error kernel drivers modification have been failed."
+				return=1
+			else
+				echo "all $noerror kernel drivers have been successfully modified."
+			fi
+			Priority_Info
+			echo
+			echo "kernel driver management utility last run on $(date)"
+		fi
+		if [ "$opt_g" -eq 1 ]; then
+			if [ "$(pgrep system_server)" ]; then
+				echo "-g: this options is only executable via init process."
+				Usage
+				return=1
+			else
+				default=0
+				priority=$opt_p_val
+				if [ "$priority" ]; then
+					if [ "$priority" -gt 200 ]; then
+						priority=200
+					elif [ "$priority" -lt 5 ]; then
+						priority=5
+					fi
+				else
+					default=1
+					priority=200
+				fi
+				renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
+				echo "waiting for zygote..."
+				while true; do
+					zygote=$(pgrep zygote)
+					if [ "$zygote" ]; then
+						prev_priority=$(cut -d "" -f 19 /proc/$zygote/stat)
+						renice $renice_val $zygote
+						echo "waiting for system_server..."
+						while true; do
+							system_server=$(pgrep system_server)
+							if [ "$system_server" ]; then
+								if [ "$(cut -d "" -f 19 /proc/$system_server/stat)" -eq "$renice_val" ]; then
+									renice $prev_priority $zygote
+								else
+									return=1
+								fi
+								break
+							fi
+							sleep 1
+						done
+						break
+					fi
+					sleep 1
+				done
+				if [ "$return" -eq 1 ]; then
+					echo "Manager was not able to continue the progress, due to a critical error."
+				else
+					echo "system_server hijacking complete! ready to rock:D"
+					Priority_Info
+					echo
+					echo "AMS process grouping utility last run on $(date)"
+				fi
+			fi
+		fi
+		if [ "$opt_m" -eq 1 ]; then
+			default=0
+			priority=$opt_p_val
+			if [ "$priority" ]; then
+				if [ "$priority" -gt 200 ]; then
+					priority=200
+				elif [ "$priority" -lt 5 ]; then
+					priority=5
+				fi
+			else
+				default=1
+				priority=50
+			fi
+			renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
+			echo "waiting for mediaserver..."
+			while true; do
+				mediaserver=$(pgrep android.process.media)
+				if [ "$mediaserver" ]; then
+					renice $renice_val $mediaserver
+					if [ "$(cut -d "" -f 19 /proc/$mediaserver/stat)" -ne "$renice_val" ]; then
+						return=1
+					fi
+					break
+				fi
+				sleep 1
+			done
+			if [ "$return" -eq 1 ]; then
+				echo "Manager was not able to continue the progress, due to a critical error."
+			else
+				echo "mediaserver optimization complete!"
+				Priority_Info
+				echo
+				echo "mediaserver optimizer last run on $(date)"
+			fi
+		fi
+		return $return
 	else
 		Usage
 		return 1
@@ -129,20 +338,32 @@ Roll_Up()
 # Put your extra options for your engine here.
 Magic_Parser()
 {
-	opt_p=0
+	# We export main instructions to memory for later check.
+	export opt_p=0
+	export opt_h=0
+	export opt_x=0
+	export opt_k=0
+	export opt_g=0
+	export opt_m=0
+
+	# Extra instructions that doesn't need export
 	opt_p_val=0
-	opt_x=0
-	opt_h=0
+
+	# Error messages
+	sop_error=$(echo 'same operation not permitted')
+	val_error=$(echo 'requires a value')
+	int_error=$(echo 'requires an integer number as a value')
+	arg_error=$(echo 'invalid argument')
 	while [ "$1" ]; do
 		case $1 in
 			-p* | --priority* )
-				if [ "$(echo $1 | grep -w "^-p.*")" ]; then
+				if [ "$(echo $1 | grep "^-p")" ]; then
 					mode="-p"
 				else
 					mode="--priority"
 				fi
 				if [ "$opt_p" -gt 0 ]; then
-					echo "$mode": same operation not permitted
+					echo "$mode: $sop_error"
 					return 1
 				fi
 				opt_p=$(($opt_p+1))
@@ -150,22 +371,22 @@ Magic_Parser()
 					if [ "$2" ]; then
 						opt_p_val=$2
 					else
-						echo "$mode": requires a value
+						echo "$mode: $val_error"
 						return 1
 					fi
 					if [ "$(echo $opt_p_val | grep "^-")" ]; then
-						echo "$mode": requires a value
+						echo "$mode: $val_error"
 						return 1
 					else
-						if [ "$(echo $opt_p_val | tr -d [0-9])" ]; then
-							echo "$mode": requires an integer number as a value
+						if [ "$(echo $opt_p_val | sed 's/[0-9]//g')" ]; then
+							echo "$mode: $int_error"
 							return 1
 						fi
 					fi
 					shift
 				else
-					if [ "$(echo $1 | sed 's/^'"$mode"'//' | tr -d [0-9])" ]; then
-						echo "$mode": requires an integer number as a value
+					if [ "$(echo $1 | sed 's/^'"$mode"'//; s/[0-9]//g')" ]; then
+						echo "$mode: $int_error"
 						return 1
 					fi
 					opt_p_val=$(echo $1 | sed 's/^'"$mode"'//')
@@ -173,7 +394,7 @@ Magic_Parser()
 			;;
 			* )
 				if [ ! "$(echo $1 | sed 's/^-//')" ]; then
-					echo "$1": invalid argument
+					echo "$1: $arg_error"
 					return 1
 				fi
 				n=0
@@ -184,58 +405,94 @@ Magic_Parser()
 					n=$(($n+1))
 				done
 				if [ "$n" -eq 1 ]; then
-					if [ ! "$(echo $1 | sed 's/^-//' | tr -d [0-9])" ]; then
+					if [ ! "$(echo $1 | sed 's/^-//; s/[0-9]//g')" ]; then
 						if [ "$opt_p" -gt 0 ]; then
 							if [ "$mode" ]; then
-								echo "$mode": same operation not permitted
+								echo "$mode: $sop_error"
 							else
-								echo "-p": same operation not permitted
+								echo "-p: $sop_error"
 							fi
 							return 1
 						fi
 						opt_p=$(($opt_p+1))
 						opt_p_val=$(echo $1 | sed 's/^-//')
 					else
-						for i in $(echo $1 | sed 's/^-//' | sed 's/.\{1\}/& /g'); do
-							if [ "$i" == x ]; then
-								if [ "$opt_x" -gt 0 ]; then
-									echo "-x": same operation not permitted
-									return 1
-								fi
-								opt_x=$(($opt_x+1))
-							elif [ "$i" == h ]; then
+						for i in $(echo $1 | sed 's/^-//; s/.\{1\}/& /g'); do
+							if [ "$i" == h ]; then
 								if [ "$opt_h" -gt 0 ]; then
-									echo "-h": same operation not permitted
+									echo "-h: $sop_error"
 									return 1
 								fi
 								opt_h=$(($opt_h+1))
+							elif [ "$i" == x ]; then
+								if [ "$opt_x" -gt 0 ]; then
+									echo "-x: $sop_error"
+									return 1
+								fi
+								opt_x=$(($opt_x+1))
+							elif [ "$i" == k ]; then
+								if [ "$opt_k" -gt 0 ]; then
+									echo "-k: $sop_error"
+									return 1
+								fi
+								opt_k=$(($opt_k+1))
+							elif [ "$i" == g ]; then
+								if [ "$opt_g" -gt 0 ]; then
+									echo "-g: $sop_error"
+									return 1
+								fi
+								opt_g=$(($opt_g+1))
+							elif [ "$i" == m ]; then
+								if [ "$opt_m" -gt 0 ]; then
+									echo "-m: $sop_error"
+									return 1
+								fi
+								opt_m=$(($opt_m+1))
 							else
-								echo "$1": invalid argument
+								echo "$1: $arg_error"
 								return 1
 							fi
 						done
 					fi
 				elif [ "$n" -eq 2 ]; then
 					for i in $(echo $1 | sed 's/^--//'); do
-						if [ "$i" == exit ]; then
-							if [ "$opt_x" -gt 0 ]; then
-								echo "--exit": same operation not permitted
-								return 1
-							fi
-							opt_x=$(($opt_x+1))
-						elif [ "$i" == help ]; then
+						if [ "$i" == help ]; then
 							if [ "$opt_h" -gt 0 ]; then
-								echo "--help": same operation not permitted
+								echo "--help: $sop_error"
 								return 1
 							fi
 							opt_h=$(($opt_h+1))
+						elif [ "$i" == exit ]; then
+							if [ "$opt_x" -gt 0 ]; then
+								echo "--exit: $sop_error"
+								return 1
+							fi
+							opt_x=$(($opt_x+1))
+						elif [ "$i" == kernel ]; then
+							if [ "$opt_k" -gt 0 ]; then
+								echo "--kernel: $sop_error"
+								return 1
+							fi
+							opt_k=$(($opt_k+1))
+						elif [ "$i" == grouping ]; then
+							if [ "$opt_g" -gt 0 ]; then
+								echo "--grouping: $sop_error"
+								return 1
+							fi
+							opt_g=$(($opt_g+1))
+						elif [ "$i" == mediaserver ]; then
+							if [ "$opt_m" -gt 0 ]; then
+								echo "--mediaserver: $sop_error"
+								return 1
+							fi
+							opt_m=$(($opt_m+1))
 						else
-							echo "$1": invalid argument
+							echo "$1: $arg_error"
 							return 1
 						fi
 					done
 				else
-					echo "$1": invalid argument
+					echo "$1: $arg_error"
 					return 1
 				fi
 			;;
@@ -248,14 +505,14 @@ Magic_Parser()
 Usage()
 {
 	cat <<EOF
-Usage: $(basename $0) -hx -p [VALUE]
-	-p turns on options to set priority manually. defaulted to 19.
-	-x ends the process already running in background.
-	-h views this message.
-	--priority does the same thing as -p.
-	--exit does the same thing as -x.
-	--help does the same thing as -h.
-	
+Usage: $(basename $0) -hxkgm -p [VALUE]
+	-p | --priority) master priority set
+	-x | --exit) ends the process already running in background.
+	-k | --kernel) run kernel driver management utility
+	-g | --grouping) launch AMS process grouping utility
+	-m | --mediaserver) mediaserver optimizer
+	type -h or --help for more description.
+
 EOF
 }
 
