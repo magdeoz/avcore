@@ -156,7 +156,7 @@ HOW TO USE -p:
 	from other options like so: -p84 -hxkgm, or -h -k -p84 -g -x -m.
 	this will not work: -hxkgmp84, or -hxkgpm84.
 
-OTHER INSTRUCTIONS:
+OTHER OPTIONS:
 	-k or --kernel is a kernel driver management utility.
 	it will tune your kernel driver processes to save more resources,
 	and try to give more of those resources to the poor.
