@@ -1,4 +1,4 @@
-CLIPPER_VERSION=0.0.1
+CLIPPER_VERSION=0.0.2
 # Copyright (C) 2013  LENAROX@xda
 #
 # This program is free software: you can redistribute it and/or modify
@@ -111,27 +111,17 @@ Roll_Down()
 # Put your engine stuffs here.
 Roll_Up()
 {
-	# Information deck
-	Priority_Info()
-	{
-		echo -n "cpulimit was set to "
-		if [ "$default" -eq 1 ]; then
-			echo "default by $priority%"
-		else
-			echo "$priority%"
-		fi
-	}
 	if [ "$?" -eq 0 ]; then
 		return=0
 		if [ "$opt_p" -eq 1 ]; then
 			count=0
-			for i in $(env | grep "^opt.*"); do
+			for i in $(env | grep "^opt.*" | grep -v "opt_p" | grep -v "opt_h" | grep -v "opt_x" ); do
 				if [ "${i#*=}" == 1 ]; then
 					count=$((count+1))
 				fi
 			done
 			if [ "$count" -eq 0 ]; then
-				echo "-p: none of the additions were selected for action."
+				echo "-p: none of the actions were selected to be applied."
 				Usage
 				return=1
 			fi
@@ -154,16 +144,16 @@ HOW TO USE -p:
 	you can type: -p 84, -p84, --priority 84, --priority84, or even -84.
 	unlike -k or -g, -p option needs to be written independently
 	from other options like so: -p84 -hxkgm, or -h -k -p84 -g -x -m.
-	this will not work: -hxkgmp84, or -hxkgpm84.
+	these will not work: -hxkgmp84, or -hxkgpm84.
 
 OTHER OPTIONS:
 	-k or --kernel is a kernel driver management utility.
 	it will tune your kernel driver processes to save more resources,
-	and try to give more of those resources to the poor.
+	and try to give more of those to the poor ones.
 
 	-g or --grouping is a AMS process grouping utility.
 	AMS stands for: Activity Manager Service.
-	its an unfinished product, therefore no more documentation.
+	its an unfinished product, therefore no more description for now.
 
 	-m or -mediaserver lets you to control the resource usage of media scanner.
 	this 'media scanner' process is your primary source of all lags and battery drains.
@@ -237,7 +227,12 @@ EOF
 			else
 				echo "all $noerror kernel drivers have been successfully modified."
 			fi
-			Priority_Info
+			echo -n "cpulimit was set to "
+			if [ "$default" -eq 1 ]; then
+				echo "default by $driver_priority%"
+			else
+				echo "$driver_priority%"
+			fi
 			echo
 			echo "kernel driver management utility last run on $(date)"
 		fi
@@ -287,7 +282,12 @@ EOF
 					echo "Manager was not able to continue the progress, due to a critical error."
 				else
 					echo "system_server hijacking complete! ready to rock:D"
-					Priority_Info
+					echo -n "cpulimit was set to "
+					if [ "$default" -eq 1 ]; then
+						echo "default by $priority%"
+					else
+						echo "$priority%"
+					fi
 					echo
 					echo "AMS process grouping utility last run on $(date)"
 				fi
@@ -323,7 +323,12 @@ EOF
 				echo "Manager was not able to continue the progress, due to a critical error."
 			else
 				echo "mediaserver optimization complete!"
-				Priority_Info
+				echo -n "cpulimit was set to "
+				if [ "$default" -eq 1 ]; then
+					echo "default by $priority%"
+				else
+					echo "$priority%"
+				fi
 				echo
 				echo "mediaserver optimizer last run on $(date)"
 			fi
@@ -354,6 +359,9 @@ Magic_Parser()
 	val_error=$(echo 'requires a value')
 	int_error=$(echo 'requires an integer number as a value')
 	arg_error=$(echo 'invalid argument')
+	if [ ! "$1" ]; then
+		return 1
+	fi
 	while [ "$1" ]; do
 		case $1 in
 			-p* | --priority* )
