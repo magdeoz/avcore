@@ -345,7 +345,7 @@ opt_m()
 		mediaserver=$(pgrep android.process.media)
 		if [ "$mediaserver" ]; then
 			renice $renice_val $mediaserver
-			if [ "$(cut -d "" -f 19 /proc/$mediaserver/stat)" -ne "$renice_val" ]; then
+			if [ "$(cut -d " " -f 19 /proc/$mediaserver/stat)" -ne "$renice_val" ]; then
 				return=1
 			fi
 			break
