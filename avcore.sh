@@ -1,4 +1,4 @@
-CLIPPER_VERSION=0.0.2
+CLIPPER_VERSION=0.0.3
 # Copyright (C) 2013  LENAROX@xda
 #
 # This program is free software: you can redistribute it and/or modify
@@ -111,27 +111,24 @@ Roll_Down()
 
 ## Following is a user editable area.
 
-# Put your engine stuffs here.
-Roll_Up()
+opt_p()
 {
-	if [ "$?" -eq 0 ]; then
-		return=0
-		if [ "$opt_p" -eq 1 ]; then
-			count=0
-			for i in $(env | grep "^opt.*" | grep -v "opt_p" | grep -v "opt_h" | grep -v "opt_x" ); do
-				if [ "${i#*=}" == 1 ]; then
-					count=$((count+1))
-				fi
-			done
-			if [ "$count" -eq 0 ]; then
-				echo "-p: none of the actions were selected to be applied."
-				Usage
-				return=1
-			fi
+	count=0
+	for i in $(env | grep "^opt.*" | grep -v "opt_p" | grep -v "opt_h" | grep -v "opt_x" ); do
+		if [ "${i#*=}" == 1 ]; then
+			count=$((count+1))
 		fi
-		if [ "$opt_h" -eq 1 ]; then
-			NAME=$(basename $0 | sed 's/\b\(.\)/\u\1/g')
-			echo "SOME BASIC STUFF THAT YOU SHOULD KNOW:
+	done
+	if [ "$count" -eq 0 ]; then
+		echo "-p: none of the actions were selected to be applied."
+		Usage
+		return=1
+	fi
+}
+
+opt_h()
+{
+	echo "SOME BASIC STUFF THAT YOU SHOULD KNOW:
 	-h or --help views this message.
 	-x or --exit does not work in this current version.
 	more options are coming soon to later versions.
@@ -162,178 +159,234 @@ OTHER OPTIONS:
 	this 'media scanner' process is your primary source of all lags and battery drains.
 	so why not control this thing for our benefits?
 
-$NAME Version $CLIPPER_VERSION
+CLIPPER VERSION $CLIPPER_VERSION
 Copyright (C) 2013  LENAROX@xda
 "
+}
+
+opt_x()
+{
+	echo "not available."
+	return=1
+}
+
+opt_k()
+{
+	default=0
+	kernel_priority=100
+	driver_priority=$opt_p_val
+	if [ "$driver_priority" ]; then
+		if [ "$driver_priority" -gt 200 ]; then
+			driver_priority=200
+		elif [ "$driver_priority" -lt 5 ]; then
+			driver_priority=5
 		fi
-		if [ "$opt_x" -eq 1 ]; then
-			echo "not available."
-			return=1
+	else
+		default=1
+		driver_priority=50
+	fi
+	noerror=0
+	error=0
+	renice_val=$(echo $kernel_priority | awk '{printf "%.0f\n", 20-$1/5}')
+	renice_val2=$(echo $driver_priority | awk '{printf "%.0f\n", 20-$1/5}')
+	echo "checking for kernel drivers..."
+	for i in $(pgrep "" | grep -v $(pgrep zygote)); do
+		if [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^2$")" ]; then
+			if [ "$(grep "^worker_thread$" /proc/$i/wchan)" ]; then
+				renice $renice_val $i
+			fi
+		elif [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^1$")" ]; then
+			if [ ! "$(grep "^binder_thread_read$" /proc/$i/wchan)" ]; then
+				renice $renice_val2 $i
+			fi
 		fi
-		if [ "$opt_k" -eq 1 ]; then
-			default=0
-			kernel_priority=100
-			driver_priority=$opt_p_val
-			if [ "$driver_priority" ]; then
-				if [ "$driver_priority" -gt 200 ]; then
-					driver_priority=200
-				elif [ "$driver_priority" -lt 5 ]; then
-					driver_priority=5
-				fi
-			else
-				default=1
-				driver_priority=50
-			fi
-			noerror=0
-			error=0
-			renice_val=$(echo $kernel_priority | awk '{printf "%.0f\n", 20-$1/5}')
-			renice_val2=$(echo $driver_priority | awk '{printf "%.0f\n", 20-$1/5}')
-			echo "checking for kernel drivers..."
-			for i in $(pgrep ""); do
-				if [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^2$")" ]; then
-					if [ "$(grep "^worker_thread$" /proc/$i/wchan)" ]; then
-						renice $renice_val $i
-					fi
-				elif [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^1$")" ]; then
-					if [ ! "$(grep "^binder_thread_read$" /proc/$i/wchan)" ] && [ ! "$(grep "^poll_schedule_timeout$" /proc/$i/wchan)" ]; then
-						renice $renice_val2 $i
-					fi
-				fi
-			done
-			echo "final looping..."
-			for i in $(pgrep ""); do
-				if [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^2$")" ]; then
-					if [ "$(grep "^worker_thread$" /proc/$i/wchan)" ]; then
-						if [ "$(cut -d "" -f 19 /proc/$i/stat)" -eq "$renice_val" ]; then
-							noerror=$(($noerror+1))
-						else
-							error=$(($error+1))
-						fi
-					fi
-				elif [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^1$")" ]; then
-					if [ ! "$(grep "^binder_thread_read$" /proc/$i/wchan)" ] && [ ! "$(grep "^poll_schedule_timeout$" /proc/$i/wchan)" ]; then
-						if [ "$(cut -d "" -f 19 /proc/$i/stat)" -eq "$renice_val2" ]; then
-							noerror=$(($noerror+1))
-						else
-							error=$(($error+1))
-						fi
-					fi
-				fi
-			done
-			if [ "$error" -ne 0 ]; then
-				if [ "$noerror" -ne 0 ]; then
-					echo "$noerror kernel drivers have been successfully modified."
-				fi
-				echo "$error kernel drivers modification have been failed."
-				return=1
-			else
-				echo "all $noerror kernel drivers have been successfully modified."
-			fi
-			echo -n "cpulimit was set to "
-			if [ "$default" -eq 1 ]; then
-				echo "default by $driver_priority%"
-			else
-				echo "$driver_priority%"
-			fi
-			echo
-			echo "kernel driver management utility last run on $(date)"
-		fi
-		if [ "$opt_g" -eq 1 ]; then
-			if [ "$(pgrep system_server)" ]; then
-				echo "-g: this options is only executable via init process."
-				Usage
-				return=1
-			else
-				default=0
-				priority=$opt_p_val
-				if [ "$priority" ]; then
-					if [ "$priority" -gt 200 ]; then
-						priority=200
-					elif [ "$priority" -lt 5 ]; then
-						priority=5
-					fi
+	done
+	echo "final looping..."
+	for i in $(pgrep "" | grep -v $(pgrep zygote)); do
+		if [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^2$")" ]; then
+			if [ "$(grep "^worker_thread$" /proc/$i/wchan)" ]; then
+				if [ "$(cut -d " " -f 19 /proc/$i/stat)" -eq "$renice_val" ]; then
+					noerror=$(($noerror+1))
 				else
-					default=1
-					priority=200
+					error=$(($error+1))
 				fi
-				renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
-				echo "waiting for zygote..."
+			fi
+		elif [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^1$")" ]; then
+			if [ ! "$(grep "^binder_thread_read$" /proc/$i/wchan)" ]; then
+				if [ "$(cut -d " " -f 19 /proc/$i/stat)" -eq "$renice_val2" ]; then
+					noerror=$(($noerror+1))
+				else
+					error=$(($error+1))
+				fi
+			fi
+		fi
+	done
+	if [ "$error" -ne 0 ]; then
+		if [ "$noerror" -ne 0 ]; then
+			echo "$noerror kernel drivers have been successfully modified."
+		fi
+		echo "$error kernel drivers modification have been failed."
+		return=1
+	else
+		echo "all $noerror kernel drivers have been successfully modified."
+	fi
+	echo -n "cpulimit was set to "
+	if [ "$default" -eq 1 ]; then
+		echo "default by $driver_priority%"
+	else
+		echo "$driver_priority%"
+	fi
+	echo
+	echo "kernel driver management utility last run on $(date)"
+}
+
+Priority_Killer()
+{
+	while true; do
+		if [ "$(ps | awk '/[0-9]/&&!/]|\/*bin\/|\/init|_server/' | wc -l)" -gt $(($(cut -d " " -f 19 /proc/$(pgrep zygote)/stat)+21)) ]; then
+			least=0
+			pid=0
+			for i in $(pgrep ""); do
+				if [ $least == 0 ] || [ $pid == 0 ]; then
+					least=$(cat /proc/$i/oom_score)
+					pid=$i
+				else
+					now=$(cat /proc/$i/oom_score)
+					if [ $least -lt $now ]; then
+						least=$now
+						pid=$i
+					fi
+				fi
+			done
+			kill -9 $pid
+		fi | sleep 1
+	done
+}
+
+opt_g()
+{
+	if [ "$(pgrep system_server)" ]; then
+		echo "-g: this options is only executable via init process."
+		Usage
+		return=1
+	else
+		default=0
+		priority=$opt_p_val
+		if [ "$priority" ]; then
+			if [ "$priority" -gt 200 ]; then
+				priority=200
+			elif [ "$priority" -lt 5 ]; then
+				priority=5
+			fi
+		else
+			default=1
+			priority=200
+		fi
+		renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
+		inverted_val=$((renice_val*-1-1))
+		echo "waiting for zygote..."
+		while true; do
+			zygote=$(pgrep zygote)
+			if [ "$zygote" ]; then
+				renice $renice_val $zygote
+				echo "waiting for system_server..."
 				while true; do
-					zygote=$(pgrep zygote)
-					if [ "$zygote" ]; then
-						prev_priority=$(cut -d "" -f 19 /proc/$zygote/stat)
-						renice $renice_val $zygote
-						echo "waiting for system_server..."
-						while true; do
-							system_server=$(pgrep system_server)
-							if [ "$system_server" ]; then
-								if [ "$(cut -d "" -f 19 /proc/$system_server/stat)" -eq "$renice_val" ]; then
-									renice $prev_priority $zygote
-								else
-									return=1
-								fi
-								break
-							fi
-							sleep 1
-						done
+					system_server=$(pgrep system_server)
+					if [ "$system_server" ]; then
+						if [ "$(cut -d " " -f 19 /proc/$system_server/stat)" -eq "$renice_val" ]; then
+							renice $inverted_val $zygote
+						else
+							return=1
+						fi
 						break
 					fi
 					sleep 1
 				done
-				if [ "$return" -eq 1 ]; then
-					echo "Manager was not able to continue the progress, due to a critical error."
-				else
-					echo "system_server hijacking complete! ready to rock:D"
-					echo -n "cpulimit was set to "
-					if [ "$default" -eq 1 ]; then
-						echo "default by $priority%"
-					else
-						echo "$priority%"
-					fi
-					echo
-					echo "AMS process grouping utility last run on $(date)"
-				fi
+				break
 			fi
+			sleep 1
+		done
+		if [ "$return" -eq 1 ]; then
+			echo "Manager was not able to continue the progress, due to a critical error."
+		else
+			echo "system_server hijacking complete! ready to rock:D"
+			echo -n "cpulimit was set to "
+			if [ "$default" -eq 1 ]; then
+				echo "default by $priority%"
+			else
+				echo "$priority%"
+			fi
+			echo
+			echo "AMS process grouping utility started on $(date)"
+			Priority_Killer &
+		fi
+	fi
+}
+
+opt_m()
+{
+	default=0
+	priority=$opt_p_val
+	if [ "$priority" ]; then
+		if [ "$priority" -gt 200 ]; then
+			priority=200
+		elif [ "$priority" -lt 5 ]; then
+			priority=5
+		fi
+	else
+		default=1
+		priority=50
+	fi
+	renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
+	echo "waiting for mediaserver..."
+	while true; do
+		mediaserver=$(pgrep android.process.media)
+		if [ "$mediaserver" ]; then
+			renice $renice_val $mediaserver
+			if [ "$(cut -d "" -f 19 /proc/$mediaserver/stat)" -ne "$renice_val" ]; then
+				return=1
+			fi
+			break
+		fi
+		sleep 1
+	done
+	if [ "$return" -eq 1 ]; then
+		echo "Manager was not able to continue the progress, due to a critical error."
+	else
+		echo "mediaserver optimization complete!"
+		echo -n "cpulimit was set to "
+		if [ "$default" -eq 1 ]; then
+			echo "default by $priority%"
+		else
+			echo "$priority%"
+		fi
+		echo
+		echo "mediaserver optimizer last run on $(date)"
+	fi
+}
+
+# Put your engine stuffs here.
+Roll_Up()
+{
+	if [ "$?" -eq 0 ]; then
+		return=0
+		if [ "$opt_p" -eq 1 ]; then
+			opt_p
+		fi
+		if [ "$opt_h" -eq 1 ]; then
+			opt_h
+		fi
+		if [ "$opt_x" -eq 1 ]; then
+			opt_x
+		fi
+		if [ "$opt_k" -eq 1 ]; then
+			opt_k
+		fi
+		if [ "$opt_g" -eq 1 ]; then
+			opt_g
 		fi
 		if [ "$opt_m" -eq 1 ]; then
-			default=0
-			priority=$opt_p_val
-			if [ "$priority" ]; then
-				if [ "$priority" -gt 200 ]; then
-					priority=200
-				elif [ "$priority" -lt 5 ]; then
-					priority=5
-				fi
-			else
-				default=1
-				priority=50
-			fi
-			renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
-			echo "waiting for mediaserver..."
-			while true; do
-				mediaserver=$(pgrep android.process.media)
-				if [ "$mediaserver" ]; then
-					renice $renice_val $mediaserver
-					if [ "$(cut -d "" -f 19 /proc/$mediaserver/stat)" -ne "$renice_val" ]; then
-						return=1
-					fi
-					break
-				fi
-				sleep 1
-			done
-			if [ "$return" -eq 1 ]; then
-				echo "Manager was not able to continue the progress, due to a critical error."
-			else
-				echo "mediaserver optimization complete!"
-				echo -n "cpulimit was set to "
-				if [ "$default" -eq 1 ]; then
-					echo "default by $priority%"
-				else
-					echo "$priority%"
-				fi
-				echo
-				echo "mediaserver optimizer last run on $(date)"
-			fi
+			opt_m
 		fi
 		return $return
 	else
