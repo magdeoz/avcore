@@ -242,6 +242,8 @@ opt_k()
 
 Priority_Killer()
 {
+	renice 19 $$
+	ionice -c2 -n7 -p$$
 	while true; do
 		if [ "$(ps | awk '/[0-9]/&&!/]|\/*bin\/|\/init|_server/' | wc -l)" -gt $(($(cut -d " " -f 19 /proc/$(pgrep zygote)/stat)+21)) ]; then
 			least=0
@@ -259,7 +261,7 @@ Priority_Killer()
 				fi
 			done
 			kill -9 $pid
-		fi | sleep 1
+		fi | sleep 5
 	done
 }
 
