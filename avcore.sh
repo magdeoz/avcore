@@ -98,6 +98,9 @@ Roll_Down()
 	if [ "$run_BAG" ] && [ "$run_BAG" == yes ]; then
 		BAG
 	fi
+	if [ "$?" -ne 0 ]; then
+		exit 1
+	fi
 	if [ "$run_Superuser" ] && [ "$run_Superuser" == yes ]; then
 		Superuser
 	fi
@@ -127,8 +130,8 @@ Roll_Up()
 			fi
 		fi
 		if [ "$opt_h" -eq 1 ]; then
-			cat <<EOF
-SOME BASIC STUFF THAT YOU SHOULD KNOW:
+			NAME=$(basename $0 | sed 's/\b\(.\)/\u\1/g')
+			echo "SOME BASIC STUFF THAT YOU SHOULD KNOW:
 	-h or --help views this message.
 	-x or --exit does not work in this current version.
 	more options are coming soon to later versions.
@@ -159,10 +162,9 @@ OTHER OPTIONS:
 	this 'media scanner' process is your primary source of all lags and battery drains.
 	so why not control this thing for our benefits?
 
-$(echo $(basename $0) | sed 's/\b\(.\)/\u\1/g') Version $CLIPPER_VERSION
+$NAME Version $CLIPPER_VERSION
 Copyright (C) 2013  LENAROX@xda
-
-EOF
+"
 		fi
 		if [ "$opt_x" -eq 1 ]; then
 			echo "not available."
@@ -512,16 +514,14 @@ Magic_Parser()
 # Customize Usage for your own needs.
 Usage()
 {
-	cat <<EOF
-Usage: $(basename $0) -hxkgm -p [VALUE]
+	echo "Usage: $(basename $0) -hxkgm -p [VALUE]
 	-p | --priority) master priority set
 	-x | --exit) ends the process already running in background.
 	-k | --kernel) run kernel driver management utility
 	-g | --grouping) launch AMS process grouping utility
 	-m | --mediaserver) mediaserver optimizer
 	type -h or --help for more description.
-
-EOF
+"
 }
 
 ## Aaand, you're good to go!
