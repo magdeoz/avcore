@@ -1,4 +1,4 @@
-CLIPPER_VERSION=0.0.3
+CLIPPER_VERSION=0.0.4
 # Copyright (C) 2013  LENAROX@xda
 #
 # This program is free software: you can redistribute it and/or modify
@@ -120,7 +120,7 @@ opt_p()
 		fi
 	done
 	if [ "$count" -eq 0 ]; then
-		echo "-p: none of the actions were selected to be applied."
+		echo "-p: expects a corresponsable argument."
 		Usage
 		return=1
 	fi
@@ -155,9 +155,8 @@ OTHER OPTIONS:
 	AMS stands for: Activity Manager Service.
 	its an unfinished product, therefore no more description for now.
 
-	-m or -mediaserver lets you to control the resource usage of media scanner.
-	this 'media scanner' process is your primary source of all lags and battery drains.
-	so why not control this thing for our benefits?
+	-m or -mediaserver lets you to control the overall resource usage of server processes.
+	these server processes are your primary source of all lags and battery drains.
 
 CLIPPER VERSION $CLIPPER_VERSION
 Copyright (C) 2013  LENAROX@xda
@@ -189,7 +188,7 @@ opt_k()
 	error=0
 	renice_val=$(echo $kernel_priority | awk '{printf "%.0f\n", 20-$1/5}')
 	renice_val2=$(echo $driver_priority | awk '{printf "%.0f\n", 20-$1/5}')
-	echo "checking for kernel drivers..."
+	echo "looking for kernel drivers..."
 	for i in $(pgrep "" | grep -v $(pgrep zygote)); do
 		if [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^2$")" ]; then
 			if [ "$(grep "^worker_thread$" /proc/$i/wchan)" ]; then
@@ -201,7 +200,7 @@ opt_k()
 			fi
 		fi
 	done
-	echo "final looping..."
+	echo "final checking..."
 	for i in $(pgrep "" | grep -v $(pgrep zygote)); do
 		if [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^2$")" ]; then
 			if [ "$(grep "^worker_thread$" /proc/$i/wchan)" ]; then
@@ -339,32 +338,46 @@ opt_m()
 		default=1
 		priority=50
 	fi
+	error=0
 	renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
-	echo "waiting for mediaserver..."
-	while true; do
-		mediaserver=$(pgrep android.process.media)
-		if [ "$mediaserver" ]; then
-			renice $renice_val $mediaserver
-			if [ "$(cut -d " " -f 19 /proc/$mediaserver/stat)" -ne "$renice_val" ]; then
-				return=1
-			fi
-			break
+	echo "looking for server processes..."
+	for i in $(pgrep ""); do
+		if [ "$(cat /proc/$i/oom_adj)" -eq -12 ] || [ "$(cat /proc/$i/oom_score_adj)" -eq -705 ]; then
+			renice $renice_val $i
 		fi
-		sleep 1
 	done
-	if [ "$return" -eq 1 ]; then
-		echo "Manager was not able to continue the progress, due to a critical error."
-	else
-		echo "mediaserver optimization complete!"
-		echo -n "cpulimit was set to "
-		if [ "$default" -eq 1 ]; then
-			echo "default by $priority%"
-		else
-			echo "$priority%"
+	echo "final checking..."
+	for i in $(pgrep ""); do
+		if [ "$(cat /proc/$i/oom_adj)" -eq -12 ] || [ "$(cat /proc/$i/oom_score_adj)" -eq -705 ]; then
+			if [ "$(cut -d " " -f 19 /proc/$i/stat)" -eq $renice_val ]; then
+				cat /proc/$i/comm
+				echo " was successfully optimized."
+			else
+				error=$((error+1))
+				cat /proc/$i/comm
+				echo " was failed to be optimized."
+			fi
 		fi
-		echo
-		echo "mediaserver optimizer last run on $(date)"
+	done
+	if [ "$error" -gt 0 ]; then
+		echo "total $error errors were found."
+		return=1
+	else
+		echo "server process optimization complete!"
 	fi
+	echo -n "cpulimit was set to "
+	if [ "$default" -eq 1 ]; then
+		echo "default by $priority%"
+	else
+		echo "$priority%"
+	fi
+	echo
+	echo "server process optimizer last run on $(date)"
+}
+
+Pre_Launcher()
+{
+	eval $(echo $i | sed 's/^\$//')
 }
 
 # Put your engine stuffs here.
@@ -373,22 +386,30 @@ Roll_Up()
 	if [ "$?" -eq 0 ]; then
 		return=0
 		if [ "$opt_p" -eq 1 ]; then
+			return=0
 			opt_p
+			if [ "$return" -eq 1 ]; then
+				Usage
+				return 1
+			fi
 		fi
 		if [ "$opt_h" -eq 1 ]; then
 			opt_h
+			return 0
 		fi
 		if [ "$opt_x" -eq 1 ]; then
+			return=0
 			opt_x
-		fi
-		if [ "$opt_k" -eq 1 ]; then
-			opt_k
-		fi
-		if [ "$opt_g" -eq 1 ]; then
-			opt_g
-		fi
-		if [ "$opt_m" -eq 1 ]; then
-			opt_m
+			return $return
+		else
+			for i in $(seq -s ' $fslot' 0 5 | sed 's/^0//'); do
+				v=$(eval echo $i)
+				if [ "$v" -eq 1 ]; then
+					return=0
+					Pre_Launcher
+				fi
+			done
+			return $return
 		fi
 		return $return
 	else
@@ -419,6 +440,7 @@ Magic_Parser()
 	if [ ! "$1" ]; then
 		return 1
 	fi
+	count=0
 	while [ "$1" ]; do
 		case $1 in
 			-p* | --priority* )
@@ -500,18 +522,24 @@ Magic_Parser()
 									echo "-k: $sop_error"
 									return 1
 								fi
+								count=$((count+1))
+								export fslot$count=opt_k
 								opt_k=$(($opt_k+1))
 							elif [ "$i" == g ]; then
 								if [ "$opt_g" -gt 0 ]; then
 									echo "-g: $sop_error"
 									return 1
 								fi
+								count=$((count+1))
+								export fslot$count=opt_g
 								opt_g=$(($opt_g+1))
 							elif [ "$i" == m ]; then
 								if [ "$opt_m" -gt 0 ]; then
 									echo "-m: $sop_error"
 									return 1
 								fi
+								count=$((count+1))
+								export fslot$count=opt_m
 								opt_m=$(($opt_m+1))
 							else
 								echo "$1: $arg_error"
@@ -538,18 +566,24 @@ Magic_Parser()
 								echo "--kernel: $sop_error"
 								return 1
 							fi
+							count=$((count+1))
+							export fslot$count=opt_k
 							opt_k=$(($opt_k+1))
 						elif [ "$i" == grouping ]; then
 							if [ "$opt_g" -gt 0 ]; then
 								echo "--grouping: $sop_error"
 								return 1
 							fi
+							count=$((count+1))
+							export fslot$count=opt_g
 							opt_g=$(($opt_g+1))
 						elif [ "$i" == mediaserver ]; then
 							if [ "$opt_m" -gt 0 ]; then
 								echo "--mediaserver: $sop_error"
 								return 1
 							fi
+							count=$((count+1))
+							export fslot$count=opt_m
 							opt_m=$(($opt_m+1))
 						else
 							echo "$1: $arg_error"
@@ -574,7 +608,7 @@ Usage()
 	-x | --exit) ends the process already running in background.
 	-k | --kernel) run kernel driver management utility
 	-g | --grouping) launch AMS process grouping utility
-	-m | --mediaserver) mediaserver optimizer
+	-m | --mediaserver) server process optimizer
 	type -h or --help for more description.
 "
 }
