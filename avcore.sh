@@ -190,11 +190,11 @@ opt_k()
 	renice_val2=$(echo $driver_priority | awk '{printf "%.0f\n", 20-$1/5}')
 	echo "looking for kernel drivers..."
 	for i in $(pgrep "" | grep -v $(pgrep zygote)); do
-		if [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^2$")" ]; then
+		if [ -f /proc/$i/status ] && [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^2$")" ]; then
 			if [ "$(grep "^worker_thread$" /proc/$i/wchan)" ]; then
 				renice $renice_val $i
 			fi
-		elif [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^1$")" ]; then
+		elif [ -f /proc/$i/status ] && [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^1$")" ]; then
 			if [ ! "$(grep "^binder_thread_read$" /proc/$i/wchan)" ]; then
 				renice $renice_val2 $i
 			fi
@@ -202,7 +202,7 @@ opt_k()
 	done
 	echo "final checking..."
 	for i in $(pgrep "" | grep -v $(pgrep zygote)); do
-		if [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^2$")" ]; then
+		if [ -f /proc/$i/status ] && [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^2$")" ]; then
 			if [ "$(grep "^worker_thread$" /proc/$i/wchan)" ]; then
 				if [ "$(cut -d " " -f 19 /proc/$i/stat)" -eq "$renice_val" ]; then
 					noerror=$(($noerror+1))
@@ -210,7 +210,7 @@ opt_k()
 					error=$(($error+1))
 				fi
 			fi
-		elif [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^1$")" ]; then
+		elif [ -f /proc/$i/status ] && [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^1$")" ]; then
 			if [ ! "$(grep "^binder_thread_read$" /proc/$i/wchan)" ]; then
 				if [ "$(cut -d " " -f 19 /proc/$i/stat)" -eq "$renice_val2" ]; then
 					noerror=$(($noerror+1))
@@ -338,24 +338,50 @@ opt_m()
 		default=1
 		priority=50
 	fi
+	for i in $(sed 's/,/ /g; s/^0//' /sys/module/lowmemorykiller/parameters/adj); do
+		if [ "$i" -gt 15 ]; then
+			oom_score_adj=1
+		else
+			oom_score_adj=0
+		fi
+	done
 	error=0
 	renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
 	echo "looking for server processes..."
 	for i in $(pgrep ""); do
-		if [ "$(cat /proc/$i/oom_adj)" -eq -12 ] || [ "$(cat /proc/$i/oom_score_adj)" -eq -705 ]; then
-			renice $renice_val $i
+		if [ "$oom_score_adj" -eq 1 ]; then
+			if [ "$(cat /proc/$i/oom_score_adj)" -eq -705 ]; then
+				renice $renice_val $i
+			fi
+		else
+			if [ "$(cat /proc/$i/oom_adj)" -eq -12 ]; then
+				renice $renice_val $i
+			fi
 		fi
 	done
 	echo "final checking..."
 	for i in $(pgrep ""); do
-		if [ "$(cat /proc/$i/oom_adj)" -eq -12 ] || [ "$(cat /proc/$i/oom_score_adj)" -eq -705 ]; then
-			if [ "$(cut -d " " -f 19 /proc/$i/stat)" -eq $renice_val ]; then
-				cat /proc/$i/comm
-				echo " was successfully optimized."
-			else
-				error=$((error+1))
-				cat /proc/$i/comm
-				echo " was failed to be optimized."
+		if [ "$oom_score_adj" -eq 1 ]; then
+			if [ "$(cat /proc/$i/oom_score_adj)" -eq -705 ]; then
+				if [ "$(cut -d " " -f 19 /proc/$i/stat)" -eq $renice_val ]; then
+					cat /proc/$i/comm
+					echo " was successfully optimized."
+				else
+					error=$((error+1))
+					cat /proc/$i/comm
+					echo " was failed to be optimized."
+				fi
+			fi
+		else
+			if [ "$(cat /proc/$i/oom_adj)" -eq -12 ]; then
+				if [ "$(cut -d " " -f 19 /proc/$i/stat)" -eq $renice_val ]; then
+					cat /proc/$i/comm
+					echo " was successfully optimized."
+				else
+					error=$((error+1))
+					cat /proc/$i/comm
+					echo " was failed to be optimized."
+				fi
 			fi
 		fi
 	done
@@ -373,11 +399,6 @@ opt_m()
 	fi
 	echo
 	echo "server process optimizer last run on $(date)"
-}
-
-Pre_Launcher()
-{
-	eval $(echo $i | sed 's/^\$//')
 }
 
 # Put your engine stuffs here.
@@ -404,9 +425,9 @@ Roll_Up()
 		else
 			for i in $(seq -s ' $fslot' 0 5 | sed 's/^0//'); do
 				v=$(eval echo $i)
-				if [ "$v" -eq 1 ]; then
+				if [ "$v" ]; then
 					return=0
-					Pre_Launcher
+					$v
 				fi
 			done
 			return $return
