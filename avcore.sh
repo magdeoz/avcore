@@ -13,6 +13,11 @@ CLIPPER_VERSION=0.0.4
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# 0.0.1 - first release.
+# 0.0.2 - fixed lots of stuff, thanks to defiant07 for a ton of help:)
+# 0.0.3 - lots of fixes on function logics, and some engine implementations were made.
+# 0.0.4 - code improvements, and new -t function added.
 set +e
 # Un-comment out the following line to enable debugging.
 #set -x
@@ -114,13 +119,34 @@ Roll_Down()
 opt_p()
 {
 	count=0
-	for i in $(env | grep "^opt.*" | grep -v "opt_p" | grep -v "opt_h" | grep -v "opt_x" ); do
+	for i in $(env | grep "^opt.*" | grep -v "opt_p" | grep -v "opt_t" | grep -v "opt_h" | grep -v "opt_x" ); do
 		if [ "${i#*=}" == 1 ]; then
 			count=$((count+1))
 		fi
 	done
 	if [ "$count" -eq 0 ]; then
 		echo "-p: expects a corresponsable argument."
+		Usage
+		return=1
+	else
+		if [ "$opt_p_val" -gt 200 ]; then
+			opt_p_val=200
+		elif [ "$opt_p_val" -lt 5 ]; then
+			opt_p_val=5
+		fi
+	fi
+}
+
+opt_t()
+{
+	count=0
+	for i in $(env | grep "^opt.*" | grep -v "opt_p" | grep -v "opt_t" | grep -v "opt_h" | grep -v "opt_x" ); do
+		if [ "${i#*=}" == 1 ]; then
+			count=$((count+1))
+		fi
+	done
+	if [ "$count" -eq 0 ]; then
+		echo "-t: expects a corresponsable argument."
 		Usage
 		return=1
 	fi
@@ -145,6 +171,10 @@ HOW TO USE -p:
 	unlike -k or -g, -p option needs to be written independently
 	from other options like so: -p84 -hxkgm, or -h -k -p84 -g -x -m.
 	these will not work: -hxkgmp84, or -hxkgpm84.
+	
+HOW TO USE -t:
+	-t is a new feature implemented to 0.0.4 for keeping track of timing.
+	reminder: -[value] is only reserved for -p, therefore -t cannot access to the command.
 
 OTHER OPTIONS:
 	-k or --kernel is a kernel driver management utility.
@@ -161,12 +191,14 @@ OTHER OPTIONS:
 CLIPPER VERSION $CLIPPER_VERSION
 Copyright (C) 2013  LENAROX@xda
 "
+	skip=1
 }
 
 opt_x()
 {
 	echo "not available."
 	return=1
+	skip=1
 }
 
 opt_k()
@@ -406,32 +438,28 @@ Roll_Up()
 {
 	if [ "$?" -eq 0 ]; then
 		return=0
-		if [ "$opt_p" -eq 1 ]; then
-			return=0
-			opt_p
-			if [ "$return" -eq 1 ]; then
-				Usage
-				return 1
-			fi
-		fi
-		if [ "$opt_h" -eq 1 ]; then
-			opt_h
-			return 0
-		fi
-		if [ "$opt_x" -eq 1 ]; then
-			return=0
-			opt_x
-			return $return
-		else
-			for i in $(seq -s ' $fslot' 0 5 | sed 's/^0//'); do
-				v=$(eval echo $i)
-				if [ "$v" ]; then
-					return=0
-					$v
+		skip=0
+		for i in $(seq -s ' $mslot' 0 6 | sed 's/^0//'); do
+			v=$(eval echo $i)
+			if [ "$v" ]; then
+				return=0
+				$v
+				if [ "$skip" -eq 1 ]; then
+					return $return
 				fi
-			done
-			return $return
-		fi
+			else
+				break
+			fi
+		done
+		for i in $(seq -s ' $fslot' 0 6 | sed 's/^0//'); do
+			v=$(eval echo $i)
+			if [ "$v" ]; then
+				return=0
+				$v
+			else
+				break
+			fi
+		done
 		return $return
 	else
 		Usage
@@ -444,6 +472,7 @@ Magic_Parser()
 {
 	# We export main instructions to memory for later check.
 	export opt_p=0
+	export opt_t=0
 	export opt_h=0
 	export opt_x=0
 	export opt_k=0
@@ -452,6 +481,7 @@ Magic_Parser()
 
 	# Extra instructions that doesn't need export
 	opt_p_val=0
+	opt_t_val=0
 
 	# Error messages
 	sop_error=$(echo 'same operation not permitted')
@@ -474,6 +504,8 @@ Magic_Parser()
 					echo "$mode: $sop_error"
 					return 1
 				fi
+				fcount=$((fcount+1))
+				export mslot$fcount=opt_p
 				opt_p=$(($opt_p+1))
 				if [ ! "$(echo $1 | sed 's/^'"$mode"'//')" ]; then
 					if [ "$2" ]; then
@@ -500,6 +532,44 @@ Magic_Parser()
 					opt_p_val=$(echo $1 | sed 's/^'"$mode"'//')
 				fi
 			;;
+			-t* | --time* )
+				if [ "$(echo $1 | grep "^-t")" ]; then
+					mode="-t"
+				else
+					mode="--time"
+				fi
+				if [ "$opt_t" -gt 0 ]; then
+					echo "$mode: $sop_error"
+					return 1
+				fi
+				fcount=$((fcount+1))
+				export mslot$fcount=opt_t
+				opt_t=$(($opt_t+1))
+				if [ ! "$(echo $1 | sed 's/^'"$mode"'//')" ]; then
+					if [ "$2" ]; then
+						opt_t_val=$2
+					else
+						echo "$mode: $val_error"
+						return 1
+					fi
+					if [ "$(echo $opt_t_val | grep "^-")" ]; then
+						echo "$mode: $val_error"
+						return 1
+					else
+						if [ "$(echo $opt_t_val | sed 's/[0-9]//g')" ]; then
+							echo "$mode: $int_error"
+							return 1
+						fi
+					fi
+					shift
+				else
+					if [ "$(echo $1 | sed 's/^'"$mode"'//; s/[0-9]//g')" ]; then
+						echo "$mode: $int_error"
+						return 1
+					fi
+					opt_t_val=$(echo $1 | sed 's/^'"$mode"'//')
+				fi
+			;;
 			* )
 				if [ ! "$(echo $1 | sed 's/^-//')" ]; then
 					echo "$1: $arg_error"
@@ -522,6 +592,8 @@ Magic_Parser()
 							fi
 							return 1
 						fi
+						fcount=$((fcount+1))
+						export mslot$fcount=opt_p
 						opt_p=$(($opt_p+1))
 						opt_p_val=$(echo $1 | sed 's/^-//')
 					else
@@ -531,12 +603,16 @@ Magic_Parser()
 									echo "-h: $sop_error"
 									return 1
 								fi
+								fcount=$((fcount+1))
+								export mslot$fcount=opt_h
 								opt_h=$(($opt_h+1))
 							elif [ "$i" == x ]; then
 								if [ "$opt_x" -gt 0 ]; then
 									echo "-x: $sop_error"
 									return 1
 								fi
+								fcount=$((fcount+1))
+								export mslot$fcount=opt_x
 								opt_x=$(($opt_x+1))
 							elif [ "$i" == k ]; then
 								if [ "$opt_k" -gt 0 ]; then
@@ -575,12 +651,16 @@ Magic_Parser()
 								echo "--help: $sop_error"
 								return 1
 							fi
+							fcount=$((fcount+1))
+							export mslot$fcount=opt_h
 							opt_h=$(($opt_h+1))
 						elif [ "$i" == exit ]; then
 							if [ "$opt_x" -gt 0 ]; then
 								echo "--exit: $sop_error"
 								return 1
 							fi
+							fcount=$((fcount+1))
+							export mslot$fcount=opt_x
 							opt_x=$(($opt_x+1))
 						elif [ "$i" == kernel ]; then
 							if [ "$opt_k" -gt 0 ]; then
@@ -625,7 +705,8 @@ Magic_Parser()
 Usage()
 {
 	echo "Usage: $(basename $0) -hxkgm -p [VALUE]
-	-p | --priority) master priority set
+	-p | --priority) master priority control set
+	-t | --time) master sync control set
 	-x | --exit) ends the process already running in background.
 	-k | --kernel) run kernel driver management utility
 	-g | --grouping) launch AMS process grouping utility
