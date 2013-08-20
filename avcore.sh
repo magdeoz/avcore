@@ -15,6 +15,7 @@ CLIPPER_VERSION=0.0.4
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # 0.0.1 - first release.
+#       - updated Busybox Applet Generator to 2.2
 # 0.0.2 - fixed lots of buggy stuff, thanks to defiant07 for a ton of help:)
 # 0.0.3 - removed 'help' regex, due to unsupported regex patterns on most shells.
 #       - removed Priority_Info for bash compatibility.
@@ -25,35 +26,31 @@ CLIPPER_VERSION=0.0.4
 #       - fcount missing error fixed.
 #       - multiple error message bug fixed.
 #       - fixed some bugs on -p function.
+#       - updated Busybox Applet Generator to 2.3
 
 set +e
 # Un-comment out the following line to enable debugging.
 #set -x
 
-# Custom settings for session behaviour: say 'yes' to enable, 'no' to disable.
-# Busybox Applet Generator(BAG) 2.2(important for Android devices)
-run_BAG=yes
+# Custom settings for session behaviour.
+# Check Busybox Applet Generator 2.3.
+run_Busybox_Applet_Generator=yes
 # Check Superuser.
 run_Superuser=yes
 
-# Busybox Applet Generator(BAG) 2.2
+# Busybox Applet Generator 2.3
 # You can type in any commands you would want it to check.
 # It will start by checking from cmd1, and its limit is up to cmd224.
 cmd1=renice
 cmd2=ionice
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 # This feature might not be compatible with some other multi-call binaries.
-BAG()
+Busybox_Applet_Generator()
 {
-if [ ! "$(busybox --list)" ]; then
-	if [ "$(busybox)" ]; then
-		echo "Your busybox is outdated!"
-		return 1
-	else
+	if [ ! "$(busybox)" ]; then
 		echo "Failed to locate busybox!"
 		return 1
 	fi
-else
 	busyboxloc=$(dirname $(which busybox))
 	n=0
 	for i in $(echo $PATH | sed 's/:/ /g'); do
@@ -82,7 +79,7 @@ else
 	for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
 		v=$(eval echo $i)
 		if [ "$v" ]; then
-			if [ ! "$(busybox --list | grep $v)" ]; then
+			if [ ! "$(busybox | grep "\<$v\>")" ]; then
 				echo "Required applets are missing!"
 				return 1
 			fi
@@ -93,7 +90,6 @@ else
 			break
 		fi
 	done
-fi 2>/dev/null
 }
 
 # Check Superuser.
@@ -108,17 +104,17 @@ Superuser()
 # Session behaviour
 Roll_Down()
 {
-	if [ "$run_BAG" ] && [ "$run_BAG" == yes ]; then
-		BAG
-	fi
-	if [ "$?" -ne 0 ]; then
-		exit 1
+	if [ "$run_Busybox_Applet_Generator" ] && [ "$run_Busybox_Applet_Generator" == yes ]; then
+		Busybox_Applet_Generator
+		if [ "$?" -ne 0 ]; then
+			exit 1
+		fi
 	fi
 	if [ "$run_Superuser" ] && [ "$run_Superuser" == yes ]; then
 		Superuser
-	fi
-	if [ "$?" -ne 0 ]; then
-		exit 1
+		if [ "$?" -ne 0 ]; then
+			exit 1
+		fi
 	fi
 }
 
@@ -128,7 +124,7 @@ opt_p()
 {
 	count=0
 	for i in $(env | grep "^opt.*" | grep -v "opt_p" | grep -v "opt_t" | grep -v "opt_h" | grep -v "opt_x" ); do
-		if [ "${i#*=}" == 1 ]; then
+		if [ "$(echo $i | cut -d "=" -f 2)" == 1 ]; then
 			count=$((count+1))
 		fi
 	done
@@ -149,7 +145,7 @@ opt_t()
 {
 	count=0
 	for i in $(env | grep "^opt.*" | grep -v "opt_p" | grep -v "opt_t" | grep -v "opt_h" | grep -v "opt_x" ); do
-		if [ "${i#*=}" == 1 ]; then
+		if [ "$(echo $i | cut -d "=" -f 2)" == 1 ]; then
 			count=$((count+1))
 		fi
 	done
