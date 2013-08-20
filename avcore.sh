@@ -718,7 +718,7 @@ Magic_Parser()
 	done
 }
 
-# Yet, this is still considered as one of the error messages.
+# A typical error message.
 Usage()
 {
 	echo "Usage: $(basename $0) -hxkgm -p [VALUE] -t [VALUE]
