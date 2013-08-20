@@ -50,46 +50,47 @@ Busybox_Applet_Generator()
 	if [ ! "$(busybox)" ]; then
 		echo "Failed to locate busybox!"
 		return 1
-	fi
-	busyboxloc=$(dirname $(which busybox))
-	n=0
-	for i in $(echo $PATH | sed 's/:/ /g'); do
-		n=$(($n+1))
-		export slot$n=$i
-		if [ "$i" == "$busyboxloc" ]; then
-			busyboxenv=slot$n
-		fi
-	done
-	if [ "$busyboxenv" != slot1 ]; then
-		export PATH=$(echo -n $busyboxloc
-		for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
-			v=$(eval echo $i)
-			if [ "$v" != "$busyboxloc" ]; then
-				echo -n ":$v"
-			fi
-		done)
-	fi
-	if [ "$cmd" ]; then
-		if [ "$cmd" -lt 0 ]; then
-			cmd=0
-		fi
 	else
-		cmd=224
-	fi
-	for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
-		v=$(eval echo $i)
-		if [ "$v" ]; then
-			if [ ! "$(busybox | grep "\<$v\>")" ]; then
-				echo "Required applets are missing!"
-				return 1
+		busyboxloc=$(dirname $(which busybox))
+		n=0
+		for i in $(echo $PATH | sed 's/:/ /g'); do
+			n=$(($n+1))
+			export slot$n=$i
+			if [ "$i" == "$busyboxloc" ]; then
+				busyboxenv=slot$n
 			fi
-			if [ ! -e "$busyboxloc"/"$v" ]; then
-				alias $i="busybox $i"
+		done
+		if [ "$busyboxenv" != slot1 ]; then
+			export PATH=$(echo -n $busyboxloc
+			for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
+				v=$(eval echo $i)
+				if [ "$v" != "$busyboxloc" ]; then
+					echo -n ":$v"
+				fi
+			done)
+		fi
+		if [ "$cmd" ]; then
+			if [ "$cmd" -lt 0 ]; then
+				cmd=0
 			fi
 		else
-			break
+			cmd=224
 		fi
-	done
+		for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
+			v=$(eval echo $i)
+			if [ "$v" ]; then
+				if [ ! "$(busybox | grep "\<$v\>")" ]; then
+					echo "Required applets are missing!"
+					return 1
+				fi
+				if [ ! -e "$busyboxloc"/"$v" ]; then
+					alias $i="busybox $i"
+				fi
+			else
+				break
+			fi
+		done
+	fi 2>/dev/null
 }
 
 # Check Superuser.
