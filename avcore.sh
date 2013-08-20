@@ -13,10 +13,11 @@ CLIPPER_VERSION=0.0.4
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-# 0.0.1 - first release.
-#       - updated Busybox Applet Generator to 2.2
-# 0.0.2 - fixed lots of buggy stuff, thanks to defiant07 for a ton of help:)
+#
+# Changelogs:
+# 0.0.1 - first release
+#       - updated Busybox Applet Generator to 2.2.
+# 0.0.2 - fixed lots of buggy stuff, thanks to defiant07 for a ton of help.:)
 # 0.0.3 - removed 'help' regex, due to unsupported regex patterns on most shells.
 #       - removed Priority_Info for bash compatibility.
 #       - implemented in-order execution on secondary opts.
@@ -26,13 +27,12 @@ CLIPPER_VERSION=0.0.4
 #       - fcount missing error fixed.
 #       - multiple error message bug fixed.
 #       - fixed some bugs on -p function.
-#       - updated Busybox Applet Generator to 2.3
-
+#       - updated Busybox Applet Generator to 2.3.
 set +e
 # Un-comment out the following line to enable debugging.
 #set -x
 
-# Custom settings for session behaviour.
+# Custom settings for session behaviour
 # Check Busybox Applet Generator 2.3.
 run_Busybox_Applet_Generator=yes
 # Check Superuser.
@@ -118,8 +118,7 @@ Roll_Down()
 	fi
 }
 
-## Following is a user editable area.
-
+# Master priority control set
 opt_p()
 {
 	count=0
@@ -129,7 +128,7 @@ opt_p()
 		fi
 	done
 	if [ "$count" -eq 0 ]; then
-		echo "-p: expects a corresponsable argument."
+		echo "-p: $req_error"
 		Usage
 		return=1
 	else
@@ -141,6 +140,7 @@ opt_p()
 	fi
 }
 
+# Master sync control set
 opt_t()
 {
 	count=0
@@ -150,12 +150,13 @@ opt_t()
 		fi
 	done
 	if [ "$count" -eq 0 ]; then
-		echo "-t: expects a corresponsable argument."
+		echo "-t: $req_error"
 		Usage
 		return=1
 	fi
 }
 
+# Help function
 opt_h()
 {
 	echo "SOME BASIC STUFF THAT YOU SHOULD KNOW:
@@ -200,6 +201,7 @@ Copyright (C) 2013  LENAROX@xda
 	skip=1
 }
 
+# End of the line
 opt_x()
 {
 	echo "not available."
@@ -207,6 +209,7 @@ opt_x()
 	skip=1
 }
 
+# Kernel driver management utility
 opt_k()
 {
 	default=0
@@ -277,6 +280,7 @@ opt_k()
 	echo "kernel driver management utility last run on $(date)"
 }
 
+# KDMU support
 Priority_Killer()
 {
 	renice 19 $$
@@ -302,6 +306,7 @@ Priority_Killer()
 	done
 }
 
+# AMS process grouping utility
 opt_g()
 {
 	if [ "$(pgrep system_server)" ]; then
@@ -362,6 +367,7 @@ opt_g()
 	fi
 }
 
+# Server process optimization
 opt_m()
 {
 	default=0
@@ -439,7 +445,7 @@ opt_m()
 	echo "server process optimizer last run on $(date)"
 }
 
-# Put your engine stuffs here.
+# Advanced in-order execution
 Roll_Up()
 {
 	if [ "$?" -eq 0 ]; then
@@ -473,7 +479,7 @@ Roll_Up()
 	fi
 }
 
-# Put your extra options for your engine here.
+# Parse user input.
 Magic_Parser()
 {
 	# We export main instructions to memory for later check.
@@ -498,6 +504,7 @@ Magic_Parser()
 	val_error=$(echo 'requires a value')
 	int_error=$(echo 'requires an integer number as a value')
 	arg_error=$(echo 'invalid argument')
+	req_error=$(echo 'expects a correspondable argument')
 	
 	if [ ! "$1" ]; then
 		return 1
@@ -711,21 +718,19 @@ Magic_Parser()
 	done
 }
 
-# Customize Usage for your own needs.
+# Yet, this is still considered as one of the error messages.
 Usage()
 {
 	echo "Usage: $(basename $0) -hxkgm -p [VALUE] -t [VALUE]
-	-p | --priority) master priority control set
-	-t | --time) master sync control set
-	-x | --exit) ends the process already running in background.
-	-k | --kernel) run kernel driver management utility
-	-g | --grouping) launch AMS process grouping utility
-	-m | --mediaserver) server process optimizer
+	-p | --priority) for master priority control set.
+	-t | --time) for master sync control set.
+	-x | --exit) ends the spawned process.
+	-k | --kernel) runs kernel driver management utility.
+	-g | --grouping) launchs AMS process grouping utility.
+	-m | --mediaserver) runs server process optimization.
 	type -h or --help for more description.
 "
 }
-
-## Aaand, you're good to go!
 
 # Main script
 Roll_Down
