@@ -15,9 +15,17 @@ CLIPPER_VERSION=0.0.4
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # 0.0.1 - first release.
-# 0.0.2 - fixed lots of stuff, thanks to defiant07 for a ton of help:)
-# 0.0.3 - lots of fixes on function logics, and some engine implementations were made.
-# 0.0.4 - code improvements, and new -t function added.
+# 0.0.2 - fixed lots of buggy stuff, thanks to defiant07 for a ton of help:)
+# 0.0.3 - removed 'help' regex, due to unsupported regex patterns on most shells.
+#       - removed Priority_Info for bash compatibility.
+#       - implemented in-order execution on secondary opts.
+#       - some new engines were implemented for demonstration.
+# 0.0.4 - created another independent in-order execution for main opts.
+#       - new -t function added.
+#       - fcount missing error fixed.
+#       - multiple error message bug fixed.
+#       - fixed some bugs on -p function.
+
 set +e
 # Un-comment out the following line to enable debugging.
 #set -x
@@ -160,21 +168,23 @@ opt_h()
 	more options are coming soon to later versions.
 
 HOW TO USE -p:
-	-p or --priority is a master priority set.
+	-p or --priority is a master priority control set.
 	it is only used for setting a custom value on options such as -k and -g.
-	so, if -p is not entered while running them, don't worry.
-	they use their own default settings built in.;)
+	so, if -p is not entered while running them, default values will encounter.
 	custom values are limited from 0% to 200%.(percentage)
 
 	for example, if you want to set 84 as a custom value,
-	you can type: -p 84, -p84, --priority 84, --priority84, or even -84.
+	you can type: -p 84, -p84, --priority 84, --priority84, or even -84.('-' is a reserved mark ONLY for -p)
 	unlike -k or -g, -p option needs to be written independently
 	from other options like so: -p84 -hxkgm, or -h -k -p84 -g -x -m.
-	these will not work: -hxkgmp84, or -hxkgpm84.
+	
+	reminder: -p must be input independently from other options.
+	these will not work or likely to give out syntax errors: -hxkgmp84, or -hxkgpm84.
 	
 HOW TO USE -t:
-	-t is a new feature implemented to 0.0.4 for keeping track of timing.
-	reminder: -[value] is only reserved for -p, therefore -t cannot access to the command.
+	-t is a new feature implemented to 0.0.4 to keep track of timing between each commands.
+	its usage is basically same as -p.
+	reminder: -[value] argument won't work on -t.
 
 OTHER OPTIONS:
 	-k or --kernel is a kernel driver management utility.
@@ -444,7 +454,7 @@ Roll_Up()
 			if [ "$v" ]; then
 				return=0
 				$v
-				if [ "$skip" -eq 1 ]; then
+				if [ "$return" -eq 1 ] || [ "$skip" -eq 1 ]; then
 					return $return
 				fi
 			else
@@ -478,6 +488,10 @@ Magic_Parser()
 	export opt_k=0
 	export opt_g=0
 	export opt_m=0
+	
+	# Parameters needed for Roll_Up
+	count=0
+	fcount=0
 
 	# Extra instructions that doesn't need export
 	opt_p_val=0
@@ -488,10 +502,10 @@ Magic_Parser()
 	val_error=$(echo 'requires a value')
 	int_error=$(echo 'requires an integer number as a value')
 	arg_error=$(echo 'invalid argument')
+	
 	if [ ! "$1" ]; then
 		return 1
 	fi
-	count=0
 	while [ "$1" ]; do
 		case $1 in
 			-p* | --priority* )
@@ -704,7 +718,7 @@ Magic_Parser()
 # Customize Usage for your own needs.
 Usage()
 {
-	echo "Usage: $(basename $0) -hxkgm -p [VALUE]
+	echo "Usage: $(basename $0) -hxkgm -p [VALUE] -t [VALUE]
 	-p | --priority) master priority control set
 	-t | --time) master sync control set
 	-x | --exit) ends the process already running in background.
