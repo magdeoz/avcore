@@ -45,8 +45,7 @@ cmd1=renice
 cmd2=ionice
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 # This feature might not be compatible with some other multi-call binaries.
-Busybox_Applet_Generator()
-{
+Busybox_Applet_Generator(){
 	if [ ! "$(busybox)" ]; then
 		echo "Failed to locate busybox!"
 		return 1
@@ -94,8 +93,7 @@ Busybox_Applet_Generator()
 }
 
 # Check Superuser.
-Superuser()
-{
+Superuser(){
 	if [ "$(id -u)" != 0 ] && [ "$(id -u)" != root ]; then
 		echo "Permission denied, are you root?"
 		return 1
@@ -103,8 +101,7 @@ Superuser()
 }
 
 # Session behaviour
-Roll_Down()
-{
+Roll_Down(){
 	if [ "$run_Busybox_Applet_Generator" ] && [ "$run_Busybox_Applet_Generator" == yes ]; then
 		Busybox_Applet_Generator
 		if [ "$?" -ne 0 ]; then
@@ -120,8 +117,7 @@ Roll_Down()
 }
 
 # Master priority control set
-opt_p()
-{
+opt_p(){
 	count=0
 	for i in $(env | grep "^opt.*" | grep -v "opt_p" | grep -v "opt_t" | grep -v "opt_h" | grep -v "opt_x" ); do
 		if [ "$(echo $i | cut -d "=" -f 2)" == 1 ]; then
@@ -142,8 +138,7 @@ opt_p()
 }
 
 # Master sync control set
-opt_t()
-{
+opt_t(){
 	count=0
 	for i in $(env | grep "^opt.*" | grep -v "opt_p" | grep -v "opt_t" | grep -v "opt_h" | grep -v "opt_x" ); do
 		if [ "$(echo $i | cut -d "=" -f 2)" == 1 ]; then
@@ -158,8 +153,7 @@ opt_t()
 }
 
 # Help function
-opt_h()
-{
+opt_h(){
 	echo "SOME BASIC STUFF THAT YOU SHOULD KNOW:
 	-h or --help views this message.
 	-x or --exit does not work in this current version.
@@ -203,16 +197,14 @@ Copyright (C) 2013  LENAROX@xda
 }
 
 # End of the line
-opt_x()
-{
+opt_x(){
 	echo "not available."
 	return=1
 	skip=1
 }
 
 # Kernel driver management utility
-opt_k()
-{
+opt_k(){
 	default=0
 	kernel_priority=100
 	driver_priority=$opt_p_val
@@ -282,8 +274,7 @@ opt_k()
 }
 
 # KDMU support
-Priority_Killer()
-{
+Priority_Killer(){
 	renice 19 $$
 	ionice -c2 -n7 -p$$
 	while true; do
@@ -308,8 +299,7 @@ Priority_Killer()
 }
 
 # AMS process grouping utility
-opt_g()
-{
+opt_g(){
 	if [ "$(pgrep system_server)" ]; then
 		echo "-g: this options is only executable via init process."
 		Usage
@@ -369,8 +359,7 @@ opt_g()
 }
 
 # Server process optimization
-opt_m()
-{
+opt_m(){
 	default=0
 	priority=$opt_p_val
 	if [ "$priority" ]; then
@@ -447,8 +436,7 @@ opt_m()
 }
 
 # Advanced in-order execution
-Roll_Up()
-{
+Roll_Up(){
 	if [ "$?" -eq 0 ]; then
 		return=0
 		skip=0
@@ -481,8 +469,7 @@ Roll_Up()
 }
 
 # Parse user input.
-Magic_Parser()
-{
+Magic_Parser(){
 	# We export main instructions to memory for later check.
 	export opt_p=0
 	export opt_t=0
@@ -505,7 +492,7 @@ Magic_Parser()
 	val_error=$(echo 'requires a value')
 	int_error=$(echo 'requires an integer number as a value')
 	arg_error=$(echo 'invalid argument')
-	req_error=$(echo 'expects a correspondable argument')
+	req_error=$(echo 'expects an argument')
 	
 	if [ ! "$1" ]; then
 		return 1
@@ -720,8 +707,7 @@ Magic_Parser()
 }
 
 # A typical error message.
-Usage()
-{
+Usage(){
 	echo "Usage: $(basename $0) -hxkgm -p [VALUE] -t [VALUE]
 	-p | --priority) for master priority control set.
 	-t | --time) for master sync control set.
