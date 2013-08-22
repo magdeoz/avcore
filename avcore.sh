@@ -129,10 +129,12 @@ opt_p(){
 		Usage
 		return=1
 	else
-		if [ "$opt_p_val" -gt 200 ]; then
-			opt_p_val=200
-		elif [ "$opt_p_val" -lt 5 ]; then
-			opt_p_val=5
+		if [ "$opt_p_val" ]; then
+			if [ "$opt_p_val" -gt 200 ]; then
+				opt_p_val=200
+			elif [ "$opt_p_val" -lt 5 ]; then
+				opt_p_val=5
+			fi
 		fi
 	fi
 }
@@ -274,27 +276,25 @@ opt_k(){
 }
 
 # KDMU support
-Priority_Killer(){
+Ioprio(){
 	renice 19 $$
-	ionice -c2 -n7 -p$$
 	while true; do
-		if [ "$(ps | awk '/[0-9]/&&!/]|\/*bin\/|\/init|_server/' | wc -l)" -gt $(($(cut -d " " -f 19 /proc/$(pgrep zygote)/stat)+21)) ]; then
-			least=0
-			pid=0
-			for i in $(pgrep ""); do
-				if [ $least == 0 ] || [ $pid == 0 ]; then
-					least=$(cat /proc/$i/oom_score)
-					pid=$i
+		for i in $(pgrep ""); do
+			ioprio=$(($(($(cut -d " " -f 19 /proc/$i/stat)+24))/5))
+			if [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^1$")" ]; then
+				if [ "$ioprio" -gt 7 ]; then
+					ionice -c3 -p$i
 				else
-					now=$(cat /proc/$i/oom_score)
-					if [ $least -lt $now ]; then
-						least=$now
-						pid=$i
-					fi
+					ionice -c1 -n$ioprio -p$i
 				fi
-			done
-			kill -9 $pid
-		fi | sleep 5
+			else
+				if [ "$ioprio" -gt 7 ]; then
+					ionice -c3 -p$i
+				else
+					ionice -c2 -n$ioprio -p$i
+				fi
+			fi
+		done
 	done
 }
 
@@ -353,7 +353,7 @@ opt_g(){
 			fi
 			echo
 			echo "AMS process grouping utility started on $(date)"
-			Priority_Killer &
+			Ioprio &
 		fi
 	fi
 }
@@ -398,23 +398,19 @@ opt_m(){
 		if [ "$oom_score_adj" -eq 1 ]; then
 			if [ "$(cat /proc/$i/oom_score_adj)" -eq -705 ]; then
 				if [ "$(cut -d " " -f 19 /proc/$i/stat)" -eq $renice_val ]; then
-					cat /proc/$i/comm
-					echo " was successfully optimized."
+					echo "$(cat /proc/$i/comm) was successfully optimized."
 				else
 					error=$((error+1))
-					cat /proc/$i/comm
-					echo " was failed to be optimized."
+					echo "$(cat /proc/$i/comm) failed for optimization."
 				fi
 			fi
 		else
 			if [ "$(cat /proc/$i/oom_adj)" -eq -12 ]; then
 				if [ "$(cut -d " " -f 19 /proc/$i/stat)" -eq $renice_val ]; then
-					cat /proc/$i/comm
-					echo " was successfully optimized."
+					echo "$(cat /proc/$i/comm) was successfully optimized."
 				else
 					error=$((error+1))
-					cat /proc/$i/comm
-					echo " was failed to be optimized."
+					echo "$(cat /proc/$i/comm) failed for optimization."
 				fi
 			fi
 		fi
@@ -483,9 +479,9 @@ Magic_Parser(){
 	count=0
 	fcount=0
 
-	# Extra instructions that doesn't need export
-	opt_p_val=0
-	opt_t_val=0
+	# Extra instructions that must not have initial values
+	opt_p_val=
+	opt_t_val=
 
 	# Error messages
 	sop_error=$(echo 'same operation not permitted')
