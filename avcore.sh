@@ -1,4 +1,6 @@
-CLIPPER_VERSION=0.0.4
+CLIPPER_VERSION="v0.0.4 alpha"
+# Clipper - a user executable binary for process & VM management.
+#
 # Copyright (C) 2013  LENAROX@xda
 #
 # This program is free software: you can redistribute it and/or modify
@@ -19,7 +21,7 @@ CLIPPER_VERSION=0.0.4
 #       - updated Busybox Applet Generator to 2.2.
 # 0.0.2 - fixed lots of buggy stuff, thanks to defiant07 for a ton of help.:)
 # 0.0.3 - removed 'help' regex, due to unsupported regex patterns on most shells.
-#       - removed Priority_Info for bash compatibility.
+#       - removed Priority_Info() for bash compatibility.
 #       - implemented in-order execution on secondary opts.
 #       - some new engines were implemented for demonstration.
 # 0.0.4 - created another independent in-order execution for main opts.
@@ -28,6 +30,7 @@ CLIPPER_VERSION=0.0.4
 #       - multiple error message bug fixed.
 #       - fixed some bugs on -p function.
 #       - updated Busybox Applet Generator to 2.3.
+#       - tweaked Magic_Parser() to support negative values.
 set +e
 # Un-comment out the following line to enable debugging.
 #set -x
@@ -172,7 +175,7 @@ HOW TO USE -p:
 	unlike -k or -g, -p option needs to be written independently
 	from other options like so: -p84 -hxkgm, or -h -k -p84 -g -x -m.
 	
-	reminder: -p must be input independently from other options.
+	reminder: -p must be used independently from other options.
 	these will not work or likely to give out syntax errors: -hxkgmp84, or -hxkgpm84.
 	
 HOW TO USE -t:
@@ -192,7 +195,13 @@ OTHER OPTIONS:
 	-m or -mediaserver lets you to control the overall resource usage of server processes.
 	these server processes are your primary source of all lags and battery drains.
 
-CLIPPER VERSION $CLIPPER_VERSION
+THE AMAZING POWER OF Magic_Parser():
+	Clipper uses an advanced logic function called Magic_Parser() to parse arguments,
+	in order to allow users to be able to input arguments more dynamically.
+	it basically means that this parser will be able to understand about any method across various argument inputs.
+	it is also designed to be very fast in complex parsing, so that any delays can be avoided.
+
+Clipper Version $CLIPPER_VERSION
 Copyright (C) 2013  LENAROX@xda
 "
 	skip=1
@@ -484,11 +493,11 @@ Magic_Parser(){
 	opt_t_val=
 
 	# Error messages
-	sop_error=$(echo 'same operation not permitted')
-	val_error=$(echo 'requires a value')
-	int_error=$(echo 'requires an integer number as a value')
-	arg_error=$(echo 'invalid argument')
-	req_error=$(echo 'expects an argument')
+	sop_error="same operation not permitted"
+	val_error="requires a value"
+	int_error="requires an integer number as a value"
+	arg_error="invalid argument"
+	req_error="expects an argument"
 	
 	if [ ! "$1" ]; then
 		return 1
@@ -516,17 +525,19 @@ Magic_Parser(){
 						return 1
 					fi
 					if [ "$(echo $opt_p_val | grep "^-")" ]; then
-						echo "$mode: $val_error"
-						return 1
+						if [ "$(echo $opt_p_val | sed 's/^-[0-9].//g')" ]; then
+							echo "$mode: $val_error"
+							return 1
+						fi
 					else
-						if [ "$(echo $opt_p_val | sed 's/[0-9]//g')" ]; then
+						if [ "$(echo $opt_p_val | sed 's/[0-9].//g')" ]; then
 							echo "$mode: $int_error"
 							return 1
 						fi
 					fi
 					shift
 				else
-					if [ "$(echo $1 | sed 's/^'"$mode"'//; s/[0-9]//g')" ]; then
+					if [ "$(echo $1 | sed 's/^'"$mode"'//; s/^-[0-9].//g')" ]; then
 						echo "$mode: $int_error"
 						return 1
 					fi
@@ -554,17 +565,19 @@ Magic_Parser(){
 						return 1
 					fi
 					if [ "$(echo $opt_t_val | grep "^-")" ]; then
-						echo "$mode: $val_error"
-						return 1
+						if [ "$(echo $opt_t_val | sed 's/^-[0-9].//g')" ]; then
+							echo "$mode: $val_error"
+							return 1
+						fi
 					else
-						if [ "$(echo $opt_t_val | sed 's/[0-9]//g')" ]; then
+						if [ "$(echo $opt_t_val | sed 's/[0-9].//g')" ]; then
 							echo "$mode: $int_error"
 							return 1
 						fi
 					fi
 					shift
 				else
-					if [ "$(echo $1 | sed 's/^'"$mode"'//; s/[0-9]//g')" ]; then
+					if [ "$(echo $1 | sed 's/^'"$mode"'//; s/^-[0-9].//g')" ]; then
 						echo "$mode: $int_error"
 						return 1
 					fi
@@ -584,7 +597,7 @@ Magic_Parser(){
 					n=$(($n+1))
 				done
 				if [ "$n" -eq 1 ]; then
-					if [ ! "$(echo $1 | sed 's/^-//; s/[0-9]//g')" ]; then
+					if [ ! "$(echo $1 | sed 's/^-[0-9].//g')" ]; then
 						if [ "$opt_p" -gt 0 ]; then
 							if [ "$mode" ]; then
 								echo "$mode: $sop_error"
