@@ -538,12 +538,12 @@ Magic_Parser(){
 					shift
 				else
 					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep "^-")" ]; then
-						if [ "$(echo $1 | sed 's/^'"$mode"'//'; s/^-[0-9]*//g')" ]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//; s/^-[0-9]*//g')" ]; then
 							echo "$mode: $val_error"
 							return 1
 						fi
 					else
-						if [ "$(echo $1 | sed 's/^'"$mode"'//'; s/[0-9]*//g')" ]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//; s/[0-9]*//g')" ]; then
 							echo "$mode: $int_error"
 							return 1
 						fi
@@ -585,12 +585,12 @@ Magic_Parser(){
 					shift
 				else
 					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep "^-")" ]; then
-						if [ "$(echo $1 | sed 's/^'"$mode"'//'; s/^-[0-9]*//g')" ]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//; s/^-[0-9]*//g')" ]; then
 							echo "$mode: $val_error"
 							return 1
 						fi
 					else
-						if [ "$(echo $1 | sed 's/^'"$mode"'//'; s/[0-9]*//g')" ]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//; s/[0-9]*//g')" ]; then
 							echo "$mode: $int_error"
 							return 1
 						fi
