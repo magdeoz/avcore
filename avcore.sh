@@ -525,21 +525,28 @@ Magic_Parser(){
 						return 1
 					fi
 					if [ "$(echo $opt_p_val | grep "^-")" ]; then
-						if [ "$(echo $opt_p_val | sed 's/^-[0-9].//g')" ]; then
+						if [ "$(echo $opt_p_val | sed 's/^-[0-9]*//g')" ]; then
 							echo "$mode: $val_error"
 							return 1
 						fi
 					else
-						if [ "$(echo $opt_p_val | sed 's/[0-9].//g')" ]; then
+						if [ "$(echo $opt_p_val | sed 's/[0-9]*//g')" ]; then
 							echo "$mode: $int_error"
 							return 1
 						fi
 					fi
 					shift
 				else
-					if [ "$(echo $1 | sed 's/^'"$mode"'//; s/^-[0-9].//g')" ]; then
-						echo "$mode: $int_error"
-						return 1
+					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep "^-")" ]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//'; s/^-[0-9]*//g')" ]; then
+							echo "$mode: $val_error"
+							return 1
+						fi
+					else
+						if [ "$(echo $1 | sed 's/^'"$mode"'//'; s/[0-9]*//g')" ]; then
+							echo "$mode: $int_error"
+							return 1
+						fi
 					fi
 					opt_p_val=$(echo $1 | sed 's/^'"$mode"'//')
 				fi
@@ -565,21 +572,28 @@ Magic_Parser(){
 						return 1
 					fi
 					if [ "$(echo $opt_t_val | grep "^-")" ]; then
-						if [ "$(echo $opt_t_val | sed 's/^-[0-9].//g')" ]; then
+						if [ "$(echo $opt_t_val | sed 's/^-[0-9]*//g')" ]; then
 							echo "$mode: $val_error"
 							return 1
 						fi
 					else
-						if [ "$(echo $opt_t_val | sed 's/[0-9].//g')" ]; then
+						if [ "$(echo $opt_t_val | sed 's/[0-9]*//g')" ]; then
 							echo "$mode: $int_error"
 							return 1
 						fi
 					fi
 					shift
 				else
-					if [ "$(echo $1 | sed 's/^'"$mode"'//; s/^-[0-9].//g')" ]; then
-						echo "$mode: $int_error"
-						return 1
+					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep "^-")" ]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//'; s/^-[0-9]*//g')" ]; then
+							echo "$mode: $val_error"
+							return 1
+						fi
+					else
+						if [ "$(echo $1 | sed 's/^'"$mode"'//'; s/[0-9]*//g')" ]; then
+							echo "$mode: $int_error"
+							return 1
+						fi
 					fi
 					opt_t_val=$(echo $1 | sed 's/^'"$mode"'//')
 				fi
@@ -597,7 +611,7 @@ Magic_Parser(){
 					n=$(($n+1))
 				done
 				if [ "$n" -eq 1 ]; then
-					if [ ! "$(echo $1 | sed 's/^-[0-9].//g')" ]; then
+					if [ ! "$(echo $1 | sed 's/^-[0-9]*//g')" ]; then
 						if [ "$opt_p" -gt 0 ]; then
 							if [ "$mode" ]; then
 								echo "$mode: $sop_error"
