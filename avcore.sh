@@ -473,7 +473,9 @@ Roll_Up(){
 			if [ "$v" ]; then
 				return=0
 				$v
-				echo
+				if [ "$v" != opt_p ] && [ "$v" != opt_t ]; then
+					echo
+				fi
 				if [ "$return" -eq 1 ] || [ "$skip" -eq 1 ]; then
 					return $return
 				fi
@@ -494,6 +496,7 @@ Roll_Up(){
 		return $return
 	else
 		Usage
+		echo
 		return 1
 	fi
 }
