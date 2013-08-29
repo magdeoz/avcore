@@ -172,7 +172,7 @@ HOW TO USE -p:
 	-p or --priority is a master priority control set.
 	it is only used for setting a custom value on options such as -k and -g.
 	so, if -p is not entered while running them, default values will encounter.
-	custom values are limited from 0% to 200%.(percentage)
+	custom values are limited from 5% to 200%.(percentage)
 
 	for example, if you want to set 84 as a custom value,
 	you can type: -p 84, -p84, --priority 84, --priority84, or even -84.('-' is a reserved mark ONLY for -p)
@@ -214,8 +214,12 @@ Copyright (C) 2013  LENAROX@xda"
 
 # End of the line
 opt_x(){
-	echo "not available."
-	return=1
+	i=$(pgrep $1)
+	if [ "$i" ]; then
+		kill -9 $i
+	else
+		return=1
+	fi
 	skip=1
 }
 
@@ -367,6 +371,9 @@ opt_g(){
 	renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
 	inverted_val=$((renice_val*-1-1))
 	echo "forking AMS manager..."
+	if [ "$(pgrep AMS_engine)" ]; then
+		opt_x AMS_engine
+	fi
 	AMS_fork_task $renice_val $inverted_val
 	if [ "$return" -eq 1 ]; then
 		echo "Manager was not able to continue the progress, due to a critical error."
