@@ -496,7 +496,6 @@ Roll_Up(){
 		return $return
 	else
 		Usage
-		echo
 		return 1
 	fi
 }
@@ -777,7 +776,8 @@ Usage(){
 	-k | --kernel) runs kernel driver management utility.
 	-g | --grouping) launchs AMS process grouping utility.
 	-m | --mediaserver) runs server process optimization.
-	type -h or --help for more description."
+	type -h or --help for more description.
+"
 }
 
 # Main script
