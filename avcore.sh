@@ -520,7 +520,7 @@ Magic_Parser(){
 	# Error messages
 	sop_error="same operation not permitted"
 	val_error="requires a value"
-	num_error="requires an arithmetic value"
+	num_error="requires a numerical value"
 	int_error="requires an integer number as a value"
 	neg_error="requires a non-negative number as a value"
 	arg_error="invalid argument"
@@ -600,7 +600,7 @@ Magic_Parser(){
 						return 1
 					fi
 					if [ "$(echo $opt_t_val | grep '-')" ]; then
-						if [ "$(echo $opt_t_val | sed 's/^-\.[0-9]*//g')" ]; then
+						if [ "$(echo $opt_t_val | sed 's/^-[0-9]*//g; s/\.//g')" ]; then
 							echo "$mode: $val_error"
 							return 1
 						else
@@ -608,8 +608,8 @@ Magic_Parser(){
 							return 1
 						fi
 					fi
-					if [ "$(echo $opt_t_val | grep '.')" ]; then
-						if [ "$(echo $opt_t_val | sed 's/\.[0-9]*//g')" ]; then
+					if [ "$(echo $opt_t_val | grep "\.")" ]; then
+						if [ "$(echo $opt_t_val | sed 's/[0-9]*//g; s/\.//g')" ]; then
 							echo "$mode: $num_error"
 							return 1
 						fi
@@ -617,7 +617,7 @@ Magic_Parser(){
 					shift
 				else
 					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep '-')" ]; then
-						if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/^-\.[0-9]*//g')" ]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/^-[0-9]*//g; s/\.//g')" ]; then
 							echo "$mode: $num_error"
 							return 1
 						else
@@ -625,8 +625,8 @@ Magic_Parser(){
 							return 1
 						fi
 					fi
-					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep '.')" ]; then
-						if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/\.[0-9]*//g')" ]; then
+					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep "\.")" ]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/[0-9]*//g; s/\.//g')" ]; then
 							echo "$mode: $num_error"
 							return 1
 						fi
