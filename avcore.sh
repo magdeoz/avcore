@@ -1,5 +1,5 @@
-CLIPPER_VERSION="v0.0.4 alpha"
-# Clipper - a user executable binary for process & VM management.
+CLIPPER_VERSION="0.0.5 alpha"
+# Clipper - a user executable binary for Dalvik VM & process management.
 #
 # Copyright (C) 2013  LENAROX@xda
 #
@@ -17,20 +17,23 @@ CLIPPER_VERSION="v0.0.4 alpha"
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Changelogs:
+# alpha version
 # 0.0.1 - first release
 #       - updated Busybox Applet Generator to 2.2.
 # 0.0.2 - fixed lots of buggy stuff, thanks to defiant07 for a ton of help.:)
 # 0.0.3 - removed 'help' regex, due to unsupported regex patterns on most shells.
 #       - removed Priority_Info() for bash compatibility.
 #       - implemented in-order execution on secondary opts.
-#       - some new engines were implemented for demonstration.
+#       - implemented some new engines for demonstration.
 # 0.0.4 - created another independent in-order execution for main opts.
 #       - new -t function added.
 #       - fcount missing error fixed.
 #       - multiple error message bug fixed.
 #       - fixed some bugs on -p function.
 #       - updated Busybox Applet Generator to 2.3.
-#       - tweaked Magic_Parser() to support negative values.
+#       - tweaked Magic_Parser() to bypass negative & floating-point numbers.
+# 0.0.5 - added some new engines.
+#       - fixed minor Magic_Parser() bugs.
 set +e
 # Un-comment out the following line to enable debugging.
 #set -x
@@ -45,7 +48,8 @@ run_Superuser=yes
 # You can type in any commands you would want it to check.
 # It will start by checking from cmd1, and its limit is up to cmd224.
 cmd1=renice
-cmd2=ionice
+cmd2=pgrep
+cmd3=mount
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 # This feature might not be compatible with some other multi-call binaries.
 Busybox_Applet_Generator(){
@@ -133,16 +137,16 @@ opt_p(){
 		return=1
 	else
 		if [ "$opt_p_val" ]; then
-			if [ "$opt_p_val" -gt 200 ]; then
-				opt_p_val=200
-			elif [ "$opt_p_val" -lt 5 ]; then
-				opt_p_val=5
+			if [ "$opt_p_val" -gt 200 ] || [ "$opt_p_val" -lt 5 ]; then
+				echo "-p: $lmt_error"
+				Usage
+				return=1
 			fi
 		fi
 	fi
 }
 
-# Master sync control set
+# Master interval control set
 opt_t(){
 	count=0
 	for i in $(env | grep "^opt.*" | grep -v "opt_p" | grep -v "opt_t" | grep -v "opt_h" | grep -v "opt_x" ); do
@@ -177,11 +181,13 @@ HOW TO USE -p:
 	
 	reminder: -p must be used independently from other options.
 	these will not work or likely to give out syntax errors: -hxkgmp84, or -hxkgpm84.
+	NOTE: non arithmetic values or floating-point numbers not supported.
 	
 HOW TO USE -t:
 	-t is a new feature implemented to 0.0.4 to keep track of timing between each commands.
 	its usage is basically same as -p.
 	reminder: -[value] argument won't work on -t.
+	NOTE: non arithmetic values or negative numbers not supported.
 
 OTHER OPTIONS:
 	-k or --kernel is a kernel driver management utility.
@@ -202,8 +208,7 @@ THE AMAZING POWER OF Magic_Parser():
 	it is also designed to be very fast in complex parsing, so that any delays can be avoided.
 
 Clipper Version $CLIPPER_VERSION
-Copyright (C) 2013  LENAROX@xda
-"
+Copyright (C) 2013  LENAROX@xda"
 	skip=1
 }
 
@@ -284,86 +289,104 @@ opt_k(){
 	echo "kernel driver management utility last run on $(date)"
 }
 
-# KDMU support
-Ioprio(){
-	renice 19 $$
-	while true; do
-		for i in $(pgrep ""); do
-			ioprio=$(($(($(cut -d " " -f 19 /proc/$i/stat)+24))/5))
-			if [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^1$")" ]; then
-				if [ "$ioprio" -gt 7 ]; then
-					ionice -c3 -p$i
-				else
-					ionice -c1 -n$ioprio -p$i
+# PGU support
+AMS_fork_task(){
+	if [ "$(mount | grep rootfs | grep '\<ro\>')" ]; then
+		mount -o remount,rw rootfs
+		mountstat=ro
+	else
+		mountstat=rw
+	fi
+	if [ ! -d /tmp ]; then
+		mkdir /tmp
+		chmod 644 /tmp
+	fi
+	echo 'while true; do
+		for i in $(ls /proc | grep -v "[a-zA-Z]"); do
+			for j in $(ls /proc/$i/task | grep -v $i); do
+				if [ "$(grep -i "HeapWorker" /proc/$i/task/$j/comm)" ]; then
+					renice $2 $j
 				fi
-			else
-				if [ "$ioprio" -gt 7 ]; then
-					ionice -c3 -p$i
-				else
-					ionice -c2 -n$ioprio -p$i
+				if [ "$(grep -i "Compiler" /proc/$i/task/$j/comm)" ]; then
+					renice $1 $j
 				fi
-			fi
+				if [ "$(grep -i "GC" /proc/$i/task/$j/comm)" ]; then
+					renice $2 $j
+				fi
+			done
 		done
+	done' > /tmp/AMS_engine
+	chmod 644 /tmp/AMS_engine
+	if [ -e /tmp/AMS_engine ]; then
+		sh /tmp/AMS_engine $1 $2 &
+		forkpid=$!
+		rm /tmp/AMS_engine
+	else
+		return=1
+	fi
+	if [ "$mountstat" == ro ]; then
+		mount -o remount,ro rootfs
+	fi
+}
+
+#limit AMS_fork_task
+process_limiter(){
+	renice 19 $$
+	renice 19 $1
+	while true; do
+		if [ -f /proc/$1 ]; then
+			kill -19 $1
+			sleep $2
+			kill -18 $1
+		else
+			kill -9 $$
+		fi
 	done
 }
 
 # AMS process grouping utility
 opt_g(){
-	if [ "$(pgrep system_server)" ]; then
-		echo "-g: this options is only executable via init process."
-		Usage
-		return=1
-	else
-		default=0
-		priority=$opt_p_val
-		if [ "$priority" ]; then
-			if [ "$priority" -gt 200 ]; then
-				priority=200
-			elif [ "$priority" -lt 5 ]; then
-				priority=5
-			fi
-		else
-			default=1
+	default=0
+	interval_default=0
+	priority=$opt_p_val
+	if [ "$priority" ]; then
+		if [ "$priority" -gt 200 ]; then
 			priority=200
+		elif [ "$priority" -lt 5 ]; then
+			priority=5
 		fi
-		renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
-		inverted_val=$((renice_val*-1-1))
-		echo "waiting for zygote..."
-		while true; do
-			zygote=$(pgrep zygote)
-			if [ "$zygote" ]; then
-				renice $renice_val $zygote
-				echo "waiting for system_server..."
-				while true; do
-					system_server=$(pgrep system_server)
-					if [ "$system_server" ]; then
-						if [ "$(cut -d " " -f 19 /proc/$system_server/stat)" -eq "$renice_val" ]; then
-							renice $inverted_val $zygote
-						else
-							return=1
-						fi
-						break
-					fi
-					sleep 1
-				done
-				break
-			fi
-			sleep 1
-		done
-		if [ "$return" -eq 1 ]; then
-			echo "Manager was not able to continue the progress, due to a critical error."
+	else
+		default=1
+		priority=5
+	fi
+	interval=$opt_t_val
+	if [ ! "$interval" ]; then
+		interval_default=1
+		interval=30
+	fi
+	renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
+	inverted_val=$((renice_val*-1-1))
+	echo "forking AMS manager..."
+	AMS_fork_task $renice_val $inverted_val
+	if [ "$return" -eq 1 ]; then
+		echo "Manager was not able to continue the progress, due to a critical error."
+	else
+		process_limiter $forkpid $interval &
+		echo "system_server hijacking complete! ready to rock:D"
+		echo -n "cpulimit was set to "
+		if [ "$default" -eq 1 ]; then
+			echo "default by $priority%"
 		else
-			echo "system_server hijacking complete! ready to rock:D"
-			echo -n "cpulimit was set to "
-			if [ "$default" -eq 1 ]; then
-				echo "default by $priority%"
-			else
-				echo "$priority%"
-			fi
-			echo
-			echo "AMS process grouping utility started on $(date)"
-			Ioprio &
+			echo "$priority%"
 		fi
+		echo -n "refresh rate interval was set to "
+		if [ "$interval_default" -eq 1 ]; then
+			echo "default by $interval seconds"
+		else
+			echo "$interval seocnds"
+		fi
+		echo
+		echo "AMS process grouping utility started on $(date)"
 	fi
 }
 
@@ -450,6 +473,7 @@ Roll_Up(){
 			if [ "$v" ]; then
 				return=0
 				$v
+				echo
 				if [ "$return" -eq 1 ] || [ "$skip" -eq 1 ]; then
 					return $return
 				fi
@@ -462,6 +486,7 @@ Roll_Up(){
 			if [ "$v" ]; then
 				return=0
 				$v
+				echo
 			else
 				break
 			fi
@@ -495,16 +520,19 @@ Magic_Parser(){
 	# Error messages
 	sop_error="same operation not permitted"
 	val_error="requires a value"
+	num_error="requires an arithmetic value"
 	int_error="requires an integer number as a value"
+	neg_error="requires a non-negative number as a value"
 	arg_error="invalid argument"
 	req_error="expects an argument"
+	lmt_error="out of range"
 	
 	if [ ! "$1" ]; then
 		return 1
 	fi
 	while [ "$1" ]; do
 		case $1 in
-			-p* | --priority* )
+			-p* | --priority*)
 				if [ "$(echo $1 | grep "^-p")" ]; then
 					mode="-p"
 				else
@@ -551,7 +579,7 @@ Magic_Parser(){
 					opt_p_val=$(echo $1 | sed 's/^'"$mode"'//')
 				fi
 			;;
-			-t* | --time* )
+			-t* | --time*)
 				if [ "$(echo $1 | grep "^-t")" ]; then
 					mode="-t"
 				else
@@ -571,34 +599,42 @@ Magic_Parser(){
 						echo "$mode: $val_error"
 						return 1
 					fi
-					if [ "$(echo $opt_t_val | grep "^-")" ]; then
-						if [ "$(echo $opt_t_val | sed 's/^-[0-9]*//g')" ]; then
+					if [ "$(echo $opt_t_val | grep '-')" ]; then
+						if [ "$(echo $opt_t_val | sed 's/^-\.[0-9]*//g')" ]; then
 							echo "$mode: $val_error"
 							return 1
+						else
+							echo "$mode: $neg_error"
+							return 1
 						fi
-					else
-						if [ "$(echo $opt_t_val | sed 's/[0-9]*//g')" ]; then
-							echo "$mode: $int_error"
+					fi
+					if [ "$(echo $opt_t_val | grep '.')" ]; then
+						if [ "$(echo $opt_t_val | sed 's/\.[0-9]*//g')" ]; then
+							echo "$mode: $num_error"
 							return 1
 						fi
 					fi
 					shift
 				else
-					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep "^-")" ]; then
-						if [ "$(echo $1 | sed 's/^'"$mode"'//; s/^-[0-9]*//g')" ]; then
-							echo "$mode: $val_error"
+					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep '-')" ]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/^-\.[0-9]*//g')" ]; then
+							echo "$mode: $num_error"
+							return 1
+						else
+							echo "$mode: $neg_error"
 							return 1
 						fi
-					else
-						if [ "$(echo $1 | sed 's/^'"$mode"'//; s/[0-9]*//g')" ]; then
-							echo "$mode: $int_error"
+					fi
+					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep '.')" ]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/\.[0-9]*//g')" ]; then
+							echo "$mode: $num_error"
 							return 1
 						fi
 					fi
 					opt_t_val=$(echo $1 | sed 's/^'"$mode"'//')
 				fi
 			;;
-			* )
+			*)
 				if [ ! "$(echo $1 | sed 's/^-//')" ]; then
 					echo "$1: $arg_error"
 					return 1
@@ -733,13 +769,12 @@ Magic_Parser(){
 Usage(){
 	echo "Usage: $(basename $0) -hxkgm -p [VALUE] -t [VALUE]
 	-p | --priority) for master priority control set.
-	-t | --time) for master sync control set.
+	-t | --time) for master interval control set.
 	-x | --exit) ends the spawned process.
 	-k | --kernel) runs kernel driver management utility.
 	-g | --grouping) launchs AMS process grouping utility.
 	-m | --mediaserver) runs server process optimization.
-	type -h or --help for more description.
-"
+	type -h or --help for more description."
 }
 
 # Main script
