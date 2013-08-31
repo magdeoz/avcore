@@ -181,13 +181,13 @@ HOW TO USE -p:
 	
 	reminder: -p must be used independently from other options.
 	these will not work or likely to give out syntax errors: -hxkgmp84, or -hxkgpm84.
-	NOTE: non arithmetic values or floating-point numbers not supported.
+	NOTE: non numerical values or floating-point numbers not supported.
 	
 HOW TO USE -t:
 	-t is a new feature implemented to 0.0.4 to keep track of timing between each commands.
 	its usage is basically same as -p.
 	reminder: -[value] argument won't work on -t.
-	NOTE: non arithmetic values or negative numbers not supported.
+	NOTE: non numerical values or negative numbers not supported.
 
 OTHER OPTIONS:
 	-k or --kernel is a kernel driver management utility.
@@ -198,7 +198,7 @@ OTHER OPTIONS:
 	AMS stands for: Activity Manager Service.
 	its an unfinished product, therefore no more description for now.
 
-	-m or -mediaserver lets you to control the overall resource usage of server processes.
+	-m or --mediaserver lets you to control the overall resource usage of server processes.
 	these server processes are your primary source of all lags and battery drains.
 
 THE AMAZING POWER OF Magic_Parser():
@@ -609,7 +609,7 @@ Magic_Parser(){
 						return 1
 					fi
 					if [ "$(echo $opt_t_val | grep '-')" ]; then
-						if [ "$(echo $opt_t_val | sed 's/^-[0-9]*//g; s/\.//g')" ]; then
+						if [ "$(echo $opt_t_val | sed 's/^-[0-9]*//g; s/\.//')" ]; then
 							echo "$mode: $val_error"
 							return 1
 						else
@@ -618,15 +618,19 @@ Magic_Parser(){
 						fi
 					fi
 					if [ "$(echo $opt_t_val | grep "\.")" ]; then
-						if [ "$(echo $opt_t_val | sed 's/[0-9]*//g; s/\.//g')" ]; then
+						if [ "$(echo $opt_t_val | sed 's/[0-9]*//g; s/\.//')" ]; then
 							echo "$mode: $num_error"
 							return 1
 						fi
 					fi
+					if [ "$(echo $opt_t_val | sed 's/^-[0-9]*//g; s/\.//')" ]; then
+						echo "$mode: $num_error"
+						return 1
+					fi
 					shift
 				else
 					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep '-')" ]; then
-						if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/^-[0-9]*//g; s/\.//g')" ]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/^-[0-9]*//g; s/\.//')" ]; then
 							echo "$mode: $num_error"
 							return 1
 						else
@@ -635,10 +639,14 @@ Magic_Parser(){
 						fi
 					fi
 					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep "\.")" ]; then
-						if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/[0-9]*//g; s/\.//g')" ]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/[0-9]*//g; s/\.//')" ]; then
 							echo "$mode: $num_error"
 							return 1
 						fi
+					fi
+					if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/^-[0-9]*//g; s/\.//')" ]; then
+						echo "$mode: $num_error"
+						return 1
 					fi
 					opt_t_val=$(echo $1 | sed 's/^'"$mode"'//')
 				fi
