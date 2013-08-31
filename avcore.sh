@@ -530,8 +530,8 @@ Magic_Parser(){
 	sop_error="same operation not permitted"
 	val_error="requires a value"
 	num_error="requires a numerical value"
-	int_error="requires an integer number as a value"
 	neg_error="requires a non-negative number as a value"
+	nfp_error="requires a non-floating point number as a value"
 	arg_error="invalid argument"
 	req_error="expects an argument"
 	lmt_error="out of range"
@@ -561,6 +561,10 @@ Magic_Parser(){
 						echo "$mode: $val_error"
 						return 1
 					fi
+					if [ "$(echo $opt_p_val | grep '\.')" ]; then
+						echo "$mode: $nfp_error"
+						return 1
+					fi
 					if [ "$(echo $opt_p_val | grep '^-')" ]; then
 						if [ "$(echo $opt_p_val | sed 's/^-//; s/[0-9]*//g')" ]; then
 							echo "$mode: $val_error"
@@ -568,12 +572,16 @@ Magic_Parser(){
 						fi
 					else
 						if [ "$(echo $opt_p_val | sed 's/[0-9]*//g')" ]; then
-							echo "$mode: $int_error"
+							echo "$mode: $num_error"
 							return 1
 						fi
 					fi
 					shift
 				else
+					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep '\.')" ]; then
+						echo "$mode: $nfp_error"
+						return 1
+					fi
 					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep '^-')" ]; then
 						if [ "$(echo $1 | sed 's/^'"$mode"'//; s/^-//; s/[0-9]*//g')" ]; then
 							echo "$mode: $val_error"
@@ -581,7 +589,7 @@ Magic_Parser(){
 						fi
 					else
 						if [ "$(echo $1 | sed 's/^'"$mode"'//; s/[0-9]*//g')" ]; then
-							echo "$mode: $int_error"
+							echo "$mode: $num_error"
 							return 1
 						fi
 					fi
@@ -664,7 +672,7 @@ Magic_Parser(){
 					n=$(($n+1))
 				done
 				if [ "$n" -eq 1 ]; then
-					if [ ! "$(echo $1 | sed 's/^-//; s/[0-9]*//g')" ]; then
+					if [ ! "$(echo $1 | sed 's/^-//; s/[0-9]*//g; s/\.//')" ]; then
 						if [ "$opt_p" -gt 0 ]; then
 							if [ "$mode" ]; then
 								echo "$mode: $sop_error"
@@ -676,6 +684,10 @@ Magic_Parser(){
 						fcount=$((fcount+1))
 						export mslot$fcount=opt_p
 						opt_p=$(($opt_p+1))
+						if [ "$(echo $1 | sed 's/^-//' | grep '\.')" ]; then
+							echo "$1: $nfp_error"
+							return 1
+						fi
 						opt_p_val=$(echo $1 | sed 's/^-//')
 					else
 						for i in $(echo $1 | sed 's/^-//; s/.\{1\}/& /g'); do
