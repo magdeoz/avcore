@@ -542,7 +542,7 @@ Magic_Parser(){
 	while [ "$1" ]; do
 		case $1 in
 			-p* | --priority*)
-				if [ "$(echo $1 | grep "^-p")" ]; then
+				if [ "$(echo $1 | grep '^-p')" ]; then
 					mode="-p"
 				else
 					mode="--priority"
@@ -561,8 +561,8 @@ Magic_Parser(){
 						echo "$mode: $val_error"
 						return 1
 					fi
-					if [ "$(echo $opt_p_val | grep "^-")" ]; then
-						if [ "$(echo $opt_p_val | sed 's/^-[0-9]*//g')" ]; then
+					if [ "$(echo $opt_p_val | grep '^-')" ]; then
+						if [ "$(echo $opt_p_val | sed 's/^-//; s/[0-9]*//g')" ]; then
 							echo "$mode: $val_error"
 							return 1
 						fi
@@ -574,8 +574,8 @@ Magic_Parser(){
 					fi
 					shift
 				else
-					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep "^-")" ]; then
-						if [ "$(echo $1 | sed 's/^'"$mode"'//; s/^-[0-9]*//g')" ]; then
+					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep '^-')" ]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//; s/^-//; s/[0-9]*//g')" ]; then
 							echo "$mode: $val_error"
 							return 1
 						fi
@@ -589,7 +589,7 @@ Magic_Parser(){
 				fi
 			;;
 			-t* | --time*)
-				if [ "$(echo $1 | grep "^-t")" ]; then
+				if [ "$(echo $1 | grep '^-t')" ]; then
 					mode="-t"
 				else
 					mode="--time"
@@ -609,7 +609,7 @@ Magic_Parser(){
 						return 1
 					fi
 					if [ "$(echo $opt_t_val | grep '-')" ]; then
-						if [ "$(echo $opt_t_val | sed 's/^-[0-9]*//g; s/\.//')" ]; then
+						if [ "$(echo $opt_t_val | sed 's/^-//; s/[0-9]*//g; s/\.//')" ]; then
 							echo "$mode: $val_error"
 							return 1
 						else
@@ -617,20 +617,20 @@ Magic_Parser(){
 							return 1
 						fi
 					fi
-					if [ "$(echo $opt_t_val | grep "\.")" ]; then
+					if [ "$(echo $opt_t_val | grep '\.')" ]; then
 						if [ "$(echo $opt_t_val | sed 's/[0-9]*//g; s/\.//')" ]; then
 							echo "$mode: $num_error"
 							return 1
 						fi
 					fi
-					if [ "$(echo $opt_t_val | sed 's/^-[0-9]*//g; s/\.//')" ]; then
+					if [ "$(echo $opt_t_val | sed 's/^-//; s/[0-9]*//g; s/\.//')" ]; then
 						echo "$mode: $num_error"
 						return 1
 					fi
 					shift
 				else
 					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep '-')" ]; then
-						if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/^-[0-9]*//g; s/\.//')" ]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/^-//; s/[0-9]*//g; s/\.//')" ]; then
 							echo "$mode: $num_error"
 							return 1
 						else
@@ -638,13 +638,13 @@ Magic_Parser(){
 							return 1
 						fi
 					fi
-					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep "\.")" ]; then
+					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep '\.')" ]; then
 						if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/[0-9]*//g; s/\.//')" ]; then
 							echo "$mode: $num_error"
 							return 1
 						fi
 					fi
-					if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/^-[0-9]*//g; s/\.//')" ]; then
+					if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/^-//; s/[0-9]*//g; s/\.//')" ]; then
 						echo "$mode: $num_error"
 						return 1
 					fi
@@ -664,7 +664,7 @@ Magic_Parser(){
 					n=$(($n+1))
 				done
 				if [ "$n" -eq 1 ]; then
-					if [ ! "$(echo $1 | sed 's/^-[0-9]*//g')" ]; then
+					if [ ! "$(echo $1 | sed 's/^-//; s/[0-9]*//g')" ]; then
 						if [ "$opt_p" -gt 0 ]; then
 							if [ "$mode" ]; then
 								echo "$mode: $sop_error"
