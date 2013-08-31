@@ -678,11 +678,7 @@ Magic_Parser(){
 						export mslot$fcount=opt_p
 						opt_p=$(($opt_p+1))
 						if [ "$(echo $1 | sed 's/^-//' | grep '\.')" ]; then
-							if [ "$mode" ]; then
-								echo "$mode: $nfp_error"
-							else
-								echo "-p: $nfp_error"
-							fi
+							echo "-p: $nfp_error"
 							return 1
 						fi
 						opt_p_val=$(echo $1 | sed 's/^-//')
@@ -789,11 +785,7 @@ Magic_Parser(){
 		esac
 		if [ "$opt_p_val" ]; then
 			if [ "$opt_p_val" -gt 200 ] || [ "$opt_p_val" -lt 5 ]; then
-				if [ "$mode" ]; then
-					echo "$mode: $lmt_error"
-				else
-					echo "-p: $lmt_error"
-				fi
+				echo "-p: $lmt_error"
 				return 1
 			fi
 		fi
