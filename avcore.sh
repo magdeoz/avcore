@@ -32,8 +32,9 @@ CLIPPER_VERSION="0.0.5 alpha"
 #       - fixed some bugs on -p function.
 #       - updated Busybox Applet Generator to 2.3.
 #       - tweaked Magic_Parser() to bypass negative & floating-point numbers.
-# 0.0.5 - added some new engines.
-#       - fixed minor Magic_Parser() bugs.
+# 0.0.5 - added some new engines that doesn't work(yet).
+#       - fixed some minor Magic_Parser() bugs.
+#       - moved 'out of range' detector to Magic_Parser()
 set +e
 # Un-comment out the following line to enable debugging.
 #set -x
@@ -135,14 +136,6 @@ opt_p(){
 		echo "-p: $req_error"
 		Usage
 		return=1
-	else
-		if [ "$opt_p_val" ]; then
-			if [ "$opt_p_val" -gt 200 ] || [ "$opt_p_val" -lt 5 ]; then
-				echo "-p: $lmt_error"
-				Usage
-				return=1
-			fi
-		fi
 	fi
 }
 
@@ -685,7 +678,11 @@ Magic_Parser(){
 						export mslot$fcount=opt_p
 						opt_p=$(($opt_p+1))
 						if [ "$(echo $1 | sed 's/^-//' | grep '\.')" ]; then
-							echo "$1: $nfp_error"
+							if [ "$mode" ]; then
+								echo "$mode: $nfp_error"
+							else
+								echo "-p: $nfp_error"
+							fi
 							return 1
 						fi
 						opt_p_val=$(echo $1 | sed 's/^-//')
@@ -790,6 +787,16 @@ Magic_Parser(){
 				fi
 			;;
 		esac
+		if [ "$opt_p_val" ]; then
+			if [ "$opt_p_val" -gt 200 ] || [ "$opt_p_val" -lt 5 ]; then
+				if [ "$mode" ]; then
+					echo "$mode: $lmt_error"
+				else
+					echo "-p: $lmt_error"
+				fi
+				return 1
+			fi
+		fi
 		shift
 	done
 }
