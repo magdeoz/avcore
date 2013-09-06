@@ -299,20 +299,19 @@ AMS_fork_task(){
 		chmod 644 /tmp
 	fi
 	echo 'while true; do
+	zygote=$(pgrep zygote)
+	if [ "$zygote" ]; then
 		for i in $(ls /proc | grep -v "[a-zA-Z]"); do
-			for j in $(ls /proc/$i/task | grep -v $i); do
-				if [ "$(grep -i "HeapWorker" /proc/$i/task/$j/comm)" ]; then
-					renice $2 $j
-				fi
-				if [ "$(grep -i "Compiler" /proc/$i/task/$j/comm)" ]; then
-					renice $1 $j
-				fi
-				if [ "$(grep -i "GC" /proc/$i/task/$j/comm)" ]; then
-					renice $2 $j
-				fi
-			done
+			if [ -f /proc/$i/status ] && [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "\<$zygote")\>" ]; then
+				for j in $(ls /proc/$i/task | grep -v $i); do
+					if [ "$(grep -i "binder_thread_read" /proc/$i/task/$j/wchan)" ]; then
+						renice $2 $j
+					fi
+				done
+			fi
 		done
-	done' > /tmp/AMS_engine
+	fi
+done' > /tmp/AMS_engine
 	chmod 644 /tmp/AMS_engine
 	if [ -e /tmp/AMS_engine ]; then
 		sh /tmp/AMS_engine $1 $2 &
@@ -354,7 +353,7 @@ opt_g(){
 		fi
 	else
 		default=1
-		priority=5
+		priority=200
 	fi
 	interval=$opt_t_val
 	if [ ! "$interval" ]; then
@@ -731,52 +730,57 @@ Magic_Parser(){
 						done
 					fi
 				elif [ "$n" -eq 2 ]; then
-					for i in $(echo $1 | sed 's/^--//'); do
-						if [ "$i" == help ]; then
-							if [ "$opt_h" -gt 0 ]; then
-								echo "--help: $sop_error"
+					if [ ! "$(echo $1 | sed 's/^--//')" ]; then
+						echo "$1: $arg_error"
+						return 1
+					else
+						for i in $(echo $1 | sed 's/^--//'); do
+							if [ "$i" == help ]; then
+								if [ "$opt_h" -gt 0 ]; then
+									echo "--help: $sop_error"
+									return 1
+								fi
+								fcount=$((fcount+1))
+								export mslot$fcount=opt_h
+								opt_h=$(($opt_h+1))
+							elif [ "$i" == exit ]; then
+								if [ "$opt_x" -gt 0 ]; then
+									echo "--exit: $sop_error"
+									return 1
+								fi
+								fcount=$((fcount+1))
+								export mslot$fcount=opt_x
+								opt_x=$(($opt_x+1))
+							elif [ "$i" == kernel ]; then
+								if [ "$opt_k" -gt 0 ]; then
+									echo "--kernel: $sop_error"
+									return 1
+								fi
+								count=$((count+1))
+								export fslot$count=opt_k
+								opt_k=$(($opt_k+1))
+							elif [ "$i" == grouping ]; then
+								if [ "$opt_g" -gt 0 ]; then
+									echo "--grouping: $sop_error"
+									return 1
+								fi
+								count=$((count+1))
+								export fslot$count=opt_g
+								opt_g=$(($opt_g+1))
+							elif [ "$i" == mediaserver ]; then
+								if [ "$opt_m" -gt 0 ]; then
+									echo "--mediaserver: $sop_error"
+									return 1
+								fi
+								count=$((count+1))
+								export fslot$count=opt_m
+								opt_m=$(($opt_m+1))
+							else
+								echo "$1: $arg_error"
 								return 1
 							fi
-							fcount=$((fcount+1))
-							export mslot$fcount=opt_h
-							opt_h=$(($opt_h+1))
-						elif [ "$i" == exit ]; then
-							if [ "$opt_x" -gt 0 ]; then
-								echo "--exit: $sop_error"
-								return 1
-							fi
-							fcount=$((fcount+1))
-							export mslot$fcount=opt_x
-							opt_x=$(($opt_x+1))
-						elif [ "$i" == kernel ]; then
-							if [ "$opt_k" -gt 0 ]; then
-								echo "--kernel: $sop_error"
-								return 1
-							fi
-							count=$((count+1))
-							export fslot$count=opt_k
-							opt_k=$(($opt_k+1))
-						elif [ "$i" == grouping ]; then
-							if [ "$opt_g" -gt 0 ]; then
-								echo "--grouping: $sop_error"
-								return 1
-							fi
-							count=$((count+1))
-							export fslot$count=opt_g
-							opt_g=$(($opt_g+1))
-						elif [ "$i" == mediaserver ]; then
-							if [ "$opt_m" -gt 0 ]; then
-								echo "--mediaserver: $sop_error"
-								return 1
-							fi
-							count=$((count+1))
-							export fslot$count=opt_m
-							opt_m=$(($opt_m+1))
-						else
-							echo "$1: $arg_error"
-							return 1
-						fi
-					done
+						done
+					fi
 				else
 					echo "$1: $arg_error"
 					return 1
