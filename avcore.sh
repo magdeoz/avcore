@@ -207,7 +207,7 @@ Copyright (C) 2013  LENAROX@xda"
 
 # End of the line
 opt_x(){
-	i=$(pgrep $1)
+	i=$(pgrep AMS_engine)
 	if [ "$i" ]; then
 		kill -9 $i
 	else
@@ -286,7 +286,7 @@ opt_k(){
 	echo "kernel driver management utility last run on $(date)"
 }
 
-# PGU support
+# PGU engine
 AMS_fork_task(){
 	if [ "$(mount | grep rootfs | grep '\<ro\>')" ]; then
 		mount -o remount,rw rootfs
@@ -298,23 +298,83 @@ AMS_fork_task(){
 		mkdir /tmp
 		chmod 644 /tmp
 	fi
-	echo 'while true; do
-	zygote=$(pgrep zygote)
-	if [ "$zygote" ]; then
-		for i in $(ls /proc | grep -v "[a-zA-Z]"); do
-			if [ -f /proc/$i/status ] && [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "\<$zygote")\>" ]; then
-				for j in $(ls /proc/$i/task | grep -v $i); do
-					if [ "$(grep -i "binder_thread_read" /proc/$i/task/$j/wchan)" ]; then
-						renice $2 $j
-					fi
-				done
+	echo '# Busybox Applet Generator 2.3
+# You can type in any commands you would want it to check.
+# It will start by checking from cmd1, and its limit is up to cmd224.
+cmd1=renice
+cmd2=pgrep
+cmd3=mount
+cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
+# This feature might not be compatible with some other multi-call binaries.
+Busybox_Applet_Generator(){
+	if [ ! "$(busybox)" ]; then
+		echo "Failed to locate busybox!"
+		return 1
+	else
+		busyboxloc=$(dirname $(which busybox))
+		n=0
+		for i in $(echo $PATH | sed 's/:/ /g'); do
+			n=$(($n+1))
+			export slot$n=$i
+			if [ "$i" == "$busyboxloc" ]; then
+				busyboxenv=slot$n
 			fi
 		done
-	fi
-done' > /tmp/AMS_engine
+		if [ "$busyboxenv" != slot1 ]; then
+			export PATH=$(echo -n $busyboxloc
+			for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
+				v=$(eval echo $i)
+				if [ "$v" != "$busyboxloc" ]; then
+					echo -n ":$v"
+				fi
+			done)
+		fi
+		if [ "$cmd" ]; then
+			if [ "$cmd" -lt 0 ]; then
+				cmd=0
+			fi
+		else
+			cmd=224
+		fi
+		for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
+			v=$(eval echo $i)
+			if [ "$v" ]; then
+				if [ ! "$(busybox | grep "\<$v\>")" ]; then
+					echo "Required applets are missing!"
+					return 1
+				fi
+				if [ ! -e "$busyboxloc"/"$v" ]; then
+					alias $i="busybox $i"
+				fi
+			else
+				break
+			fi
+		done
+	fi 2>/dev/null
+}
+Busybox_Applet_Generator
+renice 19 $$
+zygote=$(pgrep zygote)
+if [ "$zygote" ]; then
+	while true; do
+		for i in $(ps | awk '/[0-9]/&&!/]|\/*bin\/|\/init|_server/' | awk '{print $1}'); do
+			prio=$(cat /proc/$i/oom_adj)
+			for j in $(ls /proc/$i/task | grep -v $i); do
+				if [ "$(grep -i "binder_thread_read" /proc/$i/task/$j/wchan)" ]; then
+					stat=$(cat /proc$i/task/$j/stat)
+					rm=${stat#*)}
+					nicelevel=$(echo $rm | cut -d' ' -f17)
+					if [ "$nicelevel" != "$prio" ]; then
+						renice $prio $j
+					fi
+				fi
+			done
+		done & sleep $1
+	done
+fi' > /tmp/AMS_engine
 	chmod 644 /tmp/AMS_engine
 	if [ -e /tmp/AMS_engine ]; then
-		sh /tmp/AMS_engine $1 $2 &
+		sh /tmp/AMS_engine $1 &
 		forkpid=$!
 		rm /tmp/AMS_engine
 	else
@@ -325,59 +385,23 @@ done' > /tmp/AMS_engine
 	fi
 }
 
-#limit AMS_fork_task
-process_limiter(){
-	renice 19 $$
-	renice 19 $1
-	while true; do
-		if [ -f /proc/$1 ]; then
-			kill -19 $1
-			sleep $2
-			kill -18 $1
-		else
-			kill -9 $$
-		fi
-	done
-}
-
 # AMS process grouping utility
 opt_g(){
-	default=0
 	interval_default=0
-	priority=$opt_p_val
-	if [ "$priority" ]; then
-		if [ "$priority" -gt 200 ]; then
-			priority=200
-		elif [ "$priority" -lt 5 ]; then
-			priority=5
-		fi
-	else
-		default=1
-		priority=200
-	fi
 	interval=$opt_t_val
 	if [ ! "$interval" ]; then
 		interval_default=1
 		interval=30
 	fi
-	renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
-	inverted_val=$((renice_val*-1-1))
 	echo "forking AMS manager..."
 	if [ "$(pgrep AMS_engine)" ]; then
-		opt_x AMS_engine
+		opt_x
 	fi
-	AMS_fork_task $renice_val $inverted_val
+	AMS_fork_task $interval
 	if [ "$return" -eq 1 ]; then
 		echo "Manager was not able to continue the progress, due to a critical error."
 	else
-		process_limiter $forkpid $interval &
 		echo "system_server hijacking complete! ready to rock:D"
-		echo -n "cpulimit was set to "
-		if [ "$default" -eq 1 ]; then
-			echo "default by $priority%"
-		else
-			echo "$priority%"
-		fi
 		echo -n "refresh rate interval was set to "
 		if [ "$interval_default" -eq 1 ]; then
 			echo "default by $interval seconds"
