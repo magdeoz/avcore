@@ -361,7 +361,7 @@ if [ "$zygote" ]; then
 			prio=$(cat /proc/$i/oom_adj)
 			for j in $(ls /proc/$i/task | grep -v $i); do
 				if [ "$(grep -i "binder_thread_read" /proc/$i/task/$j/wchan)" ]; then
-					stat=$(cat /proc$i/task/$j/stat)
+					stat=$(cat /proc/$i/task/$j/stat)
 					rm=${stat#*)}
 					nicelevel=$(echo $rm | cut -d' ' -f17)
 					if [ "$nicelevel" != "$prio" ]; then
@@ -372,7 +372,7 @@ if [ "$zygote" ]; then
 		done & sleep $1
 	done
 fi' > /tmp/AMS_engine
-	chmod 644 /tmp/AMS_engine
+	chmod 644 /tmp/AMS_engine3
 	if [ -e /tmp/AMS_engine ]; then
 		sh /tmp/AMS_engine $1 &
 		forkpid=$!
