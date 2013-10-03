@@ -707,50 +707,57 @@ Magic_Parser(){
 						opt_p_val=$(echo $1 | sed 's/^-//')
 					else
 						for i in $(echo $1 | sed 's/^-//; s/.\{1\}/& /g'); do
-							if [ "$i" == h ]; then
-								if [ "$opt_h" -gt 0 ]; then
-									echo "-h: $sop_error"
+							case $i in
+								h)
+									if [ "$opt_h" -gt 0 ]; then
+										echo "-h: $sop_error"
+										return 1
+									fi
+									fcount=$((fcount+1))
+									export mslot$fcount=opt_h
+									opt_h=$(($opt_h+1))
+								;;
+								x)
+									if [ "$opt_x" -gt 0 ]; then
+										echo "-x: $sop_error"
+										return 1
+									fi
+									fcount=$((fcount+1))
+									export mslot$fcount=opt_x
+									opt_x=$(($opt_x+1))
+								;;
+								k)
+									if [ "$opt_k" -gt 0 ]; then
+										echo "-k: $sop_error"
+										return 1
+									fi
+									count=$((count+1))
+									export fslot$count=opt_k
+									opt_k=$(($opt_k+1))
+								;;
+								g)
+									if [ "$opt_g" -gt 0 ]; then
+										echo "-g: $sop_error"
+										return 1
+									fi
+									count=$((count+1))
+									export fslot$count=opt_g
+									opt_g=$(($opt_g+1))
+								;;
+								m)
+									if [ "$opt_m" -gt 0 ]; then
+										echo "-m: $sop_error"
+										return 1
+									fi
+									count=$((count+1))
+									export fslot$count=opt_m
+									opt_m=$(($opt_m+1))
+								;;
+								*)
+									echo "$1: $arg_error"
 									return 1
-								fi
-								fcount=$((fcount+1))
-								export mslot$fcount=opt_h
-								opt_h=$(($opt_h+1))
-							elif [ "$i" == x ]; then
-								if [ "$opt_x" -gt 0 ]; then
-									echo "-x: $sop_error"
-									return 1
-								fi
-								fcount=$((fcount+1))
-								export mslot$fcount=opt_x
-								opt_x=$(($opt_x+1))
-							elif [ "$i" == k ]; then
-								if [ "$opt_k" -gt 0 ]; then
-									echo "-k: $sop_error"
-									return 1
-								fi
-								count=$((count+1))
-								export fslot$count=opt_k
-								opt_k=$(($opt_k+1))
-							elif [ "$i" == g ]; then
-								if [ "$opt_g" -gt 0 ]; then
-									echo "-g: $sop_error"
-									return 1
-								fi
-								count=$((count+1))
-								export fslot$count=opt_g
-								opt_g=$(($opt_g+1))
-							elif [ "$i" == m ]; then
-								if [ "$opt_m" -gt 0 ]; then
-									echo "-m: $sop_error"
-									return 1
-								fi
-								count=$((count+1))
-								export fslot$count=opt_m
-								opt_m=$(($opt_m+1))
-							else
-								echo "$1: $arg_error"
-								return 1
-							fi
+								;;
+							esac
 						done
 					fi
 				elif [ "$n" -eq 2 ]; then
@@ -759,50 +766,57 @@ Magic_Parser(){
 						return 1
 					else
 						for i in $(echo $1 | sed 's/^--//'); do
-							if [ "$i" == help ]; then
-								if [ "$opt_h" -gt 0 ]; then
-									echo "--help: $sop_error"
+							case $i in
+								help)
+									if [ "$opt_h" -gt 0 ]; then
+										echo "--help: $sop_error"
+										return 1
+									fi
+									fcount=$((fcount+1))
+									export mslot$fcount=opt_h
+									opt_h=$(($opt_h+1))
+								;;
+								exit)
+									if [ "$opt_x" -gt 0 ]; then
+										echo "--exit: $sop_error"
+										return 1
+									fi
+									fcount=$((fcount+1))
+									export mslot$fcount=opt_x
+									opt_x=$(($opt_x+1))
+								;;
+								kernel)
+									if [ "$opt_k" -gt 0 ]; then
+										echo "--kernel: $sop_error"
+										return 1
+									fi
+									count=$((count+1))
+									export fslot$count=opt_k
+									opt_k=$(($opt_k+1))
+								;;
+								grouping)
+									if [ "$opt_g" -gt 0 ]; then
+										echo "--grouping: $sop_error"
+										return 1
+									fi
+									count=$((count+1))
+									export fslot$count=opt_g
+									opt_g=$(($opt_g+1))
+								;;
+								mediaserver)
+									if [ "$opt_m" -gt 0 ]; then
+										echo "--mediaserver: $sop_error"
+										return 1
+									fi
+									count=$((count+1))
+									export fslot$count=opt_m
+									opt_m=$(($opt_m+1))
+								;;
+								*)
+									echo "$1: $arg_error"
 									return 1
-								fi
-								fcount=$((fcount+1))
-								export mslot$fcount=opt_h
-								opt_h=$(($opt_h+1))
-							elif [ "$i" == exit ]; then
-								if [ "$opt_x" -gt 0 ]; then
-									echo "--exit: $sop_error"
-									return 1
-								fi
-								fcount=$((fcount+1))
-								export mslot$fcount=opt_x
-								opt_x=$(($opt_x+1))
-							elif [ "$i" == kernel ]; then
-								if [ "$opt_k" -gt 0 ]; then
-									echo "--kernel: $sop_error"
-									return 1
-								fi
-								count=$((count+1))
-								export fslot$count=opt_k
-								opt_k=$(($opt_k+1))
-							elif [ "$i" == grouping ]; then
-								if [ "$opt_g" -gt 0 ]; then
-									echo "--grouping: $sop_error"
-									return 1
-								fi
-								count=$((count+1))
-								export fslot$count=opt_g
-								opt_g=$(($opt_g+1))
-							elif [ "$i" == mediaserver ]; then
-								if [ "$opt_m" -gt 0 ]; then
-									echo "--mediaserver: $sop_error"
-									return 1
-								fi
-								count=$((count+1))
-								export fslot$count=opt_m
-								opt_m=$(($opt_m+1))
-							else
-								echo "$1: $arg_error"
-								return 1
-							fi
+								;;
+							esac
 						done
 					fi
 				else
