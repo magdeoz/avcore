@@ -442,10 +442,10 @@ opt_m(){
 					fi
 				done
 				if [ "$(ls /proc/$i/task | wc -l)" -eq "$success" ]; then
-					echo "$(cat /proc/$i/comm)successfully optimized."
+					echo "optimization successful on $(cat /proc/$i/comm)"
 				else
 					error=$((error+1))
-					echo "optimization failed on $(cat /proc/$i/comm)."
+					echo "optimization failed on $(cat /proc/$i/comm)"
 				fi
 			fi
 		fi
