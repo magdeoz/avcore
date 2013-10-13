@@ -1,7 +1,7 @@
 CLIPPER_VERSION="0.0.5 alpha"
 # Clipper - a user executable binary for Dalvik VM & process management.
 #
-# Copyright (C) 2013  LENAROX@xda
+# Copyright (C) 2013  hoholee12@naver.com
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -12,9 +12,6 @@ CLIPPER_VERSION="0.0.5 alpha"
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Changelogs:
 # alpha version
@@ -35,6 +32,7 @@ CLIPPER_VERSION="0.0.5 alpha"
 # 0.0.5 - added some new engines that doesn't work(yet).
 #       - fixed some minor Magic_Parser() bugs.
 #       - moved 'out of range' detector to Magic_Parser()
+#       - revamped Services optimizer.
 set +e
 # Un-comment out the following line to enable debugging.
 #set -x
@@ -201,7 +199,7 @@ THE AMAZING POWER OF Magic_Parser():
 	it is also designed to be very fast in complex parsing, so that any delays can be avoided.
 
 Clipper Version $CLIPPER_VERSION
-Copyright (C) 2013  LENAROX@xda"
+Copyright (C) 2013 hoholee12@naver.com"
 	skip=1
 }
 
@@ -413,7 +411,7 @@ opt_g(){
 	fi
 }
 
-# Server process optimization
+# Services optimizer
 opt_m(){
 	default=0
 	priority=$opt_p_val
@@ -425,56 +423,38 @@ opt_m(){
 		fi
 	else
 		default=1
-		priority=50
+		priority=195
 	fi
-	for i in $(sed 's/,/ /g; s/^0//' /sys/module/lowmemorykiller/parameters/adj); do
-		if [ "$i" -gt 15 ]; then
-			oom_score_adj=1
-		else
-			oom_score_adj=0
-		fi
-	done
 	error=0
 	renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
-	echo "looking for server processes..."
-	for i in $(pgrep ""); do
-		if [ "$oom_score_adj" -eq 1 ]; then
-			if [ "$(cat /proc/$i/oom_score_adj)" -eq -705 ]; then
-				renice $renice_val $i
-			fi
-		else
-			if [ "$(cat /proc/$i/oom_adj)" -eq -12 ]; then
-				renice $renice_val $i
-			fi
-		fi
-	done
-	echo "final checking..."
-	for i in $(pgrep ""); do
-		if [ "$oom_score_adj" -eq 1 ]; then
-			if [ "$(cat /proc/$i/oom_score_adj)" -eq -705 ]; then
-				if [ "$(cut -d " " -f 19 /proc/$i/stat)" -eq $renice_val ]; then
-					echo "$(cat /proc/$i/comm) was successfully optimized."
+	echo "checking for services..."
+	for i in $(ps | awk '/[0-9]/&&!/]|\/*bin\/|\/init|_server/' | awk '{print $1}'); do
+		if [ "$(cat /proc/$i/oom_adj)" -lt 0 ]; then
+			if [ -e /proc/task ]; then
+				success=0
+				for j in $(ls /proc/$i/task); do
+					renice $renice_val $j
+					stat=$(cat /proc/$i/task/$j/stat)
+					rm=${stat#*)}
+					nicelevel=$(echo $rm | cut -d' ' -f17)
+					if [ "$nicelevel" -eq "$renice_val" ]; then
+						success=$((success+1))
+					fi
+				done
+				if [ "$(ls /proc/$i/task | wc -l)" -eq "$success" ]; then
+					echo "$(cat /proc/$i/comm)successfully optimized."
 				else
 					error=$((error+1))
-					echo "$(cat /proc/$i/comm) failed for optimization."
-				fi
-			fi
-		else
-			if [ "$(cat /proc/$i/oom_adj)" -eq -12 ]; then
-				if [ "$(cut -d " " -f 19 /proc/$i/stat)" -eq $renice_val ]; then
-					echo "$(cat /proc/$i/comm) was successfully optimized."
-				else
-					error=$((error+1))
-					echo "$(cat /proc/$i/comm) failed for optimization."
+					echo "optimization failed on $(cat /proc/$i/comm)."
 				fi
 			fi
 		fi
 	done
 	if [ "$error" -gt 0 ]; then
-		echo "total $error errors were found."
+		echo "total $error errors found."
 		return=1
 	else
-		echo "server process optimization complete!"
+		echo "services optimization complete!"
 	fi
 	echo -n "cpulimit was set to "
 	if [ "$default" -eq 1 ]; then
@@ -483,7 +463,7 @@ opt_m(){
 		echo "$priority%"
 	fi
 	echo
-	echo "server process optimizer last run on $(date)"
+	echo "services optimizer last run on $(date)"
 }
 
 # Advanced in-order execution
@@ -553,6 +533,13 @@ Magic_Parser(){
 	lmt_error="out of range"
 	
 	if [ ! "$1" ]; then
+		return 1
+	fi
+	if [ "$1" == 69 ]; then
+		echo -e "\e[1;31mamigo, go fuck yourself.\e[0m"
+		return 1
+	elif [ "$1" == 1337 ]; then
+		echo -e "\e[1;32myou ain't elite, \e[1;31mI AM.\e[0m"
 		return 1
 	fi
 	while [ "$1" ]; do
@@ -843,7 +830,7 @@ Usage(){
 	-x | --exit) ends the spawned process.
 	-k | --kernel) runs kernel driver management utility.
 	-g | --grouping) launchs AMS process grouping utility.
-	-m | --mediaserver) runs server process optimization.
+	-m | --mediaserver) runs services optimizer.
 	type -h or --help for more description.
 "
 }
