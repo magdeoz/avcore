@@ -429,8 +429,8 @@ opt_m(){
 	renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
 	echo "checking for services..."
 	for i in $(ps | awk '/[0-9]/&&!/]|\/*bin\/|\/init|_server/' | awk '{print $1}'); do
-		if [ "$(cat /proc/$i/oom_adj)" -lt 0 ]; then
-			if [ -e /proc/task ]; then
+		if [ -e /proc/$i/oom_adj ] && [ "$(cat /proc/$i/oom_adj)" -lt 0 ]; then
+			if [ -e /proc/$i/task ]; then
 				success=0
 				for j in $(ls /proc/$i/task); do
 					renice $renice_val $j
@@ -537,10 +537,8 @@ Magic_Parser(){
 	fi
 	if [ "$1" == 69 ]; then
 		echo -e "\e[1;31mamigo, go fuck yourself.\e[0m"
-		return 1
 	elif [ "$1" == 1337 ]; then
 		echo -e "\e[1;32myou ain't elite, \e[1;31mI AM.\e[0m"
-		return 1
 	fi
 	while [ "$1" ]; do
 		case $1 in
