@@ -87,7 +87,7 @@ Busybox_Applet_Generator(){
 			v=$(eval echo $i)
 			if [ "$v" ]; then
 				if [ ! "$(busybox | grep "\<$v\>")" ]; then
-					echo "Required applets are missing!"
+					echo "This program needs the following applet to be able to run: $v"
 					return 1
 				fi
 				if [ ! -e "$busyboxloc"/"$v" ]; then
@@ -235,15 +235,15 @@ opt_k(){
 	echo "looking through direct I/O calls..."
 	for i in $(pgrep ""); do
 		if [ "$(grep -i ":PPid" /proc/$i/status | grep -o [0-9]* | grep "\<2\>")" ]; then
-			for j in $(grep -i "dio" /proc/*/comm); do
-				renice $renice_val $j
-				stat=$(cat /proc/$i/task/$j/stat)
+			if [ "$(grep -i "dio" /proc/*/comm)" }; then
+				renice $renice_val $i
+				stat=$(cat /proc/$i/stat)
 				rm=${stat#*)}
 				nicelevel=$(echo $rm | cut -d' ' -f17)
 				if [ "$nicelevel" -ne "$renice_val" ]; then
 					error=$((error+1))
 				fi
-			done
+			fi
 		fi
 	done
 	if [ "$error" -gt 0 ]; then
@@ -316,7 +316,7 @@ Busybox_Applet_Generator(){
 			v=$(eval echo $i)
 			if [ "$v" ]; then
 				if [ ! "$(busybox | grep "\<$v\>")" ]; then
-					echo "Required applets are missing!"
+					echo "This program needs the following applet to be able to run: $v"
 					return 1
 				fi
 				if [ ! -e "$busyboxloc"/"$v" ]; then
