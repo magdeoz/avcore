@@ -184,7 +184,7 @@ HOW TO USE -t:
 
 OTHER OPTIONS:
 	-k or --kernel is a utility for optimizing direct I/O calls.
-	the purpose of this utility is to try to delay I/O hangs caused by non-buffering I/O(or direct I/O), and give more resources for asynchronous I/O to go on.
+	the purpose of this utility is to attempt delay on non-buffering I/O(or direct I/O), in order to prevent certain I/O hangs.
 	it may fix mediaserver audio stutter issue from earlier Android 2.3.x builds.
 
 	-g or --grouping is a AMS process grouping utility.
@@ -235,7 +235,7 @@ opt_k(){
 	echo "looking through direct I/O calls..."
 	for i in $(pgrep ""); do
 		if [ "$(grep -i ":PPid" /proc/$i/status | grep -o [0-9]* | grep "\<2\>")" ]; then
-			if [ "$(grep -i "dio" /proc/*/comm)" }; then
+			if [ "$(grep -i "dio" /proc/$i/comm)" }; then
 				renice $renice_val $i
 				stat=$(cat /proc/$i/stat)
 				rm=${stat#*)}
