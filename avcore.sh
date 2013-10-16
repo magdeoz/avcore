@@ -32,7 +32,9 @@ CLIPPER_VERSION="0.0.5 alpha"
 # 0.0.5 - added some new engines that doesn't work(yet).
 #       - fixed some minor Magic_Parser() bugs.
 #       - moved 'out of range' detector to Magic_Parser()
-#       - revamped Services optimizer.
+#       - revamped services optimizer.
+#       - revamped direct I/O call optimizer.
+#       - edited help() page.
 set +e
 # Un-comment out the following line to enable debugging.
 #set -x
@@ -181,16 +183,16 @@ HOW TO USE -t:
 	NOTE: non numerical values or negative numbers not supported.
 
 OTHER OPTIONS:
-	-k or --kernel is a kernel driver management utility.
-	it will tune your kernel driver processes to save more resources,
-	and try to give more of those to the poor ones.
+	-k or --kernel is a utility for optimizing direct I/O calls.
+	the purpose of this utility is to try to delay I/O hangs caused by non-buffering I/O(or direct I/O), and give more resources for asynchronous I/O to go on.
+	it may fix mediaserver audio stutter issue from earlier Android 2.3.x builds.
 
 	-g or --grouping is a AMS process grouping utility.
 	AMS stands for: Activity Manager Service.
 	its an unfinished product, therefore no more description for now.
 
 	-m or --mediaserver lets you to control the overall resource usage of server processes.
-	these server processes are your primary source of all lags and battery drains.
+	these server processes may be your primary source of all lags and battery drains.
 
 THE AMAZING POWER OF Magic_Parser():
 	Clipper uses an advanced logic function called Magic_Parser() to parse arguments,
@@ -214,74 +216,50 @@ opt_x(){
 	skip=1
 }
 
-# Kernel driver management utility
+# Direct I/O call optimizer
 opt_k(){
 	default=0
-	kernel_priority=100
-	driver_priority=$opt_p_val
-	if [ "$driver_priority" ]; then
-		if [ "$driver_priority" -gt 200 ]; then
-			driver_priority=200
-		elif [ "$driver_priority" -lt 5 ]; then
-			driver_priority=5
+	priority=$opt_p_val
+	if [ "$priority" ]; then
+		if [ "$priority" -gt 200 ]; then
+			priority=200
+		elif [ "$priority" -lt 5 ]; then
+			priority=5
 		fi
 	else
 		default=1
-		driver_priority=50
+		priority=5
 	fi
-	noerror=0
 	error=0
-	renice_val=$(echo $kernel_priority | awk '{printf "%.0f\n", 20-$1/5}')
-	renice_val2=$(echo $driver_priority | awk '{printf "%.0f\n", 20-$1/5}')
-	echo "looking for kernel drivers..."
-	for i in $(pgrep "" | grep -v $(pgrep zygote)); do
-		if [ -f /proc/$i/status ] && [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^2$")" ]; then
-			if [ "$(grep "^worker_thread$" /proc/$i/wchan)" ]; then
-				renice $renice_val $i
-			fi
-		elif [ -f /proc/$i/status ] && [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^1$")" ]; then
-			if [ ! "$(grep "^binder_thread_read$" /proc/$i/wchan)" ]; then
-				renice $renice_val2 $i
-			fi
+	renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
+	echo "looking through direct I/O calls..."
+	for i in $(pgrep ""); do
+		if [ "$(grep -i ":PPid" /proc/$i/status | grep -o [0-9]* | grep "\<2\>")" ]; then
+			for j in $(grep -i "dio" /proc/*/comm); do
+				renice $renice_val $j
+				stat=$(cat /proc/$i/task/$j/stat)
+				rm=${stat#*)}
+				nicelevel=$(echo $rm | cut -d' ' -f17)
+				if [ "$nicelevel" -ne "$renice_val" ]; then
+					error=$((error+1))
+				fi
+			done
 		fi
 	done
-	echo "final checking..."
-	for i in $(pgrep "" | grep -v $(pgrep zygote)); do
-		if [ -f /proc/$i/status ] && [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^2$")" ]; then
-			if [ "$(grep "^worker_thread$" /proc/$i/wchan)" ]; then
-				if [ "$(cut -d " " -f 19 /proc/$i/stat)" -eq "$renice_val" ]; then
-					noerror=$(($noerror+1))
-				else
-					error=$(($error+1))
-				fi
-			fi
-		elif [ -f /proc/$i/status ] && [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^1$")" ]; then
-			if [ ! "$(grep "^binder_thread_read$" /proc/$i/wchan)" ]; then
-				if [ "$(cut -d " " -f 19 /proc/$i/stat)" -eq "$renice_val2" ]; then
-					noerror=$(($noerror+1))
-				else
-					error=$(($error+1))
-				fi
-			fi
-		fi
-	done
-	if [ "$error" -ne 0 ]; then
-		if [ "$noerror" -ne 0 ]; then
-			echo "$noerror kernel drivers have been successfully modified."
-		fi
-		echo "$error kernel drivers modification have been failed."
+	if [ "$error" -gt 0 ]; then
+		echo "total $error errors found."
 		return=1
 	else
-		echo "all $noerror kernel drivers have been successfully modified."
+		echo "direct I/O call optimization complete!"
 	fi
 	echo -n "cpulimit was set to "
 	if [ "$default" -eq 1 ]; then
-		echo "default by $driver_priority%"
+		echo "default by $priority%"
 	else
-		echo "$driver_priority%"
+		echo "$priority%"
 	fi
 	echo
-	echo "kernel driver management utility last run on $(date)"
+	echo "direct I/O call optimizer last run on $(date)"
 }
 
 # PGU engine
@@ -423,29 +401,31 @@ opt_m(){
 		fi
 	else
 		default=1
-		priority=195
+		priority=5
 	fi
 	error=0
 	renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
 	echo "checking for services..."
-	for i in $(ps | awk '/[0-9]/&&!/]|\/*bin\/|\/init|_server/' | awk '{print $1}'); do
-		if [ -e /proc/$i/oom_adj ] && [ "$(cat /proc/$i/oom_adj)" -lt 0 ]; then
-			if [ -e /proc/$i/task ]; then
-				success=0
-				for j in $(ls /proc/$i/task); do
-					renice $renice_val $j
-					stat=$(cat /proc/$i/task/$j/stat)
-					rm=${stat#*)}
-					nicelevel=$(echo $rm | cut -d' ' -f17)
-					if [ "$nicelevel" -eq "$renice_val" ]; then
-						success=$((success+1))
+	for i in $(pgrep ""); do
+		if [ "$(grep -i ":PPid" /proc/$i/status | grep -o [0-9]* | grep "\<$(pgrep zygote)\>")" ]; then
+			if [ -e /proc/$i/oom_adj ] && [ "$(cat /proc/$i/oom_adj)" -lt 0 ]; then
+				if [ -e /proc/$i/task ]; then
+					success=0
+					for j in $(ls /proc/$i/task); do
+						renice $renice_val $j
+						stat=$(cat /proc/$i/task/$j/stat)
+						rm=${stat#*)}
+						nicelevel=$(echo $rm | cut -d' ' -f17)
+						if [ "$nicelevel" -eq "$renice_val" ]; then
+							success=$((success+1))
+						fi
+					done
+					if [ "$(ls /proc/$i/task | wc -l)" -eq "$success" ]; then
+						echo "optimization successful on $(cat /proc/$i/comm)"
+					else
+						error=$((error+1))
+						echo "optimization failed on $(cat /proc/$i/comm)"
 					fi
-				done
-				if [ "$(ls /proc/$i/task | wc -l)" -eq "$success" ]; then
-					echo "optimization successful on $(cat /proc/$i/comm)"
-				else
-					error=$((error+1))
-					echo "optimization failed on $(cat /proc/$i/comm)"
 				fi
 			fi
 		fi
@@ -536,7 +516,7 @@ Magic_Parser(){
 		return 1
 	fi
 	if [ "$1" == 69 ]; then
-		echo -e "\e[1;31mamigo, go fuck yourself.\e[0m"
+		echo -e "\e[1;31mWow, just wow.\e[0m"
 	elif [ "$1" == 1337 ]; then
 		echo -e "\e[1;32myou ain't elite, \e[1;31mI AM.\e[0m"
 	fi
@@ -826,7 +806,7 @@ Usage(){
 	-p | --priority) for master priority control set.
 	-t | --time) for master interval control set.
 	-x | --exit) ends the spawned process.
-	-k | --kernel) runs kernel driver management utility.
+	-k | --kernel) runs direct I/O call optimizer.
 	-g | --grouping) launchs AMS process grouping utility.
 	-m | --mediaserver) runs services optimizer.
 	type -h or --help for more description.
@@ -834,6 +814,12 @@ Usage(){
 }
 
 # Main script
+
+# Allow users to bypass root check when necessary.
+if [ "$1" == bypass ]; then
+	run_Superuser=no
+	shift
+fi
 Roll_Down
 Magic_Parser $@
 Roll_Up
