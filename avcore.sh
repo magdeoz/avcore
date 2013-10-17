@@ -234,7 +234,7 @@ opt_k(){
 	renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
 	echo "looking through direct I/O calls..."
 	for i in $(pgrep ""); do
-		if [ "$(grep -i ":PPid" /proc/$i/status | grep -o [0-9]* | grep "\<2\>")" ]; then
+		if [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "\<2\>")" ]; then
 			if [ "$(grep -i "dio" /proc/$i/comm)" }; then
 				renice $renice_val $i
 				stat=$(cat /proc/$i/stat)
@@ -407,7 +407,7 @@ opt_m(){
 	renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
 	echo "checking for services..."
 	for i in $(pgrep ""); do
-		if [ "$(grep -i ":PPid" /proc/$i/status | grep -o [0-9]* | grep "\<$(pgrep zygote)\>")" ]; then
+		if [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "\<$(pgrep zygote)\>")" ]; then
 			if [ -e /proc/$i/oom_adj ] && [ "$(cat /proc/$i/oom_adj)" -lt 0 ]; then
 				if [ -e /proc/$i/task ]; then
 					success=0
