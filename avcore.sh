@@ -235,7 +235,7 @@ opt_k(){
 	echo "looking through direct I/O calls..."
 	for i in $(pgrep ""); do
 		if [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "\<2\>")" ]; then
-			if [ "$(grep -i "dio" /proc/$i/comm)" }; then
+			if [ "$(grep -i "dio" /proc/$i/comm)" ]; then
 				renice $renice_val $i
 				stat=$(cat /proc/$i/stat)
 				rm=${stat#*)}
