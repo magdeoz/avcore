@@ -1,4 +1,4 @@
-CLIPPER_VERSION="0.0.5 alpha"
+CLIPPER_VERSION="0.0.5 alpha"; BASE_NAME=$(basename $0)
 # Clipper - a user executable binary for Dalvik VM & process management.
 #
 # Copyright (C) 2013  hoholee12@naver.com
@@ -188,8 +188,6 @@ OTHER OPTIONS:
 	it may fix mediaserver audio stutter issue from earlier Android 2.3.x builds.
 
 	-g or --grouping is a AMS process grouping utility.
-	AMS stands for: Activity Manager Service.
-	its an unfinished product, therefore no more description for now.
 
 	-m or --mediaserver lets you to control the overall resource usage of server processes.
 	these server processes may be your primary source of all lags and battery drains.
@@ -207,13 +205,45 @@ Copyright (C) 2013 hoholee12@naver.com"
 
 # End of the line
 opt_x(){
-	i=$(pgrep AMS_engine)
-	if [ "$i" ]; then
-		kill -9 $i
+	running_progs=$(getprop | grep $BASE_NAME | grep -v false | grep -v terminated | sed 's/^\[$BASE_NAME\.//; s/]:/ /' | awk '{print $1}')
+	if [ "$opt_x_val" ]; then
+		avail=0
+		for i in $running_progs; do
+			if [ "$opt_x_val" == "$i" ]; then
+				setprop $BASE_NAME.$i false
+				avail=$((avail+1))
+			fi
+		done
+		if [ "$avail" -eq 0 ]; then
+			echo "couldn't find any program with that name."
+			return=1
+		else
+			echo "$avail process(es) terminated."
+		fi
 	else
-		return=1
+		avail=0
+		for i in $running_progs; do
+			avail=$((avail+1))
+			if [ "$avail" -eq 1 ]; then
+				echo "list of running program codes:"
+			fi
+			echo "$i"
+		done
+		if [ "$avail" -eq 0 ]; then
+			echo "no $BASE_NAME programs currently running."
+		else
+			echo
+			echo -e "\e[1;31mkill ALL?\e[0m(y/n):"
+			read i
+			case $i in
+				y|Y)
+					for i in $running_progs; do
+						setprop $BASE_NAME.$i false
+					done
+				;;
+			esac
+		fi
 	fi
-	skip=1
 }
 
 # Direct I/O call optimizer
@@ -262,131 +292,84 @@ opt_k(){
 	echo "direct I/O call optimizer last run on $(date)"
 }
 
-# PGU engine
-AMS_fork_task(){
-	if [ "$(mount | grep rootfs | grep '\<ro\>')" ]; then
-		mount -o remount,rw rootfs
-		mountstat=ro
-	else
-		mountstat=rw
-	fi
-	if [ ! -d /tmp ]; then
-		mkdir /tmp
-		chmod 644 /tmp
-	fi
-	echo '# Busybox Applet Generator 2.3
-# You can type in any commands you would want it to check.
-# It will start by checking from cmd1, and its limit is up to cmd224.
-cmd1=renice
-cmd2=pgrep
-cmd3=mount
-cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
-# This feature might not be compatible with some other multi-call binaries.
-Busybox_Applet_Generator(){
-	if [ ! "$(busybox)" ]; then
-		echo "Failed to locate busybox!"
-		return 1
-	else
-		busyboxloc=$(dirname $(which busybox))
-		n=0
-		for i in $(echo $PATH | sed 's/:/ /g'); do
-			n=$(($n+1))
-			export slot$n=$i
-			if [ "$i" == "$busyboxloc" ]; then
-				busyboxenv=slot$n
-			fi
-		done
-		if [ "$busyboxenv" != slot1 ]; then
-			export PATH=$(echo -n $busyboxloc
-			for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
-				v=$(eval echo $i)
-				if [ "$v" != "$busyboxloc" ]; then
-					echo -n ":$v"
-				fi
-			done)
+# AMS grouping manager
+launchseq(){
+	for launcher in $(grep "<h\>" /data/system/appwidgets.xml | tr " " "\n" | grep pkg | sed 's/^pkg="//; s/"$//'); do
+		launcher_pid=$(pgrep $launcher)
+		if [ "$launcher_pid" ]; then
+			break
 		fi
-		if [ "$cmd" ]; then
-			if [ "$cmd" -lt 0 ]; then
-				cmd=0
-			fi
+	done
+	launcher_adj=$(cat /proc/$launcher_pid/oom_adj)
+	for pid in $(pgrep "" | grep -v $launcher_pid); do
+		adj=$(cat /proc/$pid/oom_adj)
+		if [ ! "$previous_adj" ];then
+			previous_adj=$adj
+			higher_level_adj=$adj
 		else
-			cmd=224
-		fi
-		for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
-			v=$(eval echo $i)
-			if [ "$v" ]; then
-				if [ ! "$(busybox | grep "\<$v\>")" ]; then
-					echo "This program needs the following applet to be able to run: $v"
-					return 1
-				fi
-				if [ ! -e "$busyboxloc"/"$v" ]; then
-					alias $i="busybox $i"
-				fi
-			else
-				break
+			if [ "$adj" -gt "$launcher_adj" ] && [ "$adj" -lt "$previous_adj" ]; then
+				higher_level_adj=$adj
 			fi
-		done
-	fi 2>/dev/null
+		fi
+	done
 }
-Busybox_Applet_Generator
-renice 19 $$
-zygote=$(pgrep zygote)
-if [ "$zygote" ]; then
+autogen(){
 	while true; do
-		for i in $(ps | awk '/[0-9]/&&!/]|\/*bin\/|\/init|_server/' | awk '{print $1}'); do
-			prio=$(cat /proc/$i/oom_adj)
-			for j in $(ls /proc/$i/task | grep -v $i); do
-				if [ "$(grep -i "binder_thread_read" /proc/$i/task/$j/wchan)" ]; then
-					stat=$(cat /proc/$i/task/$j/stat)
-					rm=${stat#*)}
-					nicelevel=$(echo $rm | cut -d' ' -f17)
-					if [ "$nicelevel" != "$prio" ]; then
-						renice $prio $j
-					fi
-				fi
-			done
+		for pid in $(pgrep "" | grep -v $launcher_pid); do
+			adj=$(cat /proc/$pid/oom_adj)
+			if [ "$adj" -eq 2 ]; then
+				echo "15" > /proc/$pid/oom_adj
+			elif [ "$adj" -gt 2 ] && [ "$adj" -le "$launcher_adj" ]; then
+				echo "$higher_level_adj" > /proc/$pid/oom_adj
+			fi
 		done & sleep $1
 	done
-fi' > /tmp/AMS_engine
-	chmod 644 /tmp/AMS_engine3
-	if [ -e /tmp/AMS_engine ]; then
-		sh /tmp/AMS_engine $1 &
-		forkpid=$!
-		rm /tmp/AMS_engine
-	else
-		return=1
-	fi
-	if [ "$mountstat" == ro ]; then
-		mount -o remount,ro rootfs
-	fi
 }
-
-# AMS process grouping utility
+loopcheck(){
+	renice 19 $$
+	setprop $BASE_NAME.autogen true
+	launchseq
+	autogen $1 & autogen_pid=$!
+	while true; do
+		if [ "$(getprop $BASE_NAME.autogen)" == false ]; then
+			setprop $BASE_NAME.autogen terminated
+			kill -9 $autogen_pid
+			kill -9 $$
+		fi
+		launcher_pid=$(pgrep $launcher)
+		if [ "$launcher_pid" ]; then
+			if [ "$(cat /proc/$launcher_pid/oom_adj)" -ne "$launcher_adj" ]; then
+				kill -9 $autogen_pid
+				launchseq
+				autogen $1 & autogen_pid=$!
+			fi
+		fi
+		sleep 5
+	done
+}
 opt_g(){
 	interval_default=0
 	interval=$opt_t_val
 	if [ ! "$interval" ]; then
 		interval_default=1
-		interval=30
+		interval=15
 	fi
-	echo "forking AMS manager..."
-	if [ "$(pgrep AMS_engine)" ]; then
-		opt_x
-	fi
-	AMS_fork_task $interval
-	if [ "$return" -eq 1 ]; then
-		echo "Manager was not able to continue the progress, due to a critical error."
+	if [ "$(getprop $BASE_NAME.autogen)" == true ]; then
+		echo "killing previous forked AMS grouping manager..."
+		opt_x autogen
+		echo "re-forking AMS grouping manager..."
 	else
-		echo "system_server hijacking complete! ready to rock:D"
-		echo -n "refresh rate interval was set to "
-		if [ "$interval_default" -eq 1 ]; then
-			echo "default by $interval seconds"
-		else
-			echo "$interval seocnds"
-		fi
-		echo
-		echo "AMS process grouping utility started on $(date)"
+		echo "forking AMS grouping manager..."
 	fi
+	loopcheck $interval &
+	echo -n "refresh rate interval was set to "
+	if [ "$interval_default" -eq 1 ]; then
+		echo "default by $interval seconds"
+	else
+		echo "$interval seocnds"
+	fi
+	echo
+	echo "AMS process grouping utility started on $(date)"
 }
 
 # Services optimizer
@@ -501,6 +484,7 @@ Magic_Parser(){
 	# Extra instructions that must not have initial values
 	opt_p_val=
 	opt_t_val=
+	opt_x_val=
 
 	# Error messages
 	sop_error="same operation not permitted"
@@ -516,7 +500,7 @@ Magic_Parser(){
 		return 1
 	fi
 	if [ "$1" == 69 ]; then
-		echo -e "\e[1;31mWow, just wow.\e[0m"
+		echo -e "\e[1;36mHi, zepp!:D\e[0m"
 	elif [ "$1" == 1337 ]; then
 		echo -e "\e[1;32myou ain't elite, \e[1;31mI AM.\e[0m"
 	fi
@@ -640,6 +624,30 @@ Magic_Parser(){
 					opt_t_val=$(echo $1 | sed 's/^'"$mode"'//')
 				fi
 			;;
+			-x* | --exit*)
+				if [ "$(echo $1 | grep '^-x')" ]; then
+					mode="-x"
+				else
+					mode="--exit"
+				fi
+				if [ "$opt_x" -gt 0 ]; then
+					echo "$mode: $sop_error"
+					return 1
+				fi
+				fcount=$((fcount+1))
+				export mslot$fcount=opt_x
+				opt_x=$(($opt_x+1))
+				if [ ! "$(echo $1 | sed 's/^'"$mode"'//')" ]; then
+					if [ "$2" ]; then
+						if [ ! "$(echo $2 | grep '^-')" ]; then
+							opt_x_val=$2
+							shift
+						fi
+					fi
+				else
+					opt_x_val=$(echo $1 | sed 's/^'"$mode"'//')
+				fi
+			;;
 			*)
 				if [ ! "$(echo $1 | sed 's/^-//')" ]; then
 					echo "$1: $arg_error"
@@ -681,15 +689,6 @@ Magic_Parser(){
 									fcount=$((fcount+1))
 									export mslot$fcount=opt_h
 									opt_h=$(($opt_h+1))
-								;;
-								x)
-									if [ "$opt_x" -gt 0 ]; then
-										echo "-x: $sop_error"
-										return 1
-									fi
-									fcount=$((fcount+1))
-									export mslot$fcount=opt_x
-									opt_x=$(($opt_x+1))
 								;;
 								k)
 									if [ "$opt_k" -gt 0 ]; then
@@ -741,15 +740,6 @@ Magic_Parser(){
 									export mslot$fcount=opt_h
 									opt_h=$(($opt_h+1))
 								;;
-								exit)
-									if [ "$opt_x" -gt 0 ]; then
-										echo "--exit: $sop_error"
-										return 1
-									fi
-									fcount=$((fcount+1))
-									export mslot$fcount=opt_x
-									opt_x=$(($opt_x+1))
-								;;
 								kernel)
 									if [ "$opt_k" -gt 0 ]; then
 										echo "--kernel: $sop_error"
@@ -800,7 +790,7 @@ Magic_Parser(){
 	done
 }
 
-# A typical error message.
+# Short info/error message
 Usage(){
 	echo "Usage: $(basename $0) -hxkgm -p [VALUE] -t [VALUE]
 	-p | --priority) for master priority control set.
