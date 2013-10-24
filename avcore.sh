@@ -205,7 +205,7 @@ Copyright (C) 2013 hoholee12@naver.com"
 
 # End of the line
 opt_x(){
-	running_progs=$(getprop | grep $BASE_NAME | grep -v false | grep -v terminated | sed 's/^\[$BASE_NAME\.//; s/]:/ /' | awk '{print $1}')
+	running_progs=$(getprop | grep $BASE_NAME | grep -v false | grep -v terminated | sed 's/^\['"$BASE_NAME"'\.//; s/]:/ /' | awk '{print $1}')
 	if [ "$opt_x_val" ]; then
 		avail=0
 		for i in $running_progs; do
@@ -323,7 +323,7 @@ autogen(){
 				echo "$higher_level_adj" > /proc/$pid/oom_adj
 			fi
 		done & sleep $1
-	done
+	done 2>/dev/null
 }
 loopcheck(){
 	renice 19 $$
