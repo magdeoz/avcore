@@ -1,4 +1,5 @@
-CLIPPER_VERSION="0.0.5 alpha"; BASE_NAME=$(basename $0)
+CLIPPER_VERSION="0.0.5 alpha"
+BASE_NAME=$(basename $0)
 # Clipper - a user executable binary for Dalvik VM & process management.
 #
 # Copyright (C) 2013  hoholee12@naver.com
@@ -56,7 +57,7 @@ cmd= # It notifies the generator how many cmds are available for check. Leave it
 Busybox_Applet_Generator(){
 	if [ ! "$(busybox)" ]; then
 		echo "Failed to locate busybox!"
-		return 1
+		return 127
 	else
 		busyboxloc=$(dirname $(which busybox))
 		n=0
@@ -88,7 +89,7 @@ Busybox_Applet_Generator(){
 			if [ "$v" ]; then
 				if [ ! "$(busybox | grep "\<$v\>")" ]; then
 					echo "This program needs the following applet to be able to run: $v"
-					return 1
+					return 127
 				fi
 				if [ ! -e "$busyboxloc"/"$v" ]; then
 					alias $i="busybox $i"
@@ -104,7 +105,7 @@ Busybox_Applet_Generator(){
 Superuser(){
 	if [ "$(id -u)" != 0 ] && [ "$(id -u)" != root ]; then
 		echo "Permission denied, are you root?"
-		return 1
+		return 126
 	fi
 }
 
@@ -112,14 +113,16 @@ Superuser(){
 Roll_Down(){
 	if [ "$run_Busybox_Applet_Generator" ] && [ "$run_Busybox_Applet_Generator" == yes ]; then
 		Busybox_Applet_Generator
-		if [ "$?" -ne 0 ]; then
-			exit 1
+		return=$?
+		if [ "$return" -ne 0 ]; then
+			exit $return
 		fi
 	fi
 	if [ "$run_Superuser" ] && [ "$run_Superuser" == yes ]; then
 		Superuser
-		if [ "$?" -ne 0 ]; then
-			exit 1
+		return=$?
+		if [ "$return" -ne 0 ]; then
+			exit $return
 		fi
 	fi
 }
@@ -177,10 +180,15 @@ HOW TO USE -p:
 	NOTE: non numerical values or floating-point numbers not supported.
 	
 HOW TO USE -t:
-	-t is a new feature implemented to 0.0.4 to keep track of timing between each commands.
+	-t is a new feature implemented in 0.0.4 to keep track of timing between each commands.
 	its usage is basically same as -p.
 	reminder: -[value] argument won't work on -t.
 	NOTE: non numerical values or negative numbers not supported.
+	
+HOW TO USE -x:
+	-x is a new feature implemented in 0.0.5 alpha to end processes spawned from this program manually.
+	type program feature name after typing -x to end that program.
+	if you dont know the name of the process you're trying to kill, just type -x.
 
 OTHER OPTIONS:
 	-k or --kernel is a utility for optimizing direct I/O calls.
@@ -197,6 +205,17 @@ THE AMAZING POWER OF Magic_Parser():
 	in order to allow users to be able to input arguments more dynamically.
 	it basically means that this parser will be able to understand about any method across various argument inputs.
 	it is also designed to be very fast in complex parsing, so that any delays can be avoided.
+	
+DISCLAIMER:
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
 Clipper Version $CLIPPER_VERSION
 Copyright (C) 2013 hoholee12@naver.com"
@@ -215,7 +234,8 @@ opt_x(){
 			fi
 		done
 		if [ "$avail" -eq 0 ]; then
-			echo "couldn't find any program with that name."
+			echo "-x: couldn't find any program with that name."
+			Usage
 			return=1
 		else
 			echo "$avail process(es) terminated."
@@ -431,7 +451,8 @@ opt_m(){
 
 # Advanced in-order execution
 Roll_Up(){
-	if [ "$?" -eq 0 ]; then
+	return=$?
+	if [ "$return" -eq 0 ]; then
 		return=0
 		skip=0
 		for i in $(seq -s ' $mslot' 0 6 | sed 's/^0//'); do
@@ -439,10 +460,10 @@ Roll_Up(){
 			if [ "$v" ]; then
 				return=0
 				$v
-				if [ "$v" != opt_p ] && [ "$v" != opt_t ]; then
+				if [ "$v" != opt_p ] && [ "$v" != opt_t ] && [ "$v" != opt_x ]; then
 					echo
 				fi
-				if [ "$return" -eq 1 ] || [ "$skip" -eq 1 ]; then
+				if [ "$return" -ge 1 ] || [ "$skip" -eq 1 ]; then
 					return $return
 				fi
 			else
@@ -462,7 +483,7 @@ Roll_Up(){
 		return $return
 	else
 		Usage
-		return 1
+		return $return
 	fi
 }
 
@@ -790,9 +811,9 @@ Magic_Parser(){
 	done
 }
 
-# Short info/error message
+# Short info/help message
 Usage(){
-	echo "Usage: $(basename $0) -hxkgm -p [VALUE] -t [VALUE]
+	echo "Usage: $(basename $0) -p [VALUE] -t [VALUE] -x [PROG NAME] -h -kgm
 	-p | --priority) for master priority control set.
 	-t | --time) for master interval control set.
 	-x | --exit) ends the spawned process.
@@ -815,5 +836,6 @@ Magic_Parser $@
 Roll_Up
 
 # End session.
-exit $?
+return=$?
+exit $return
 
