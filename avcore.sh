@@ -813,7 +813,7 @@ Magic_Parser(){
 
 # Short info/help message
 Usage(){
-	echo "Usage: $(basename $0) -p [VALUE] -t [VALUE] -x [PROG NAME] -h -kgm
+	echo "Usage: $BASE_NAME -p [VALUE] -t [VALUE] -x [PROG NAME] -h -kgm
 	-p | --priority) for master priority control set.
 	-t | --time) for master interval control set.
 	-x | --exit) ends the spawned process.
