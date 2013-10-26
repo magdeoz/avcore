@@ -103,7 +103,7 @@ Busybox_Applet_Generator(){
 
 # Check Superuser.
 Superuser(){
-	if [ "$(id -u)" != 0 ] && [ "$(id -u)" != root ]; then
+	if [ "$(grep -i "^Gid:" /proc/$$/status | awk '{print $2}')" != 0 ] || [ "$(grep -i "^Uid:" /proc/$$/status | awk '{print $2}')" != 0 ]; then
 		echo "Permission denied, are you root?"
 		return 126
 	fi
