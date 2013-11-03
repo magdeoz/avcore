@@ -363,13 +363,13 @@ loopcheck(){
 	while true; do
 		if [ "$(getprop $BASE_NAME.autogen)" == false ] || [ "$(getprop $BASE_NAME.autogen)" == terminated ]; then
 			setprop $BASE_NAME.autogen terminated
-			kill -9 $autogen_pid
-			kill -9 $$
+			kill $autogen_pid
+			kill $$
 		fi
 		launcher_pid=$(pgrep $launcher)
 		if [ "$launcher_pid" ]; then
 			if [ "$(cat /proc/$launcher_pid/oom_adj)" -ne "$launcher_adj" ]; then
-				kill -9 $autogen_pid
+				kill $autogen_pid
 				launchseq
 				autogen $1 & autogen_pid=$!
 			fi
@@ -392,6 +392,7 @@ opt_g(){
 		echo "forking AMS grouping manager..."
 	fi
 	loopcheck $interval &
+	echo "new codename for this service is \"autogen\". you can type \"[program name] -x autogen\" in terminal whenever you want to stop the service."
 	echo -n "refresh rate interval was set to "
 	if [ "$interval_default" -eq 1 ]; then
 		echo "default by $interval seconds"
