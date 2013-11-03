@@ -315,34 +315,44 @@ opt_k(){
 # AMS grouping manager
 launchseq(){
 	for launcher in $(grep "<h\>" /data/system/appwidgets.xml | tr " " "\n" | grep pkg | sed 's/^pkg="//; s/"$//'); do
-		launcher_pid=$(pgrep $launcher)
+		export launcher_pid=$(pgrep $launcher)
 		if [ "$launcher_pid" ]; then
 			break
 		fi
 	done
-	launcher_adj=$(cat /proc/$launcher_pid/oom_adj)
-	for pid in $(pgrep "" | grep -v $launcher_pid); do
-		adj=$(cat /proc/$pid/oom_adj)
-		if [ ! "$previous_adj" ];then
-			previous_adj=$adj
-			higher_level_adj=$adj
-		else
-			if [ "$adj" -gt "$launcher_adj" ] && [ "$adj" -lt "$previous_adj" ]; then
-				higher_level_adj=$adj
-			fi
-		fi
-	done
+	export launcher_adj=$(cat /proc/$launcher_pid/oom_adj)
+	export heapalloc=$(($(getprop | grep dalvik.vm.heapsize | sed 's/\[dalvik.vm.heapsize]: \[//; s/m]//')*1024))
 }
 autogen(){
 	while true; do
-		for pid in $(pgrep "" | grep -v $launcher_pid); do
-			adj=$(cat /proc/$pid/oom_adj)
-			if [ "$adj" -eq 2 ]; then
-				echo "15" > /proc/$pid/oom_adj
-			elif [ "$adj" -gt 2 ] && [ "$adj" -le "$launcher_adj" ]; then
-				echo "$higher_level_adj" > /proc/$pid/oom_adj
+		if [ "$(($(grep -i "^Cached:" /proc/meminfo | awk '{print $2}')+$(grep -i "^Memfree:" /proc/meminfo | awk '{print $2}')))" -lt "$heapalloc" ]; then
+			for prev_pid in $(pgrep "" | grep -v $launcher_pid); do
+				prev_adj=$(cat /proc/$prev_pid/oom_adj)
+				if [ "$prev_adj" -ge 2 ] && [ "$prev_adj" -le "$launcher_adj" ]; then
+					prev_score=$(cat /proc/$prev_pid/score)
+					break
+				fi
+			done
+			if [ "$prev_pid" ]; then
+				while true; do
+					for pid in $(pgrep "" | grep -v $launcher_pid); do
+						adj=$(cat /proc/$pid/oom_adj)
+						if [ "$adj" -ge 2 ] && [ "$adj" -le "$launcher_adj" ]; then
+							score=$(cat /proc/$pid/score)
+							if [ "$score" -gt "$prev_score" ]; then
+								prev_pid=$pid
+								prev_score=$score
+							fi
+						fi
+					done
+					kill $prev_pid
+					if [ "$(($(grep -i "^Cached:" /proc/meminfo | awk '{print $2}')+$(grep -i "^Memfree:" /proc/meminfo | awk '{print $2}')))" -ge "$heapalloc" ]; then
+						break
+					fi
+				done
 			fi
-		done & sleep $1
+		fi
+		sleep $1
 	done 2>/dev/null
 }
 loopcheck(){
@@ -351,7 +361,7 @@ loopcheck(){
 	launchseq
 	autogen $1 & autogen_pid=$!
 	while true; do
-		if [ "$(getprop $BASE_NAME.autogen)" == false ]; then
+		if [ "$(getprop $BASE_NAME.autogen)" == false ] || [ "$(getprop $BASE_NAME.autogen)" == terminated ]; then
 			setprop $BASE_NAME.autogen terminated
 			kill -9 $autogen_pid
 			kill -9 $$
@@ -372,7 +382,7 @@ opt_g(){
 	interval=$opt_t_val
 	if [ ! "$interval" ]; then
 		interval_default=1
-		interval=15
+		interval=5
 	fi
 	if [ "$(getprop $BASE_NAME.autogen)" == true ]; then
 		echo "killing previous forked AMS grouping manager..."
