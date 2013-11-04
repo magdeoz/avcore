@@ -36,6 +36,8 @@ BASE_NAME=$(basename $0)
 #       - revamped services optimizer.
 #       - revamped direct I/O call optimizer.
 #       - edited help() page.
+#       - revamped AMS grouping manager.
+#       - revamped Busybox Applet Generator 2.3.
 set +e
 # Un-comment out the following line to enable debugging.
 #set -x
@@ -52,6 +54,7 @@ run_Superuser=yes
 cmd1=renice
 cmd2=pgrep
 cmd3=mount
+cmd4="Your permission to use this program has been taken away for now. If you wish to gain immediate access to this program, you must edit 'cmd=' to 'cmd=3'."
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 # This feature might not be compatible with some other multi-call binaries.
 Busybox_Applet_Generator(){
@@ -88,7 +91,7 @@ Busybox_Applet_Generator(){
 			v=$(eval echo $i)
 			if [ "$v" ]; then
 				if [ ! "$(busybox | grep "\<$v\>")" ]; then
-					echo "This program needs the following applet to be able to run: $v"
+					echo "This program needs the following applet to run: $v"
 					return 127
 				fi
 				if [ ! -e "$busyboxloc"/"$v" ]; then
