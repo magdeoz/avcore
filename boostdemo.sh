@@ -232,7 +232,7 @@ found=y
 break
 fi
 done
-if [ ! $found ]; then
+if [ ! $found ] || [ $file == "/" ]; then
 echo "$file: is not a symlinked file"
 return 1
 fi
