@@ -213,14 +213,15 @@ loopcheck(){
 	done
 }
 
+#chklnk
 if [ ! $1 ]; then
 return 1
 fi
 file=$1
 dir=$(dirname $file)
 base=$(basename $file)
-if [ ! -e $file ]; then
-echo "file doesnt exist."
+if [ ! -e $file ] && [ ! -d $file ]; then
+echo "$file: not found"
 return 1
 fi
 count=0
@@ -232,7 +233,7 @@ break
 fi
 done
 if [ ! $found ]; then
-echo "this file isnt linked."
+echo "$file: is not a symlinked file"
 return 1
 fi
 #link=$((count-1))
