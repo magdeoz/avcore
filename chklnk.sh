@@ -1,4 +1,4 @@
-#chklnk
+# chklnk.sh
 #
 # Copyright (C) 2013  hoholee12@naver.com
 #
@@ -16,6 +16,66 @@
 # alpha version
 # 0.0.1 - first release
 set +e
+# Busybox Applet Generator 2.3
+# You can type in any commands you would want it to check.
+# It will start by checking from cmd1, and its limit is up to cmd224.
+cmd1=dirname
+cmd2=basename
+cmd3=ls
+cmd4=grep
+cmd5=head
+cmd6=awk
+cmd=6 # It notifies the generator how many cmds are available for check. Leave it as blank.
+# This feature might not be compatible with some other multi-call binaries.
+Busybox_Applet_Generator(){
+	if [ ! "$(busybox)" ]; then
+		echo "Failed to locate busybox!"
+		return 127
+	else
+		busyboxloc=$(dirname $(which busybox))
+		n=0
+		for i in $(echo $PATH | sed 's/:/ /g'); do
+			n=$(($n+1))
+			export slot$n=$i
+			if [ "$i" == "$busyboxloc" ]; then
+				busyboxenv=slot$n
+			fi
+		done
+		if [ "$busyboxenv" != slot1 ]; then
+			export PATH=$(echo -n $busyboxloc
+			for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
+				v=$(eval echo $i)
+				if [ "$v" != "$busyboxloc" ]; then
+					echo -n ":$v"
+				fi
+			done)
+		fi
+		if [ "$cmd" ]; then
+			if [ "$cmd" -lt 0 ]; then
+				cmd=0
+			fi
+		else
+			cmd=224
+		fi
+		for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
+			v=$(eval echo $i)
+			if [ "$v" ]; then
+				if [ ! "$(busybox | grep "\<$v\>")" ]; then
+					echo "This program needs the following applet to run: $v"
+					return 127
+				fi
+				if [ ! -e "$busyboxloc"/"$v" ]; then
+					alias $i="busybox $i"
+				fi
+			else
+				break
+			fi
+		done
+	fi 2>/dev/null
+}
+Busybox_Applet_Generator
+
+# Main script
 if [ ! $1 ]; then
 	return 1
 fi
@@ -42,4 +102,5 @@ fi
 orig=$((count+1))
 linked_file=$(ls -l $dir | grep $base | head -1 | awk '{print $'"$orig"'}')
 echo "$linked_file"
+return 0
 
