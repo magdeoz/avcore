@@ -233,7 +233,7 @@ break
 fi
 done
 if [ ! $found ] || [ $file == "/" ]; then
-echo "$file: is not a symlinked file"
+echo "$file: is not a symlink"
 return 1
 fi
 #link=$((count-1))
