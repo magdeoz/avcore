@@ -118,14 +118,14 @@ Roll_Down(){
 		Busybox_Applet_Generator
 		return=$?
 		if [ "$return" -ne 0 ]; then
-			return $return
+			exit $return
 		fi
 	fi
 	if [ "$run_Superuser" ] && [ "$run_Superuser" == yes ]; then
 		Superuser
 		return=$?
 		if [ "$return" -ne 0 ]; then
-			return $return
+			exit $return
 		fi
 	fi
 }
@@ -851,5 +851,5 @@ Roll_Up
 
 # End session.
 return=$?
-return $return
+exit $return
 
