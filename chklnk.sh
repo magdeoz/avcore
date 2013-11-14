@@ -15,6 +15,8 @@
 # Changelogs:
 # alpha version
 # 0.0.1 - first release
+# 0.0.2 - permission error support added.
+#       - revamped return command.
 set +e
 # Busybox Applet Generator 2.3
 # You can type in any commands you would want it to check.
@@ -80,25 +82,30 @@ if [ "$return" != 0 ]; then
 fi
 
 # Main script
-if [ ! $1 ]; then
+if [ ! "$1" ]; then
 	exit 1
 fi
 file=$1
 dir=$(dirname $file)
 base=$(basename $file)
-if [ ! -e $file ] && [ ! -d $file ]; then
+if [ ! -e "$file" ] && [ ! -d "$file" ]; then
 	echo "$file: not found"
 	exit 127
 fi
 count=0
 for i in $(ls -l $dir | grep $base | head -1); do
 	count=$((count+1))
-	if [ $i == "->" ]; then
+	if [ "$i" == "->" ]; then
 		found=y
 		break
 	fi
-done
-if [ ! $found ] || [ $file == "/" ]; then
+done 2>/dev/null
+return=$?
+if [ "$return" != 0 ]; then
+	echo "$file: operation not permitted"
+	exit $return
+fi
+if [ ! "$found" ] || [ "$file" == "/" ]; then
 	echo "$file: is not a symlink"
 	exit 1
 fi
