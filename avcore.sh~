@@ -1,17 +1,18 @@
 CLIPPER_VERSION="0.0.5 alpha"
 BASE_NAME=$(basename $0)
-DIR_NAME=$(dirname $(which $BASE_NAME))
-FULL_NAME=$(echo $DIR_NAME/$BASE_NAME)
-print_PARTIAL_DIR_NAME(){
-	echo $(echo $DIR_NAME | tr -s / \\n | head -n$(($1+1))	| tr -s \\n /)
-}
-ROOT_DIR=$(print_PARTIAL_DIR_NAME 1)
-# avcore.sh
+# Clipper - a user executable binary for Dalvik VM & process management.
 #
-# Copyright (C) 2013-2014  hoholee12@naver.com
+# Copyright (C) 2013  hoholee12@naver.com
 #
-# Everyone is permitted to copy and distribute verbatim copies
-# of this code, but changing it is not allowed.
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
 # Changelogs:
 # alpha version
@@ -37,19 +38,13 @@ ROOT_DIR=$(print_PARTIAL_DIR_NAME 1)
 #       - edited help() page.
 #       - revamped AMS grouping manager.
 #       - revamped Busybox Applet Generator 2.3.
-#		- the code has undergone a massive diet. :-)
-#		- removed gpl license.
-
-#i am now back from the dead and i cant remember anything about this code, so i need help from someone who could read and verify it for me. :-(
-#if you'd like to help, please contact me via e-mail.
-
 set +e
 # Un-comment out the following line to enable debugging.
 #set -x
 
 # Custom settings for session behaviour
 # Check Busybox Applet Generator 2.3.
-run_Busybox_Applet_Generator=no
+run_Busybox_Applet_Generator=yes
 # Check Superuser.
 run_Superuser=yes
 
@@ -59,34 +54,34 @@ run_Superuser=yes
 cmd1=renice
 cmd2=pgrep
 cmd3=mount
+cmd4="Your permission to use this program has been taken away for now. If you wish to gain immediate access to this program, you must edit 'cmd=' to 'cmd=3'."
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 # This feature might not be compatible with some other multi-call binaries.
 Busybox_Applet_Generator(){
-	local n i busyboxloc busyboxenv cmd
-	if [[ ! "$(busybox)" ]]; then
+	if [ ! "$(busybox)" ]; then
 		echo "Failed to locate busybox!"
-		return 1
+		return 127
 	else
 		busyboxloc=$(dirname $(which busybox))
 		n=0
 		for i in $(echo $PATH | sed 's/:/ /g'); do
 			n=$(($n+1))
 			export slot$n=$i
-			if [[ "$i" == "$busyboxloc" ]]; then
+			if [ "$i" == "$busyboxloc" ]; then
 				busyboxenv=slot$n
 			fi
 		done
-		if [[ "$busyboxenv" != slot1 ]]; then
+		if [ "$busyboxenv" != slot1 ]; then
 			export PATH=$(echo -n $busyboxloc
 			for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
 				v=$(eval echo $i)
-				if [[ "$v" != "$busyboxloc" ]]; then
+				if [ "$v" != "$busyboxloc" ]; then
 					echo -n ":$v"
 				fi
 			done)
 		fi
-		if [[ "$cmd" ]]; then
-			if [[ "$cmd" -lt 0 ]]; then
+		if [ "$cmd" ]; then
+			if [ "$cmd" -lt 0 ]; then
 				cmd=0
 			fi
 		else
@@ -94,12 +89,12 @@ Busybox_Applet_Generator(){
 		fi
 		for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
 			v=$(eval echo $i)
-			if [[ "$v" ]]; then
-				if [[ ! "$(busybox | grep "\<$v\>")" ]]; then
+			if [ "$v" ]; then
+				if [ ! "$(busybox | grep "\<$v\>")" ]; then
 					echo "This program needs the following applet to run: $v"
-					return 1
+					return 127
 				fi
-				if [[ ! -e "$busyboxloc"/"$v" ]]; then
+				if [ ! -e "$busyboxloc"/"$v" ]; then
 					alias $i="busybox $i"
 				fi
 			else
@@ -111,26 +106,25 @@ Busybox_Applet_Generator(){
 
 # Check Superuser.
 Superuser(){
-	if [[ "$(grep -i "^Uid:" /proc/$$/status | awk '{print $2}')" != 0 ]]; then
+	if [ "$(grep -i "^Gid:" /proc/$$/status | awk '{print $2}')" != 0 ] || [ "$(grep -i "^Uid:" /proc/$$/status | awk '{print $2}')" != 0 ]; then
 		echo "Permission denied, are you root?"
-		return 1
+		return 126
 	fi
 }
 
 # Session behaviour
 Roll_Down(){
-	local return
-	if [[ "$run_Busybox_Applet_Generator" == yes ]]; then
+	if [ "$run_Busybox_Applet_Generator" ] && [ "$run_Busybox_Applet_Generator" == yes ]; then
 		Busybox_Applet_Generator
 		return=$?
-		if [[ "$return" -ne 0 ]]; then
+		if [ "$return" -ne 0 ]; then
 			exit $return
 		fi
 	fi
-	if [[ "$run_Superuser" == yes ]]; then
+	if [ "$run_Superuser" ] && [ "$run_Superuser" == yes ]; then
 		Superuser
 		return=$?
-		if [[ "$return" -ne 0 ]]; then
+		if [ "$return" -ne 0 ]; then
 			exit $return
 		fi
 	fi
@@ -140,11 +134,11 @@ Roll_Down(){
 opt_p(){
 	count=0
 	for i in $(env | grep "^opt.*" | grep -v "opt_p" | grep -v "opt_t" | grep -v "opt_h" | grep -v "opt_x" ); do
-		if [[ "$(echo $i | cut -d "=" -f 2)" == 1 ]]; then
+		if [ "$(echo $i | cut -d "=" -f 2)" == 1 ]; then
 			count=$((count+1))
 		fi
 	done
-	if [[ "$count" -eq 0 ]]; then
+	if [ "$count" -eq 0 ]; then
 		echo "-p: $req_error"
 		Usage
 		return=1
@@ -155,11 +149,11 @@ opt_p(){
 opt_t(){
 	count=0
 	for i in $(env | grep "^opt.*" | grep -v "opt_p" | grep -v "opt_t" | grep -v "opt_h" | grep -v "opt_x" ); do
-		if [[ "$(echo $i | cut -d "=" -f 2)" == 1 ]]; then
+		if [ "$(echo $i | cut -d "=" -f 2)" == 1 ]; then
 			count=$((count+1))
 		fi
 	done
-	if [[ "$count" -eq 0 ]]; then
+	if [ "$count" -eq 0 ]; then
 		echo "-t: $req_error"
 		Usage
 		return=1
@@ -171,20 +165,20 @@ opt_h(){
 	echo "SOME BASIC STUFF THAT YOU SHOULD KNOW:
 	-h or --help views this message.
 	-x or --exit does not work in this current version.
-	more parameters are coming soon to later versions.
+	more options are coming soon to later versions.
 
 HOW TO USE -p:
 	-p or --priority is a master priority control set.
-	it is only used for setting a custom value on parameters such as -k and -g.
+	it is only used for setting a custom value on options such as -k and -g.
 	so, if -p is not entered while running them, default values will encounter.
 	custom values are limited from 5% to 200%.(percentage)
 
 	for example, if you want to set 84 as a custom value,
 	you can type: -p 84, -p84, --priority 84, --priority84, or even -84.('-' is a reserved mark ONLY for -p)
 	unlike -k or -g, -p option needs to be written independently
-	from other parameters like so: -p84 -hxkgm, or -h -k -p84 -g -x -m.
+	from other options like so: -p84 -hxkgm, or -h -k -p84 -g -x -m.
 	
-	reminder: -p must be used independently from other parameters.
+	reminder: -p must be used independently from other options.
 	these will not work or likely to give out syntax errors: -hxkgmp84, or -hxkgpm84.
 	NOTE: non numerical values or floating-point numbers not supported.
 	
@@ -199,7 +193,7 @@ HOW TO USE -x:
 	type program feature name after typing -x to end that program.
 	if you dont know the name of the process you're trying to kill, just type -x.
 
-OTHER PARAMETERS:
+OTHER OPTIONS:
 	-k or --kernel is a utility for optimizing direct I/O calls.
 	the purpose of this utility is to attempt delay on non-buffering I/O(or direct I/O), in order to prevent certain I/O hangs.
 	it may fix mediaserver audio stutter issue from earlier Android 2.3.x builds.
@@ -208,28 +202,41 @@ OTHER PARAMETERS:
 
 	-m or --mediaserver lets you to control the overall resource usage of server processes.
 	these server processes may be your primary source of all lags and battery drains.
+
+THE AMAZING POWER OF Magic_Parser():
+	Clipper uses an advanced logic function called Magic_Parser() to parse arguments,
+	in order to allow users to be able to input arguments more dynamically.
+	it basically means that this parser will be able to understand about any method across various argument inputs.
+	it is also designed to be very fast in complex parsing, so that any delays can be avoided.
 	
 DISCLAIMER:
-	Everyone is permitted to copy and distribute verbatim copies
-	of this code, but changing it is not allowed.
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
 Clipper Version $CLIPPER_VERSION
-Copyright (C) 2013-2014 hoholee12@naver.com"
+Copyright (C) 2013 hoholee12@naver.com"
 	skip=1
 }
 
 # End of the line
 opt_x(){
 	running_progs=$(getprop | grep $BASE_NAME | grep -v false | grep -v terminated | sed 's/^\['"$BASE_NAME"'\.//; s/]:/ /' | awk '{print $1}')
-	if [[ "$opt_x_val" ]]; then
+	if [ "$opt_x_val" ]; then
 		avail=0
 		for i in $running_progs; do
-			if [[ "$opt_x_val" == "$i" ]]; then
+			if [ "$opt_x_val" == "$i" ]; then
 				setprop $BASE_NAME.$i false
 				avail=$((avail+1))
 			fi
 		done
-		if [[ "$avail" -eq 0 ]]; then
+		if [ "$avail" -eq 0 ]; then
 			echo "-x: couldn't find any program with that name."
 			Usage
 			return=1
@@ -240,12 +247,12 @@ opt_x(){
 		avail=0
 		for i in $running_progs; do
 			avail=$((avail+1))
-			if [[ "$avail" -eq 1 ]]; then
+			if [ "$avail" -eq 1 ]; then
 				echo "list of running program codes:"
 			fi
 			echo "$i"
 		done
-		if [[ "$avail" -eq 0 ]]; then
+		if [ "$avail" -eq 0 ]; then
 			echo "no $BASE_NAME programs currently running."
 		else
 			echo
@@ -266,10 +273,10 @@ opt_x(){
 opt_k(){
 	default=0
 	priority=$opt_p_val
-	if [[ "$priority" ]]; then
-		if [[ "$priority" -gt 200 ]]; then
+	if [ "$priority" ]; then
+		if [ "$priority" -gt 200 ]; then
 			priority=200
-		elif [[ "$priority" -lt 5 ]]; then
+		elif [ "$priority" -lt 5 ]; then
 			priority=5
 		fi
 	else
@@ -280,26 +287,26 @@ opt_k(){
 	renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
 	echo "looking through direct I/O calls..."
 	for i in $(pgrep ""); do
-		if [[ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "\<2\>")" ]]; then
-			if [[ "$(grep -i "dio" /proc/$i/comm)" ]]; then
+		if [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "\<2\>")" ]; then
+			if [ "$(grep -i "dio" /proc/$i/comm)" ]; then
 				renice $renice_val $i
 				stat=$(cat /proc/$i/stat)
 				rm=${stat#*)}
 				nicelevel=$(echo $rm | cut -d' ' -f17)
-				if [[ "$nicelevel" -ne "$renice_val" ]]; then
+				if [ "$nicelevel" -ne "$renice_val" ]; then
 					error=$((error+1))
 				fi
 			fi
 		fi
 	done
-	if [[ "$error" -gt 0 ]]; then
+	if [ "$error" -gt 0 ]; then
 		echo "total $error errors found."
 		return=1
 	else
 		echo "direct I/O call optimization complete!"
 	fi
 	echo -n "cpulimit was set to "
-	if [[ "$default" -eq 1 ]]; then
+	if [ "$default" -eq 1 ]; then
 		echo "default by $priority%"
 	else
 		echo "$priority%"
@@ -312,7 +319,7 @@ opt_k(){
 launchseq(){
 	for launcher in $(grep "<h\>" /data/system/appwidgets.xml | tr " " "\n" | grep pkg | sed 's/^pkg="//; s/"$//'); do
 		export launcher_pid=$(pgrep $launcher)
-		if [[ "$launcher_pid" ]]; then
+		if [ "$launcher_pid" ]; then
 			break
 		fi
 	done
@@ -321,28 +328,28 @@ launchseq(){
 }
 autogen(){
 	while true; do
-		if [[ "$(($(grep -i "^Cached:" /proc/meminfo | awk '{print $2}')+$(grep -i "^Memfree:" /proc/meminfo | awk '{print $2}')))" -lt "$heapalloc" ]]; then
+		if [ "$(($(grep -i "^Cached:" /proc/meminfo | awk '{print $2}')+$(grep -i "^Memfree:" /proc/meminfo | awk '{print $2}')))" -lt "$heapalloc" ]; then
 			for prev_pid in $(pgrep "" | grep -v $launcher_pid); do
 				prev_adj=$(cat /proc/$prev_pid/oom_adj)
-				if [[ "$prev_adj" -ge 2 ]] && [[ "$prev_adj" -le "$launcher_adj" ]]; then
+				if [ "$prev_adj" -ge 2 ] && [ "$prev_adj" -le "$launcher_adj" ]; then
 					prev_score=$(cat /proc/$prev_pid/score)
 					break
 				fi
 			done
-			if [[ "$prev_pid" ]]; then
+			if [ "$prev_pid" ]; then
 				while true; do
 					for pid in $(pgrep "" | grep -v $launcher_pid); do
 						adj=$(cat /proc/$pid/oom_adj)
-						if [[ "$adj" -ge 2 ]] && [[ "$adj" -le "$launcher_adj" ]]; then
+						if [ "$adj" -ge 2 ] && [ "$adj" -le "$launcher_adj" ]; then
 							score=$(cat /proc/$pid/score)
-							if [[ "$score" -gt "$prev_score" ]]; then
+							if [ "$score" -gt "$prev_score" ]; then
 								prev_pid=$pid
 								prev_score=$score
 							fi
 						fi
 					done
 					kill $prev_pid
-					if [[ "$(($(grep -i "^Cached:" /proc/meminfo | awk '{print $2}')+$(grep -i "^Memfree:" /proc/meminfo | awk '{print $2}')))" -ge "$heapalloc" ]]; then
+					if [ "$(($(grep -i "^Cached:" /proc/meminfo | awk '{print $2}')+$(grep -i "^Memfree:" /proc/meminfo | awk '{print $2}')))" -ge "$heapalloc" ]; then
 						break
 					fi
 				done
@@ -357,14 +364,14 @@ loopcheck(){
 	launchseq
 	autogen $1 & autogen_pid=$!
 	while true; do
-		if [[ "$(getprop $BASE_NAME.autogen)" == false ]] || [[ "$(getprop $BASE_NAME.autogen)" == terminated ]]; then
+		if [ "$(getprop $BASE_NAME.autogen)" == false ] || [ "$(getprop $BASE_NAME.autogen)" == terminated ]; then
 			setprop $BASE_NAME.autogen terminated
 			kill $autogen_pid
 			kill $$
 		fi
 		launcher_pid=$(pgrep $launcher)
-		if [[ "$launcher_pid" ]]; then
-			if [[ "$(cat /proc/$launcher_pid/oom_adj)" -ne "$launcher_adj" ]]; then
+		if [ "$launcher_pid" ]; then
+			if [ "$(cat /proc/$launcher_pid/oom_adj)" -ne "$launcher_adj" ]; then
 				kill $autogen_pid
 				launchseq
 				autogen $1 & autogen_pid=$!
@@ -376,11 +383,11 @@ loopcheck(){
 opt_g(){
 	interval_default=0
 	interval=$opt_t_val
-	if [[ ! "$interval" ]]; then
+	if [ ! "$interval" ]; then
 		interval_default=1
 		interval=5
 	fi
-	if [[ "$(getprop $BASE_NAME.autogen)" == true ]]; then
+	if [ "$(getprop $BASE_NAME.autogen)" == true ]; then
 		echo "killing previous forked AMS grouping manager..."
 		opt_x autogen
 		echo "re-forking AMS grouping manager..."
@@ -390,7 +397,7 @@ opt_g(){
 	loopcheck $interval &
 	echo "new codename for this service is \"autogen\". you can type \"[program name] -x autogen\" in terminal whenever you want to stop the service."
 	echo -n "refresh rate interval was set to "
-	if [[ "$interval_default" -eq 1 ]]; then
+	if [ "$interval_default" -eq 1 ]; then
 		echo "default by $interval seconds"
 	else
 		echo "$interval seocnds"
@@ -403,10 +410,10 @@ opt_g(){
 opt_m(){
 	default=0
 	priority=$opt_p_val
-	if [[ "$priority" ]]; then
-		if [[ "$priority" -gt 200 ]]; then
+	if [ "$priority" ]; then
+		if [ "$priority" -gt 200 ]; then
 			priority=200
-		elif [[ "$priority" -lt 5 ]]; then
+		elif [ "$priority" -lt 5 ]; then
 			priority=5
 		fi
 	else
@@ -417,20 +424,20 @@ opt_m(){
 	renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
 	echo "checking for services..."
 	for i in $(pgrep ""); do
-		if [[ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "\<$(pgrep zygote)\>")" ]]; then
-			if [[ -e /proc/$i/oom_adj ]] && [[ "$(cat /proc/$i/oom_adj)" -lt 0 ]]; then
-				if [[ -e /proc/$i/task ]]; then
+		if [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "\<$(pgrep zygote)\>")" ]; then
+			if [ -e /proc/$i/oom_adj ] && [ "$(cat /proc/$i/oom_adj)" -lt 0 ]; then
+				if [ -e /proc/$i/task ]; then
 					success=0
 					for j in $(ls /proc/$i/task); do
 						renice $renice_val $j
 						stat=$(cat /proc/$i/task/$j/stat)
 						rm=${stat#*)}
 						nicelevel=$(echo $rm | cut -d' ' -f17)
-						if [[ "$nicelevel" -eq "$renice_val" ]]; then
+						if [ "$nicelevel" -eq "$renice_val" ]; then
 							success=$((success+1))
 						fi
 					done
-					if [[ "$(ls /proc/$i/task | wc -l)" -eq "$success" ]]; then
+					if [ "$(ls /proc/$i/task | wc -l)" -eq "$success" ]; then
 						echo "optimization successful on $(cat /proc/$i/comm)"
 					else
 						error=$((error+1))
@@ -440,14 +447,14 @@ opt_m(){
 			fi
 		fi
 	done
-	if [[ "$error" -gt 0 ]]; then
+	if [ "$error" -gt 0 ]; then
 		echo "total $error errors found."
 		return=1
 	else
 		echo "services optimization complete!"
 	fi
 	echo -n "cpulimit was set to "
-	if [[ "$default" -eq 1 ]]; then
+	if [ "$default" -eq 1 ]; then
 		echo "default by $priority%"
 	else
 		echo "$priority%"
@@ -459,18 +466,18 @@ opt_m(){
 # Advanced in-order execution
 Roll_Up(){
 	return=$?
-	if [[ "$return" -eq 0 ]]; then
+	if [ "$return" -eq 0 ]; then
 		return=0
 		skip=0
 		for i in $(seq -s ' $mslot' 0 6 | sed 's/^0//'); do
 			v=$(eval echo $i)
-			if [[ "$v" ]]; then
+			if [ "$v" ]; then
 				return=0
 				$v
-				if [[ "$v" != opt_p ]] && [[ "$v" != opt_t ]] && [[ "$v" != opt_x ]]; then
+				if [ "$v" != opt_p ] && [ "$v" != opt_t ] && [ "$v" != opt_x ]; then
 					echo
 				fi
-				if [[ "$return" -ge 1 ]] || [[ "$skip" -eq 1 ]]; then
+				if [ "$return" -ge 1 ] || [ "$skip" -eq 1 ]; then
 					return $return
 				fi
 			else
@@ -479,7 +486,7 @@ Roll_Up(){
 		done
 		for i in $(seq -s ' $fslot' 0 6 | sed 's/^0//'); do
 			v=$(eval echo $i)
-			if [[ "$v" ]]; then
+			if [ "$v" ]; then
 				return=0
 				$v
 				echo
@@ -496,11 +503,7 @@ Roll_Up(){
 
 # Parse user input.
 Magic_Parser(){
-	#did not touch anything else except local var.
-	#i can't find count, fcount in Roll_Up() so im localizing it here.
-	local i count fcount mode
-	
-	#export these to memory to share with Roll_Up()
+	# We export main instructions to memory for later check.
 	export opt_p=0
 	export opt_t=0
 	export opt_h=0
@@ -509,16 +512,16 @@ Magic_Parser(){
 	export opt_g=0
 	export opt_m=0
 	
-	#
+	# Parameters needed for Roll_Up
 	count=0
 	fcount=0
 
-	#leave it as blank.
+	# Extra instructions that must not have initial values
 	opt_p_val=
 	opt_t_val=
 	opt_x_val=
 
-	#error msgs.
+	# Error messages
 	sop_error="same operation not permitted"
 	val_error="requires a value"
 	num_error="requires a numerical value"
@@ -528,74 +531,64 @@ Magic_Parser(){
 	req_error="expects an argument"
 	lmt_error="out of range"
 	
-	#main loop.
-	if [[ ! "$1" ]]; then
+	if [ ! "$1" ]; then
 		return 1
 	fi
-	if [[ "$1" == 69 ]]; then
-		if [[ $(grep $ROOT_DIR /proc/mounts) ]]; then
-			mount -o remount,rw $ROOT_DIR
-			if [[ $(grep $ROOT_DIR /proc/mounts | grep rw) ]]; then
-				rm -f $BASE_LOCATION
-				if [[ ! -f $BASE_LOCATION ]]; then
-					echo "uninstall completed."
-					exit 0
-				fi
-			fi
-		fi
-	elif [[ "$1" == 1337 ]]; then
+	if [ "$1" == 69 ]; then
+		echo -e "\e[1;36mHi, zepp!:D\e[0m"
+	elif [ "$1" == 1337 ]; then
 		echo -e "\e[1;32myou ain't elite, \e[1;31mI AM.\e[0m"
 	fi
-	while [[ "$1" ]]; do
+	while [ "$1" ]; do
 		case $1 in
 			-p* | --priority*)
-				if [[ "$(echo $1 | grep '^-p')" ]]; then
+				if [ "$(echo $1 | grep '^-p')" ]; then
 					mode="-p"
 				else
 					mode="--priority"
 				fi
-				if [[ "$opt_p" -gt 0 ]]; then
+				if [ "$opt_p" -gt 0 ]; then
 					echo "$mode: $sop_error"
 					return 1
 				fi
 				fcount=$((fcount+1))
 				export mslot$fcount=opt_p
 				opt_p=$(($opt_p+1))
-				if [[ ! "$(echo $1 | sed 's/^'"$mode"'//')" ]]; then
-					if [[ "$2" ]]; then
+				if [ ! "$(echo $1 | sed 's/^'"$mode"'//')" ]; then
+					if [ "$2" ]; then
 						opt_p_val=$2
 					else
 						echo "$mode: $val_error"
 						return 1
 					fi
-					if [[ "$(echo $opt_p_val | grep '\.')" ]]; then
+					if [ "$(echo $opt_p_val | grep '\.')" ]; then
 						echo "$mode: $nfp_error"
 						return 1
 					fi
-					if [[ "$(echo $opt_p_val | grep '^-')" ]]; then
-						if [[ "$(echo $opt_p_val | sed 's/^-//; s/[0-9]*//g')" ]]; then
+					if [ "$(echo $opt_p_val | grep '^-')" ]; then
+						if [ "$(echo $opt_p_val | sed 's/^-//; s/[0-9]*//g')" ]; then
 							echo "$mode: $val_error"
 							return 1
 						fi
 					else
-						if [[ "$(echo $opt_p_val | sed 's/[0-9]*//g')" ]]; then
+						if [ "$(echo $opt_p_val | sed 's/[0-9]*//g')" ]; then
 							echo "$mode: $num_error"
 							return 1
 						fi
 					fi
 					shift
 				else
-					if [[ "$(echo $1 | sed 's/^'"$mode"'//' | grep '\.')" ]]; then
+					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep '\.')" ]; then
 						echo "$mode: $nfp_error"
 						return 1
 					fi
-					if [[ "$(echo $1 | sed 's/^'"$mode"'//' | grep '^-')" ]]; then
-						if [[ "$(echo $1 | sed 's/^'"$mode"'//; s/^-//; s/[0-9]*//g')" ]]; then
+					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep '^-')" ]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//; s/^-//; s/[0-9]*//g')" ]; then
 							echo "$mode: $val_error"
 							return 1
 						fi
 					else
-						if [[ "$(echo $1 | sed 's/^'"$mode"'//; s/[0-9]*//g')" ]]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//; s/[0-9]*//g')" ]; then
 							echo "$mode: $num_error"
 							return 1
 						fi
@@ -604,27 +597,27 @@ Magic_Parser(){
 				fi
 			;;
 			-t* | --time*)
-				if [[ "$(echo $1 | grep '^-t')" ]]; then
+				if [ "$(echo $1 | grep '^-t')" ]; then
 					mode="-t"
 				else
 					mode="--time"
 				fi
-				if [[ "$opt_t" -gt 0 ]]; then
+				if [ "$opt_t" -gt 0 ]; then
 					echo "$mode: $sop_error"
 					return 1
 				fi
 				fcount=$((fcount+1))
 				export mslot$fcount=opt_t
 				opt_t=$(($opt_t+1))
-				if [[ ! "$(echo $1 | sed 's/^'"$mode"'//')" ]]; then
+				if [ ! "$(echo $1 | sed 's/^'"$mode"'//')" ]; then
 					if [ "$2" ]; then
 						opt_t_val=$2
 					else
 						echo "$mode: $val_error"
 						return 1
 					fi
-					if [[ "$(echo $opt_t_val | grep '-')" ]]; then
-						if [[ "$(echo $opt_t_val | sed 's/^-//; s/[0-9]*//g; s/\.//')" ]]; then
+					if [ "$(echo $opt_t_val | grep '-')" ]; then
+						if [ "$(echo $opt_t_val | sed 's/^-//; s/[0-9]*//g; s/\.//')" ]; then
 							echo "$mode: $val_error"
 							return 1
 						else
@@ -632,20 +625,20 @@ Magic_Parser(){
 							return 1
 						fi
 					fi
-					if [[ "$(echo $opt_t_val | grep '\.')" ]]; then
-						if [[ "$(echo $opt_t_val | sed 's/[0-9]*//g; s/\.//')" ]]; then
+					if [ "$(echo $opt_t_val | grep '\.')" ]; then
+						if [ "$(echo $opt_t_val | sed 's/[0-9]*//g; s/\.//')" ]; then
 							echo "$mode: $num_error"
 							return 1
 						fi
 					fi
-					if [[ "$(echo $opt_t_val | sed 's/^-//; s/[0-9]*//g; s/\.//')" ]]; then
+					if [ "$(echo $opt_t_val | sed 's/^-//; s/[0-9]*//g; s/\.//')" ]; then
 						echo "$mode: $num_error"
 						return 1
 					fi
 					shift
 				else
-					if [[ "$(echo $1 | sed 's/^'"$mode"'//' | grep '-')" ]]; then
-						if [[ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/^-//; s/[0-9]*//g; s/\.//')" ]]; then
+					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep '-')" ]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/^-//; s/[0-9]*//g; s/\.//')" ]; then
 							echo "$mode: $num_error"
 							return 1
 						else
@@ -653,13 +646,13 @@ Magic_Parser(){
 							return 1
 						fi
 					fi
-					if [[ "$(echo $1 | sed 's/^'"$mode"'//' | grep '\.')" ]]; then
-						if [[ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/[0-9]*//g; s/\.//')" ]]; then
+					if [ "$(echo $1 | sed 's/^'"$mode"'//' | grep '\.')" ]; then
+						if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/[0-9]*//g; s/\.//')" ]; then
 							echo "$mode: $num_error"
 							return 1
 						fi
 					fi
-					if [[ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/^-//; s/[0-9]*//g; s/\.//')" ]]; then
+					if [ "$(echo $1 | sed 's/^'"$mode"'//' | sed 's/^-//; s/[0-9]*//g; s/\.//')" ]; then
 						echo "$mode: $num_error"
 						return 1
 					fi
@@ -667,21 +660,21 @@ Magic_Parser(){
 				fi
 			;;
 			-x* | --exit*)
-				if [[ "$(echo $1 | grep '^-x')" ]]; then
+				if [ "$(echo $1 | grep '^-x')" ]; then
 					mode="-x"
 				else
 					mode="--exit"
 				fi
-				if [[ "$opt_x" -gt 0 ]]; then
+				if [ "$opt_x" -gt 0 ]; then
 					echo "$mode: $sop_error"
 					return 1
 				fi
 				fcount=$((fcount+1))
 				export mslot$fcount=opt_x
 				opt_x=$(($opt_x+1))
-				if [[ ! "$(echo $1 | sed 's/^'"$mode"'//')" ]]; then
+				if [ ! "$(echo $1 | sed 's/^'"$mode"'//')" ]; then
 					if [ "$2" ]; then
-						if [[ ! "$(echo $2 | grep '^-')" ]]; then
+						if [ ! "$(echo $2 | grep '^-')" ]; then
 							opt_x_val=$2
 							shift
 						fi
@@ -691,21 +684,21 @@ Magic_Parser(){
 				fi
 			;;
 			*)
-				if [[ ! "$(echo $1 | sed 's/^-//')" ]]; then
+				if [ ! "$(echo $1 | sed 's/^-//')" ]; then
 					echo "$1: $arg_error"
 					return 1
 				fi
 				n=0
 				for i in $(echo $1 | sed 's/.\{1\}/& /g'); do
-					if [[ "$i" != "-" ]]; then
+					if [ "$i" != "-" ]; then
 						break
 					fi
 					n=$(($n+1))
 				done
-				if [[ "$n" -eq 1 ]]; then
-					if [[ ! "$(echo $1 | sed 's/^-//; s/[0-9]*//g; s/\.//')" ]]; then
-						if [[ "$opt_p" -gt 0 ]]; then
-							if [[ "$mode" ]]; then
+				if [ "$n" -eq 1 ]; then
+					if [ ! "$(echo $1 | sed 's/^-//; s/[0-9]*//g; s/\.//')" ]; then
+						if [ "$opt_p" -gt 0 ]; then
+							if [ "$mode" ]; then
 								echo "$mode: $sop_error"
 							else
 								echo "-p: $sop_error"
@@ -715,7 +708,7 @@ Magic_Parser(){
 						fcount=$((fcount+1))
 						export mslot$fcount=opt_p
 						opt_p=$(($opt_p+1))
-						if [[ "$(echo $1 | sed 's/^-//' | grep '\.')" ]]; then
+						if [ "$(echo $1 | sed 's/^-//' | grep '\.')" ]; then
 							echo "-p: $nfp_error"
 							return 1
 						fi
@@ -724,7 +717,7 @@ Magic_Parser(){
 						for i in $(echo $1 | sed 's/^-//; s/.\{1\}/& /g'); do
 							case $i in
 								h)
-									if [[ "$opt_h" -gt 0 ]]; then
+									if [ "$opt_h" -gt 0 ]; then
 										echo "-h: $sop_error"
 										return 1
 									fi
@@ -733,7 +726,7 @@ Magic_Parser(){
 									opt_h=$(($opt_h+1))
 								;;
 								k)
-									if [[ "$opt_k" -gt 0 ]]; then
+									if [ "$opt_k" -gt 0 ]; then
 										echo "-k: $sop_error"
 										return 1
 									fi
@@ -742,7 +735,7 @@ Magic_Parser(){
 									opt_k=$(($opt_k+1))
 								;;
 								g)
-									if [[ "$opt_g" -gt 0 ]]; then
+									if [ "$opt_g" -gt 0 ]; then
 										echo "-g: $sop_error"
 										return 1
 									fi
@@ -751,7 +744,7 @@ Magic_Parser(){
 									opt_g=$(($opt_g+1))
 								;;
 								m)
-									if [[ "$opt_m" -gt 0 ]]; then
+									if [ "$opt_m" -gt 0 ]; then
 										echo "-m: $sop_error"
 										return 1
 									fi
@@ -766,15 +759,15 @@ Magic_Parser(){
 							esac
 						done
 					fi
-				elif [[ "$n" -eq 2 ]]; then
-					if [[ ! "$(echo $1 | sed 's/^--//')" ]]; then
+				elif [ "$n" -eq 2 ]; then
+					if [ ! "$(echo $1 | sed 's/^--//')" ]; then
 						echo "$1: $arg_error"
 						return 1
 					else
 						for i in $(echo $1 | sed 's/^--//'); do
 							case $i in
 								help)
-									if [[ "$opt_h" -gt 0 ]]; then
+									if [ "$opt_h" -gt 0 ]; then
 										echo "--help: $sop_error"
 										return 1
 									fi
@@ -783,7 +776,7 @@ Magic_Parser(){
 									opt_h=$(($opt_h+1))
 								;;
 								kernel)
-									if [[ "$opt_k" -gt 0 ]]; then
+									if [ "$opt_k" -gt 0 ]; then
 										echo "--kernel: $sop_error"
 										return 1
 									fi
@@ -792,7 +785,7 @@ Magic_Parser(){
 									opt_k=$(($opt_k+1))
 								;;
 								grouping)
-									if [[ "$opt_g" -gt 0 ]]; then
+									if [ "$opt_g" -gt 0 ]; then
 										echo "--grouping: $sop_error"
 										return 1
 									fi
@@ -801,7 +794,7 @@ Magic_Parser(){
 									opt_g=$(($opt_g+1))
 								;;
 								mediaserver)
-									if [[ "$opt_m" -gt 0 ]]; then
+									if [ "$opt_m" -gt 0 ]; then
 										echo "--mediaserver: $sop_error"
 										return 1
 									fi
@@ -822,8 +815,8 @@ Magic_Parser(){
 				fi
 			;;
 		esac
-		if [[ "$opt_p_val" ]]; then
-			if [[ "$opt_p_val" -gt 200 ]] || [[ "$opt_p_val" -lt 5 ]]; then
+		if [ "$opt_p_val" ]; then
+			if [ "$opt_p_val" -gt 200 ] || [ "$opt_p_val" -lt 5 ]; then
 				echo "-p: $lmt_error"
 				return 1
 			fi
@@ -848,7 +841,7 @@ Usage(){
 # Main script
 
 # Allow users to bypass root check when necessary.
-if [[ "$1" == bypass ]]; then
+if [ "$1" == bypass ]; then
 	run_Superuser=no
 	shift
 fi
@@ -859,5 +852,4 @@ Roll_Up
 # End session.
 return=$?
 exit $return
-
 

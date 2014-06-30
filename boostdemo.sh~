@@ -149,17 +149,11 @@ renice value
 
 # AMS grouping manager
 launchseq(){
-	while true; do
-		for launcher in $(grep "<h\>" /data/system/appwidgets.xml | tr " " "\n" | grep pkg | sed 's/^pkg="//; s/"$//'); do
-			launcher_pid=$(pgrep $launcher)
-			if [ "$launcher_pid" ]; then
-				break
-			fi
-		done
+	for launcher in $(grep "<h\>" /data/system/appwidgets.xml | tr " " "\n" | grep pkg | sed 's/^pkg="//; s/"$//'); do
+		launcher_pid=$(pgrep $launcher)
 		if [ "$launcher_pid" ]; then
 			break
 		fi
-		sleep 1
 	done
 	launcher_adj=$(cat /proc/$launcher_pid/oom_adj)
 	heapalloc=$(($(getprop | grep dalvik.vm.heapsize | sed 's/\[dalvik.vm.heapsize]: \[//; s/m]//')*1024))
@@ -248,29 +242,4 @@ linked_file=$(ls -l $dir | grep $base | head -1 | awk '{print $'"$orig"'}')
 echo "$linked_file"
 
 
-#2014 new project
 
-#identifier
-for i in $(find /proc/*/task -maxdepth 1 | grep 'task/'); do
-	echo -n 'comm: '
-	cat $i/comm
-	echo -n 'wchan: '
-	cat $i/wchan
-	echo
-	chrt -p $(basename $i)
-	echo
-done
-
-#prototype
-renice 19 $$
-while true; do
-	for i in $(find /proc/*/task -maxdepth 1 | grep 'task/'); do
-		if [ $(grep sys_rt_sigtimedwait $i/wchan) 2>/dev/null ]; then
-			chrt -f -p 99 $(basename $i)
-		fi
-		if [ $(grep sys_epoll_wait $i/wchan) 2>/dev/null ]; then
-			chrt -r -p 1 $(basename $i)
-		fi
-	done
-	sleep 10
-done
