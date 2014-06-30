@@ -3,11 +3,13 @@
 run_Busybox_Applet_Generator=yes
 # Check Superuser.
 run_Superuser=yes
-until [[ "$1" != debug ]]&&[[ "$1" != bypass ]]; do
-	if [[ "$1" == debug ]]; then
+until [[ "$1" != verbose ]]&&[[ "$1" != supass ]]&&[[ "$1" != bbpass ]]; do
+	if [[ "$1" == verbose ]]; then
 		set -x
-	elif [[ "$1" == bypass ]]; then
+	elif [[ "$1" == supass ]]; then
 		readonly run_Superuser=no
+	elif [[ "$1" == bbpass ]]; then
+		readonly run_Busybox_Applet_Generator=no
 	fi
 	shift
 done
