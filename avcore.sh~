@@ -469,7 +469,7 @@ opt_g(){
 		2)prototype
 	which grouping engine do you wish to run?:"
 	read i
-	case $i in
+	case i in
 		1 | autogen)
 			return 1
 			if [[ "$(getprop $BASE_NAME.autogen)" == true ]]; then
