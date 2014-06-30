@@ -3,7 +3,7 @@ BASE_NAME=$(basename $0)
 DIR_NAME=$(dirname $(which $BASE_NAME))
 FULL_NAME=$(echo $DIR_NAME/$BASE_NAME)
 print_PARTIAL_DIR_NAME(){
-	echo $(echo $DIR_NAME | tr -s / \\n | head -n$(($1+1))	| tr -s \\n /)
+	echo $(echo $DIR_NAME | tr -s / \\n | head -n$(($1+1))	| tr -s \\n / | sed 's/\/$//')
 }
 ROOT_DIR=$(print_PARTIAL_DIR_NAME 1)
 # avcore.sh
@@ -533,11 +533,13 @@ Magic_Parser(){
 		return 1
 	fi
 	if [[ "$1" == 69 ]]; then
-		if [[ $(grep $ROOT_DIR /proc/mounts) ]]; then
-			mount -o remount,rw $ROOT_DIR
-			if [[ $(grep $ROOT_DIR /proc/mounts | grep rw) ]]; then
-				rm -f $BASE_LOCATION
-				if [[ ! -f $BASE_LOCATION ]]; then
+		mountstat=$(grep $ROOT_DIR /proc/mounts | head -n1)
+		mountdev=$(echo $mountstat | awk '{print $1}')
+		if [[ "$mountstat" ]]; then
+			mount -o remount,rw $mountdev $ROOT_DIR
+			if [[ "$(echo $mountstat | grep rw)" ]]; then
+				rm $BASE_LOCATION
+				if [[ ! -f "$BASE_LOCATION" ]]; then
 					echo "uninstall completed."
 					exit 0
 				fi
