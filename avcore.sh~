@@ -538,8 +538,8 @@ Magic_Parser(){
 		if [[ "$mountstat" ]]; then
 			mount -o remount,rw $mountdev $ROOT_DIR
 			if [[ "$(echo $mountstat | grep rw)" ]]; then
-				rm $BASE_LOCATION
-				if [[ ! -f "$BASE_LOCATION" ]]; then
+				rm $FULL_NAME
+				if [[ ! -f "$FULL_NAME" ]]; then
 					echo "uninstall completed."
 					exit 0
 				fi

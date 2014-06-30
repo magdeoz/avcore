@@ -49,7 +49,7 @@ set +e
 
 # Custom settings for session behaviour
 # Check Busybox Applet Generator 2.3.
-run_Busybox_Applet_Generator=no
+run_Busybox_Applet_Generator=yes
 # Check Superuser.
 run_Superuser=yes
 
@@ -319,6 +319,7 @@ launchseq(){
 	export launcher_adj=$(cat /proc/$launcher_pid/oom_adj)
 	export heapalloc=$(($(getprop | grep dalvik.vm.heapsize | sed 's/\[dalvik.vm.heapsize]: \[//; s/m]//')*1024))
 }
+
 autogen(){
 	while true; do
 		if [[ "$(($(grep -i "^Cached:" /proc/meminfo | awk '{print $2}')+$(grep -i "^Memfree:" /proc/meminfo | awk '{print $2}')))" -lt "$heapalloc" ]]; then
@@ -351,6 +352,7 @@ autogen(){
 		sleep $1
 	done 2>/dev/null
 }
+
 loopcheck(){
 	renice 19 $$
 	setprop $BASE_NAME.autogen true
@@ -373,6 +375,88 @@ loopcheck(){
 		sleep 5
 	done
 }
+
+prototype(){
+	local fifo_sched_pid normal_sched_pid
+	setprop $BASE_NAME.prototype true
+	fifo_sched $1 & fifo_sched_pid=$!
+	normal_sched $1 & normal_sched_pid=$!
+	while true; do
+		if [[ ! "$(find /proc/[0-9]*/task/$fifo_sched_pid)" ]] || [[ ! "$(find /proc/[0-9]*/task/$normal_sched_pid)" ]]; then
+			return 1
+		fi
+		if [[ "$(getprop $BASE_NAME.prototype)" == false ]] || [[ "$(getprop $BASE_NAME.prototype)" == terminated ]]; then
+			setprop $BASE_NAME.prototype terminated
+			kill -9 $fifo_sched_pid
+			kill -9 $normal_sched_pid
+			return 0
+		fi
+		sleep 5
+	done
+}
+
+fifo_sched(){
+	local i adj mode score tested final n
+	while true; do
+		for i in $(find /proc/[0-9]*/task -maxdepth 1 | grep 'task/'); do
+			adj=$(cat $i/oom_adj)
+			if [[ "$adj" -eq 0 ]]; then
+				let "mode=2**$adj"
+				score=$(($(cat $i/oom_score)/$mode))
+				if [[ ! "$tested" ]]; then
+					tested=$score
+					continue
+				fi
+				if [[ "$score" -gt "$tested" ]]; then
+					tested=$score
+				fi
+			fi
+		done
+		for i in $(find /proc/[0-9]*/task -maxdepth 1 | grep 'task/'); do
+			adj=$(cat $i/oom_adj)
+			if [[ "$adj" -eq 0 ]]; then
+				let "mode=2**$adj"
+				score=$(($(cat $i/oom_score)/$mode))
+				final=$(($score*100/$tested))
+				if [[ "$final" -lt 1 ]]; then
+					final=1
+				elif [[ "$final" -gt 99 ]]; then
+					final=99
+				fi
+				chrt -f -p $final $(basename $i)
+			fi
+		done
+		sleep $1
+	done
+}
+
+normal_sched(){
+	local i adj n j
+	while true; do
+		n=0
+		for i in $(find /proc/[0-9]*/task -maxdepth 1 | grep 'task/'); do
+			adj=$(cat $i/oom_adj)
+			if [[ "$adj" -eq 0 ]]; then
+				n=$((n+1))
+				export slot$n=$(basename $i)
+			fi
+		done
+		for j in $(seq -s ' $slot' 0 $n | sed '/^0//'); do
+			v=$(eval echo $j)
+			for i in $(find /proc/[0-9]*/task -maxdepth 1 | grep 'task/'); do
+				if [[ "$v" == "$(basename $i)" ]]; then
+					adj=$(cat $i/oom_adj)
+					if [[ "$adj" -ne 0 ]]; then
+						chrt -o -p 0 $(basename $i)
+					fi
+					break
+				fi
+			done
+		done
+		sleep $1
+	done	
+}
+
 opt_g(){
 	interval_default=0
 	interval=$opt_t_val
@@ -380,15 +464,36 @@ opt_g(){
 		interval_default=1
 		interval=5
 	fi
-	if [[ "$(getprop $BASE_NAME.autogen)" == true ]]; then
-		echo "killing previous forked AMS grouping manager..."
-		opt_x autogen
-		echo "re-forking AMS grouping manager..."
-	else
-		echo "forking AMS grouping manager..."
-	fi
-	loopcheck $interval &
-	echo "new codename for this service is \"autogen\". you can type \"[program name] -x autogen\" in terminal whenever you want to stop the service."
+	echo -n "currently, there are two engines available in this program.
+		1)autogen
+		2)prototype
+	which grouping engine do you wish to run?:"
+	read i
+	case i in
+		1 | autogen)
+			return 1
+			if [[ "$(getprop $BASE_NAME.autogen)" == true ]]; then
+				echo "killing previous forked autogen..."
+				opt_x autogen
+				echo "re-forking autogen..."
+			else
+				echo "forking autogen..."
+			fi
+			autogen $interval &
+			echo "new codename for this service is \"autogen\". you can type \"[program name] -x autogen\" in terminal whenever you want to stop the service."
+		;;
+		2 | prototype)
+			if [[ "$(getprop $BASE_NAME.prototype)" == true ]]; then
+				echo "killing previous forked prototype..."
+				opt_x prototype
+				echo "re-forking prototype..."
+			else
+				echo "forking prototype..."
+			fi
+			prototype $interval &
+			echo "new codename for this service is \"prototype\". you can type \"[program name] -x prototype\" in terminal whenever you want to stop the service."
+		;;
+	esac
 	echo -n "refresh rate interval was set to "
 	if [[ "$interval_default" -eq 1 ]]; then
 		echo "default by $interval seconds"
