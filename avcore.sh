@@ -1,11 +1,24 @@
-CLIPPER_VERSION="0.0.5 alpha"
-BASE_NAME=$(basename $0)
-DIR_NAME=$(dirname $(which $BASE_NAME))
-FULL_NAME=$(echo $DIR_NAME/$BASE_NAME)
+# Custom settings for session behaviour
+# Check Busybox Applet Generator 2.3.
+run_Busybox_Applet_Generator=yes
+# Check Superuser.
+run_Superuser=yes
+until [[ "$1" != debug ]]&&[[ "$1" != bypass ]]; do
+	if [[ "$1" == debug ]]; then
+		set -x
+	elif [[ "$1" == bypass ]]; then
+		declare -r run_Superuser=no
+	fi
+	shift
+done
+declare -r CLIPPER_VERSION="0.0.5 alpha"
+declare -r BASE_NAME=$(basename $0)
+declare -r DIR_NAME=$(dirname $(which $BASE_NAME))
+declare -r FULL_NAME=$(echo $DIR_NAME/$BASE_NAME)
 print_PARTIAL_DIR_NAME(){
 	echo $(echo $DIR_NAME | tr -s / \\n | head -n$(($1+1))	| tr -s \\n / | sed 's/\/$//')
 }
-ROOT_DIR=$(print_PARTIAL_DIR_NAME 1)
+declare -r ROOT_DIR=$(print_PARTIAL_DIR_NAME 1)
 # avcore.sh
 #
 # Copyright (C) 2013-2014  hoholee12@naver.com
@@ -44,14 +57,6 @@ ROOT_DIR=$(print_PARTIAL_DIR_NAME 1)
 #if you'd like to help, please contact me via e-mail.
 
 set +e
-# Un-comment out the following line to enable debugging.
-#set -x
-
-# Custom settings for session behaviour
-# Check Busybox Applet Generator 2.3.
-run_Busybox_Applet_Generator=yes
-# Check Superuser.
-run_Superuser=yes
 
 # Busybox Applet Generator 2.3
 # You can type in any commands you would want it to check.
@@ -954,11 +959,6 @@ Usage(){
 
 # Main script
 
-# Allow users to bypass root check when necessary.
-if [[ "$1" == bypass ]]; then
-	run_Superuser=no
-	shift
-fi
 Roll_Down
 Magic_Parser $@
 Roll_Up
