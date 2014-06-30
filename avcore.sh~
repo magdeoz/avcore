@@ -1,14 +1,15 @@
+#!/bin/bash
 # Custom settings for session behaviour
 # Check Busybox Applet Generator 2.3.
 run_Busybox_Applet_Generator=yes
 # Check Superuser.
 run_Superuser=yes
-until [[ "$1" != verbose ]] && [[ "$1" != supass ]] && [[ "$1" != bbpass ]]; do
+until [[ "$1" != verbose ]]&&[[ "$1" != supass ]]&&[[ "$1" != bbpass ]]; do
 	if [[ "$1" == verbose ]]; then
 		set -x
-	elif [[ "$1" == supass ]] && [[ "$run_Superuser" != no ]]; then
+	elif [[ "$1" == supass ]]; then
 		readonly run_Superuser=no
-	elif [[ "$1" == bbpass ]] && [[ "$run_Busybox_Applet_Generator" != no ]]; then
+	elif [[ "$1" == bbpass ]]; then
 		readonly run_Busybox_Applet_Generator=no
 	fi
 	shift
@@ -64,7 +65,8 @@ set +e
 # You can type in any commands you would want it to check.
 # It will start by checking from cmd1, and its limit is up to cmd224.
 cmd1=renice
-cmd2=mount
+cmd2=pgrep
+cmd3=mount
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 # This feature might not be compatible with some other multi-call binaries.
 Busybox_Applet_Generator(){
@@ -403,7 +405,6 @@ prototype(){
 
 fifo_sched(){
 	local i adj mode score tested final n
-	trap 'exit' SIGKILL
 	while true; do
 		for i in $(find /proc/[0-9]*/task -maxdepth 1 | grep 'task/'); do
 			adj=$(cat $i/oom_adj)
@@ -439,7 +440,6 @@ fifo_sched(){
 
 normal_sched(){
 	local i adj n j
-	trap 'exit' SIGKILL
 	while true; do
 		n=0
 		for i in $(find /proc/[0-9]*/task -maxdepth 1 | grep 'task/'); do
