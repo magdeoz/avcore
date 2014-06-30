@@ -1,5 +1,5 @@
 # Custom settings for session behaviour
-# Check Busybox Applet Generator 2.4.
+# Check Busybox Applet Generator 2.3.
 run_Busybox_Applet_Generator=yes
 # Check Superuser.
 run_Superuser=yes
@@ -54,46 +54,24 @@ readonly ROOT_DIR=$(print_PARTIAL_DIR_NAME 1)
 #       - revamped Busybox Applet Generator 2.3.
 #		- the code has undergone a massive diet. :-)
 #		- removed gpl license.
-#		- busybox applet generator improved, new 2.4 update!
-#		- readded kernel driver management utility.
 
 #i am now back from the dead and i cant remember anything about this code, so i need help from someone who could read and verify it for me. :-(
 #if you'd like to help, please contact me via e-mail.
 
 set +e
 
-# Busybox Applet Generator 2.4
+# Busybox Applet Generator 2.3
 # You can type in any commands you would want it to check.
 # It will start by checking from cmd1, and its limit is up to cmd224.
 cmd1=renice
 cmd2=mount
-cmd3=pgrep
-cmd4=busybox #lol
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 # This feature might not be compatible with some other multi-call binaries.
-# if similar applets are found and Busybox do not have them, it will still continue but leave out some error messages regarding compatibility issues.
 Busybox_Applet_Generator(){
 	local n i busyboxloc busyboxenv cmd
-	if [[ ! "$(busybox)" ]]; then #allow non-Busybox users to continue.
-		echo "Busybox does not exist! Busybox is required for best compatibility!"
-		if [[ "$cmd" ]]; then
-			if [[ "$cmd" -lt 0 ]]; then
-				cmd=0
-			fi
-		else
-			cmd=224
-		fi
-		for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
-			v=$(eval echo $i)
-			if [[ "$v" ]]; then
-				if [[ ! "$(which "\<$v\>")" ]]; then
-					echo "required applet: $v does not exist!"
-					fail=1 #fail later
-				fi
-			else
-				break #reduce cycle
-			fi
-		done
+	if [[ ! "$(busybox)" ]]; then
+		echo "Failed to locate busybox!"
+		return 1
 	else
 		busyboxloc=$(dirname $(which busybox))
 		n=0
@@ -124,25 +102,17 @@ Busybox_Applet_Generator(){
 			v=$(eval echo $i)
 			if [[ "$v" ]]; then
 				if [[ ! "$(busybox | grep "\<$v\>")" ]]; then
-					echo -n "required applet: $v not embedded in Busybox!"
-					if [[ ! "$(which "\<$v\>")" ]]; then
-						echo "...and also does not exist!"
-						fail=1 #fail later
-					else
-						echo
-					fi
+					echo "This program needs the following applet to run: $v"
+					return 1
 				fi
 				if [[ ! -e "$busyboxloc"/"$v" ]]; then
 					alias $i="busybox $i"
 				fi
 			else
-				break #reduce cycle
+				break
 			fi
 		done
 	fi 2>/dev/null
-	if [[ "$fail" == 1 ]]; then #the fail manager!
-		return 1
-	fi
 }
 
 # Check Superuser.
@@ -236,9 +206,9 @@ HOW TO USE -x:
 	if you dont know the name of the process you're trying to kill, just type -x.
 
 OTHER PARAMETERS:
-	-k or --kernel is a kernel driver management utility.
-	it will tune your kernel driver processes to save more resources,
-	and try to give more of those to the poor ones.
+	-k or --kernel is a utility for optimizing direct I/O calls.
+	the purpose of this utility is to attempt delay on non-buffering I/O(or direct I/O), in order to prevent certain I/O hangs.
+	it may fix mediaserver audio stutter issue from earlier Android 2.3.x builds.
 
 	-g or --grouping is a AMS process grouping utility.
 
@@ -298,76 +268,51 @@ opt_x(){
 	fi
 }
 
-# Kernel driver management utility
+# Direct I/O call optimizer
 opt_k(){
 	default=0
-	kernel_priority=100
-	driver_priority=$opt_p_val
-	if [ "$driver_priority" ]; then
-		if [ "$driver_priority" -gt 200 ]; then
-			driver_priority=200
-		elif [ "$driver_priority" -lt 5 ]; then
-			driver_priority=5
+	priority=$opt_p_val
+	if [[ "$priority" ]]; then
+		if [[ "$priority" -gt 200 ]]; then
+			priority=200
+		elif [[ "$priority" -lt 5 ]]; then
+			priority=5
 		fi
 	else
 		default=1
-		driver_priority=50
+		priority=5
 	fi
-	noerror=0
 	error=0
-	renice_val=$(echo $kernel_priority | awk '{printf "%.0f\n", 20-$1/5}')
-	renice_val2=$(echo $driver_priority | awk '{printf "%.0f\n", 20-$1/5}')
-	echo "looking for kernel drivers..."
-	for i in $(pgrep "" | grep -v $(pgrep zygote)); do
-		if [ -f /proc/$i/status ] && [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^2$")" ]; then
-			if [ "$(grep "^worker_thread$" /proc/$i/wchan)" ]; then
+	renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
+	echo "looking through direct I/O calls..."
+	for i in $(pgrep ""); do
+		if [[ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "\<2\>")" ]]; then
+			if [[ "$(grep -i "dio" /proc/$i/comm)" ]]; then
 				renice $renice_val $i
-			fi
-		elif [ -f /proc/$i/status ] && [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^1$")" ]; then
-			if [ ! "$(grep "^binder_thread_read$" /proc/$i/wchan)" ]; then
-				renice $renice_val2 $i
-			fi
-		fi
-	done
-	echo "final checking..."
-	for i in $(pgrep "" | grep -v $(pgrep zygote)); do
-		if [ -f /proc/$i/status ] && [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^2$")" ]; then
-			if [ "$(grep "^worker_thread$" /proc/$i/wchan)" ]; then
-				if [ "$(cut -d " " -f 19 /proc/$i/stat)" -eq "$renice_val" ]; then
-					noerror=$(($noerror+1))
-				else
-					error=$(($error+1))
-				fi
-			fi
-		elif [ -f /proc/$i/status ] && [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^1$")" ]; then
-			if [ ! "$(grep "^binder_thread_read$" /proc/$i/wchan)" ]; then
-				if [ "$(cut -d " " -f 19 /proc/$i/stat)" -eq "$renice_val2" ]; then
-					noerror=$(($noerror+1))
-				else
-					error=$(($error+1))
+				stat=$(cat /proc/$i/stat)
+				rm=${stat#*)}
+				nicelevel=$(echo $rm | cut -d' ' -f17)
+				if [[ "$nicelevel" -ne "$renice_val" ]]; then
+					error=$((error+1))
 				fi
 			fi
 		fi
 	done
-	if [ "$error" -ne 0 ]; then
-		if [ "$noerror" -ne 0 ]; then
-			echo "$noerror kernel drivers have been successfully modified."
-		fi
-		echo "$error kernel drivers modification have been failed."
+	if [[ "$error" -gt 0 ]]; then
+		echo "total $error errors found."
 		return=1
 	else
-		echo "all $noerror kernel drivers have been successfully modified."
+		echo "direct I/O call optimization complete!"
 	fi
 	echo -n "cpulimit was set to "
-	if [ "$default" -eq 1 ]; then
-		echo "default by $driver_priority%"
+	if [[ "$default" -eq 1 ]]; then
+		echo "default by $priority%"
 	else
-		echo "$driver_priority%"
+		echo "$priority%"
 	fi
 	echo
-	echo "kernel driver management utility last run on $(date)"
+	echo "direct I/O call optimizer last run on $(date)"
 }
-
 
 # AMS grouping manager
 launchseq(){
@@ -1008,7 +953,7 @@ Usage(){
 	-p | --priority) for master priority control set.
 	-t | --time) for master interval control set.
 	-x | --exit) ends the spawned process.
-	-k | --kernel) runs kernel driver management utility.
+	-k | --kernel) runs direct I/O call optimizer.
 	-g | --grouping) launchs AMS process grouping utility.
 	-m | --mediaserver) runs services optimizer.
 	type -h or --help for more description.
