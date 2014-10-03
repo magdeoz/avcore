@@ -39,8 +39,9 @@ cmd5=head
 cmd6=awk
 cmd7=cat
 cmd8=pgrep
-cmd9=ps
-cmd=9 # It notifies the generator how many cmds are available for check. Leave it as blank.
+cmd9=cd
+cmd10=ps
+cmd=10 # It notifies the generator how many cmds are available for check. Leave it as blank.
 
 silent_mode=1 # enabling this will hide errors.
 # This feature might not be compatible with some other multi-call binaries.
