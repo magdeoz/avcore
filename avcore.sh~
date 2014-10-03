@@ -52,11 +52,10 @@ readonly ROOT_DIR=$(print_PARTIAL_DIR_NAME 1)
 #       - edited help() page.
 #       - revamped AMS grouping manager.
 #       - revamped Busybox Applet Generator 2.3.
-#       - the code has undergone a massive diet. :-)
-#       - removed gpl license.
-#       - busybox applet generator improved, new 2.4 update!
-#       - readded kernel driver management utility.
-#       - added silent_mode for busybox applet generator.
+#		- the code has undergone a massive diet. :-)
+#		- removed gpl license.
+#		- busybox applet generator improved, new 2.4 update!
+#		- readded kernel driver management utility.
 
 #i am now back from the dead and i cant remember anything about this code, so i need help from someone who could read and verify it for me. :-(
 #if you'd like to help, please contact me via e-mail.
@@ -71,16 +70,12 @@ cmd2=mount
 cmd3=pgrep
 cmd4=busybox #lol
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
-
-silent_mode=0 # enabling this will hide errors.
 # This feature might not be compatible with some other multi-call binaries.
 # if similar applets are found and Busybox do not have them, it will still continue but leave out some error messages regarding compatibility issues.
 Busybox_Applet_Generator(){
-	local n i busyboxloc busyboxenv fail
+	local n i busyboxloc busyboxenv cmd
 	if [[ ! "$(busybox)" ]]; then #allow non-Busybox users to continue.
-		if [[ "$silent_mode" == 0 ]]; then
-			echo "Busybox does not exist! Busybox is required for best compatibility!"
-		fi
+		echo "Busybox does not exist! Busybox is required for best compatibility!"
 		if [[ "$cmd" ]]; then
 			if [[ "$cmd" -lt 0 ]]; then
 				cmd=0
@@ -92,9 +87,7 @@ Busybox_Applet_Generator(){
 			v=$(eval echo $i)
 			if [[ "$v" ]]; then
 				if [[ ! "$(which "\<$v\>")" ]]; then
-					if [[ "$silent_mode" == 0 ]]; then
-						echo "required applet: $v does not exist!"
-					fi
+					echo "required applet: $v does not exist!"
 					fail=1 #fail later
 				fi
 			else
@@ -131,13 +124,9 @@ Busybox_Applet_Generator(){
 			v=$(eval echo $i)
 			if [[ "$v" ]]; then
 				if [[ ! "$(busybox | grep "\<$v\>")" ]]; then
-					if [[ "$silent_mode" == 0 ]]; then
-						echo -n "required applet: $v not embedded in Busybox!"
-					fi
+					echo -n "required applet: $v not embedded in Busybox!"
 					if [[ ! "$(which "\<$v\>")" ]]; then
-						if [[ "$silent_mode" == 0 ]]; then
-							echo "...and also does not exist!"
-						fi
+						echo "...and also does not exist!"
 						fail=1 #fail later
 					else
 						echo

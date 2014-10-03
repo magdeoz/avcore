@@ -1,16 +1,9 @@
 # chklnk.sh
 #
-# Copyright (C) 2013  hoholee12@naver.com
+# Copyright (C) 2013-2014  hoholee12@naver.com
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Everyone is permitted to copy and distribute verbatim copies
+# of this code, but changing it is not allowed.
 #
 # Changelogs:
 # alpha version
@@ -18,7 +11,7 @@
 # 0.0.2 - permission error support added.
 #       - revamped return command.
 set +e
-# Busybox Applet Generator 2.3
+# Busybox Applet Generator 2.4
 # You can type in any commands you would want it to check.
 # It will start by checking from cmd1, and its limit is up to cmd224.
 cmd1=dirname
@@ -27,33 +20,23 @@ cmd3=ls
 cmd4=grep
 cmd5=head
 cmd6=awk
-cmd=6 # It notifies the generator how many cmds are available for check. Leave it as blank.
+cmd7=cat
+cmd8=pgrep
+cmd9=cd
+cmd10=ps
+cmd=10 # It notifies the generator how many cmds are available for check. Leave it as blank.
+
+silent_mode=1 # enabling this will hide errors.
 # This feature might not be compatible with some other multi-call binaries.
+# if similar applets are found and Busybox do not have them, it will still continue but leave out some error messages regarding compatibility issues.
 Busybox_Applet_Generator(){
-	if [ ! "$(busybox)" ]; then
-		echo "Failed to locate busybox!"
-		return 127
-	else
-		busyboxloc=$(dirname $(which busybox))
-		n=0
-		for i in $(echo $PATH | sed 's/:/ /g'); do
-			n=$(($n+1))
-			export slot$n=$i
-			if [ "$i" == "$busyboxloc" ]; then
-				busyboxenv=slot$n
-			fi
-		done
-		if [ "$busyboxenv" != slot1 ]; then
-			export PATH=$(echo -n $busyboxloc
-			for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
-				v=$(eval echo $i)
-				if [ "$v" != "$busyboxloc" ]; then
-					echo -n ":$v"
-				fi
-			done)
+	local n i busyboxloc busyboxenv fail
+	if [[ ! "$(busybox)" ]]; then #allow non-Busybox users to continue.
+		if [[ "$silent_mode" == 0 ]]; then
+			echo "Busybox does not exist! Busybox is required for best compatibility!"
 		fi
-		if [ "$cmd" ]; then
-			if [ "$cmd" -lt 0 ]; then
+		if [[ "$cmd" ]]; then
+			if [[ "$cmd" -lt 0 ]]; then
 				cmd=0
 			fi
 		else
@@ -61,19 +44,70 @@ Busybox_Applet_Generator(){
 		fi
 		for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
 			v=$(eval echo $i)
-			if [ "$v" ]; then
-				if [ ! "$(busybox | grep "\<$v\>")" ]; then
-					echo "This program needs the following applet to run: $v"
-					return 127
+			if [[ "$v" ]]; then
+				if [[ ! "$(which "\<$v\>")" ]]; then
+					if [[ "$silent_mode" == 0 ]]; then
+						echo "required applet: $v does not exist!"
+					fi
+					fail=1 #fail later
 				fi
-				if [ ! -e "$busyboxloc"/"$v" ]; then
+			else
+				break #reduce cycle
+			fi
+		done
+	else
+		busyboxloc=$(dirname $(which busybox))
+		n=0
+		for i in $(echo $PATH | sed 's/:/ /g'); do
+			n=$(($n+1))
+			export slot$n=$i
+			if [[ "$i" == "$busyboxloc" ]]; then
+				busyboxenv=slot$n
+			fi
+		done
+		if [[ "$busyboxenv" != slot1 ]]; then
+			export PATH=$(echo -n $busyboxloc
+			for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
+				v=$(eval echo $i)
+				if [[ "$v" != "$busyboxloc" ]]; then
+					echo -n ":$v"
+				fi
+			done)
+		fi
+		if [[ "$cmd" ]]; then
+			if [[ "$cmd" -lt 0 ]]; then
+				cmd=0
+			fi
+		else
+			cmd=224
+		fi
+		for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
+			v=$(eval echo $i)
+			if [[ "$v" ]]; then
+				if [[ ! "$(busybox | grep "\<$v\>")" ]]; then
+					if [[ "$silent_mode" == 0 ]]; then
+						echo -n "required applet: $v not embedded in Busybox!"
+					fi
+					if [[ ! "$(which "\<$v\>")" ]]; then
+						if [[ "$silent_mode" == 0 ]]; then
+							echo "...and also does not exist!"
+						fi
+						fail=1 #fail later
+					else
+						echo
+					fi
+				fi
+				if [[ ! -e "$busyboxloc"/"$v" ]]; then
 					alias $i="busybox $i"
 				fi
 			else
-				break
+				break #reduce cycle
 			fi
 		done
 	fi 2>/dev/null
+	if [[ "$fail" == 1 ]]; then #the fail manager!
+		return 1
+	fi
 }
 Busybox_Applet_Generator
 return=$?
