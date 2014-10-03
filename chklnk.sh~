@@ -110,9 +110,7 @@ Busybox_Applet_Generator(){
 						fi
 						fail=1 #fail later
 					else
-						if [[ "$silent_mode" == 0 ]]; then
-							echo
-						fi
+						echo
 					fi
 				fi
 				if [[ ! -e "$busyboxloc"/"$v" ]]; then
