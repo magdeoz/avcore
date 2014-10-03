@@ -1,18 +1,3 @@
-# Custom settings for session behaviour
-# Check Busybox Applet Generator 2.4.
-run_Busybox_Applet_Generator=yes
-# Check Superuser.
-run_Superuser=no
-until [[ "$1" != verbose ]] && [[ "$1" != supass ]] && [[ "$1" != bbpass ]]; do
-	if [[ "$1" == verbose ]]; then
-		set -x
-	elif [[ "$1" == supass ]] && [[ "$run_Superuser" != no ]]; then
-		readonly run_Superuser=no
-	elif [[ "$1" == bbpass ]] && [[ "$run_Busybox_Applet_Generator" != no ]]; then
-		readonly run_Busybox_Applet_Generator=no
-	fi
-	shift
-done
 # chklnk.sh
 #
 # Copyright (C) 2013-2014  hoholee12@naver.com
@@ -25,9 +10,7 @@ done
 # 0.0.1 - first release
 # 0.0.2 - permission error support added.
 #       - revamped return command.
-
-set +e #error proof
-
+set +e
 # Busybox Applet Generator 2.4
 # You can type in any commands you would want it to check.
 # It will start by checking from cmd1, and its limit is up to cmd224.
@@ -62,7 +45,7 @@ Busybox_Applet_Generator(){
 		for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
 			v=$(eval echo $i)
 			if [[ "$v" ]]; then
-				if [[ ! "$(which $v)" ]]; then
+				if [[ ! "$(which "\<$v\>")" ]]; then
 					if [[ "$silent_mode" == 0 ]]; then
 						echo "required applet: $v does not exist!"
 					fi
@@ -105,7 +88,7 @@ Busybox_Applet_Generator(){
 					if [[ "$silent_mode" == 0 ]]; then
 						echo -n "required applet: $v not embedded in Busybox!"
 					fi
-					if [[ ! "$(which $v)" ]]; then
+					if [[ ! "$(which "\<$v\>")" ]]; then
 						if [[ "$silent_mode" == 0 ]]; then
 							echo "...and also does not exist!"
 						fi
@@ -126,34 +109,11 @@ Busybox_Applet_Generator(){
 		return 1
 	fi
 }
-
-# Check Superuser.
-Superuser(){
-	if [[ "$(grep -i "^Uid:" /proc/$$/status | awk '{print $2}')" != 0 ]]; then
-		echo "Permission denied, are you root?"
-		return 1
-	fi
-}
-
-# Session behaviour
-Roll_Down(){
-	local return
-	if [[ "$run_Busybox_Applet_Generator" == yes ]]; then
-		Busybox_Applet_Generator
-		return=$?
-		if [[ "$return" -ne 0 ]]; then
-			exit $return
-		fi
-	fi
-	if [[ "$run_Superuser" == yes ]]; then
-		Superuser
-		return=$?
-		if [[ "$return" -ne 0 ]]; then
-			exit $return
-		fi
-	fi
-}
-Roll_Down
+Busybox_Applet_Generator
+return=$?
+if [ "$return" != 0 ]; then
+	exit $return
+fi
 
 # Main script
 if [ ! "$1" ]; then

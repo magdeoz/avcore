@@ -58,7 +58,10 @@ readonly ROOT_DIR=$(print_PARTIAL_DIR_NAME 1)
 #       - readded kernel driver management utility.
 #       - added silent_mode for busybox applet generator.
 
-set +e #error proof
+#i am now back from the dead and i cant remember anything about this code, so i need help from someone who could read and verify it for me. :-(
+#if you'd like to help, please contact me via e-mail.
+
+set +e
 
 # Busybox Applet Generator 2.4
 # You can type in any commands you would want it to check.
@@ -88,7 +91,7 @@ Busybox_Applet_Generator(){
 		for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
 			v=$(eval echo $i)
 			if [[ "$v" ]]; then
-				if [[ ! "$(which $v)" ]]; then
+				if [[ ! "$(which "\<$v\>")" ]]; then
 					if [[ "$silent_mode" == 0 ]]; then
 						echo "required applet: $v does not exist!"
 					fi
@@ -131,7 +134,7 @@ Busybox_Applet_Generator(){
 					if [[ "$silent_mode" == 0 ]]; then
 						echo -n "required applet: $v not embedded in Busybox!"
 					fi
-					if [[ ! "$(which $v)" ]]; then
+					if [[ ! "$(which "\<$v\>")" ]]; then
 						if [[ "$silent_mode" == 0 ]]; then
 							echo "...and also does not exist!"
 						fi
