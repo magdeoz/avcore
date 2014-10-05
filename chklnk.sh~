@@ -25,7 +25,6 @@ done
 # 0.0.1 - first release
 # 0.0.2 - permission error support added.
 #       - revamped return command.
-#       - some codes borrowed from avcore.sh
 
 set +e #error proof
 
@@ -125,7 +124,6 @@ Busybox_Applet_Generator(){
 		done
 	fi 2>/dev/null
 	if [[ "$fail" == 1 ]]; then #the fail manager!
-		echo -e "process terminated. \e[1;31m\"error code 1\"\e[0m"
 		return 1
 	fi
 }
