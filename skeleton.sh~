@@ -18,7 +18,7 @@ until [[ "$1" != verbose ]] && [[ "$1" != supass ]] && [[ "$1" != bbpass ]] && [
 	fi
 	shift
 done
-readonly chklnk_ver="0.0.2"
+readonly skeleton_ver="0.0.1"
 readonly BASE_NAME=$(basename $0)
 reg_name=$(which $BASE_NAME)
 if [[ ! "$reg_name" ]]; then
@@ -39,7 +39,7 @@ print_RANDOM_BYTE(){
 		echo $(($(od -An -N2 -i /dev/urandom)%32767))
 	fi
 }
-# chklnk.sh
+# skeleton.sh
 #
 # Copyright (C) 2013-2015  hoholee12@naver.com
 #
@@ -47,12 +47,6 @@ print_RANDOM_BYTE(){
 # of this code, but changing it is not allowed.
 #
 # Changelogs:
-# alpha version
-# 0.0.1 - first release
-# 0.0.2 - permission error support added.
-#       - revamped return command.
-#       - some codes borrowed from avcore.sh
-#       - skeleton.sh
 
 set +e #error proof
 
@@ -185,37 +179,12 @@ Roll_Down(){
 }
 Roll_Down
 
-# Main script
-if [ ! "$1" ]; then
-	exit 1
-fi
-file=$1
-dir=$(dirname $file)
-base=$(basename $file)
-if [ ! -e "$file" ] && [ ! -d "$file" ]; then
-	echo "$file: not found"
-	exit 127
-fi
-count=0
-for i in $(ls -l $dir | grep $base | head -1); do
-	count=$((count+1))
-	if [ "$i" == "->" ]; then
-		found=y
-		break
-	fi
-done 2>/dev/null
-return=$?
-if [ "$return" != 0 ]; then
-	echo "$file: operation not permitted"
-	exit $return
-fi
-if [ ! "$found" ] || [ "$file" == "/" ]; then
-	echo "$file: is not a symlink"
-	exit 1
-fi
-#link=$((count-1))
-orig=$((count+1))
-linked_file=$(ls -l $dir | grep $base | head -1 | awk '{print $'"$orig"'}')
-echo "$linked_file"
+#test range!
+echo $skeleton_ver #show version number
+echo $BASE_NAME
+echo $DIR_NAME
+echo $FULL_NAME
+print_PARTIAL_DIR_NAME 1 #print home directory(will work only when DIR_NAME works)
+print_RANDOM_BYTE #print random number upto 32767
 
 exit 0 #EOF
