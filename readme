@@ -1,4 +1,12 @@
-Copyright (C) 2013-2014  hoholee12@naver.com
+Copyright (C) 2013-2015  hoholee12@naver.com
 
 Everyone is permitted to copy and distribute verbatim copies
 of this code, but changing it is not allowed.
+
+this repo includes:
+
+avcore.sh
+boostdemo.sh
+chklnk.sh
+readme
+skeleton.sh
