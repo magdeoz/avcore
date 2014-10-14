@@ -6,7 +6,9 @@ run_Busybox_Applet_Generator=1
 run_Superuser=
 # Use /dev/urandom for print_RANDOM_BYTE.
 use_urand=
-until [[ "$1" != verbose ]] && [[ "$1" != supass ]] && [[ "$1" != bbpass ]] && [[ "$1" != urand ]]; do
+# invert print_RANDOM_BYTE.
+invert_rand=
+until [[ "$1" != verbose ]] && [[ "$1" != supass ]] && [[ "$1" != bbpass ]] && [[ "$1" != urand ]] && [[ "$1" != invrand ]] && [[ "$1" != renice ]]; do
 	if [[ "$1" == verbose ]]; then
 		set -x
 	elif [[ "$1" == supass ]] && [[ "$run_Superuser" != 0 ]]; then
@@ -15,12 +17,27 @@ until [[ "$1" != verbose ]] && [[ "$1" != supass ]] && [[ "$1" != bbpass ]] && [
 		readonly run_Busybox_Applet_Generator=0
 	elif [[ "$1" == urand ]] && [[ "$use_urand" != 1 ]]; then
 		readonly use_urand=1
+	elif [[ "$1" == invrand ]] && [[ "$invert_rand" != 1 ]]; then
+		readonly invert_rand=1
+	elif [[ "$1" == renice ]]; then
+		if [[ ! "$(echo "$2" | tr [0-9] " " | sed 's/-//')" ]]; then
+			if [[ "$2" -le 19 ]] && [[ "$2" -ge -20 ]]; then
+				renice $2 $$
+			else
+				echo "parameter input out-of-range!"
+				return 1
+			fi
+		else
+			echo "invalid parameter input!"
+			return 1
+		fi
+		shift
 	fi
 	shift
 done
 readonly skeleton_ver="0.0.1"
 readonly BASE_NAME=$(basename $0)
-reg_name=$(which $BASE_NAME)
+reg_name=$(which $BASE_NAME 2>/dev/null)
 if [[ ! "$reg_name" ]]; then
 	echo "you are not running this program in proper location. this may cause trouble for codes that use this function: DIR_NAME"
 	readonly DIR_NAME="NULL" #'NULL' will go out instead of an actual directory name
@@ -34,10 +51,16 @@ print_PARTIAL_DIR_NAME(){
 readonly ROOT_DIR=$(print_PARTIAL_DIR_NAME 1)
 print_RANDOM_BYTE(){
 	if [[ "$use_urand" != 1 ]]; then
-		echo $(($(od -An -N2 -i /dev/random)%32767))
+		rand=$(($(od -An -N2 -i /dev/random)%32767))
 	else
-		echo $(($(od -An -N2 -i /dev/urandom)%32767))
+		rand=$(($(od -An -N2 -i /dev/urandom)%32767))
 	fi
+	if [[ "$invert_rand" == 1 ]]; then
+		if [[ "$rand" -lt 0 ]]; then
+			rand=$(($((rand*-1))-1))
+		fi
+	fi
+	echo $rand #output
 }
 # skeleton.sh
 #
