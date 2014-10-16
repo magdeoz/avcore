@@ -211,10 +211,7 @@ Roll_Down
 # Main script
 case $1 in
 	-h | --help)
-		echo "$BASE_NAME v$chklnk_ver
-Copyright (C) 2013-2014 hoholee12@naver.com
-Usage: $BASE_NAME [LOCATION] -h
-"
+		
 	;;
 	*)
 		exit 0

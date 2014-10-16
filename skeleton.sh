@@ -20,9 +20,9 @@ until [[ "$1" != verbose ]] && [[ "$1" != supass ]] && [[ "$1" != bbpass ]] && [
 	elif [[ "$1" == invrand ]] && [[ "$invert_rand" != 1 ]]; then
 		readonly invert_rand=1
 	elif [[ "$1" == renice ]]; then
-		if [[ "$(echo "$2" | tr [0-9] " " | sed 's/-//')" ]]; then
+		if [[ "$(echo $2 | tr [0-9] ' ' | sed 's/-//')" ]]; then
 			if [[ "$2" -le 19 ]] && [[ "$2" -ge -20 ]]; then
-				renice $2 $$
+				renice $2 $$ 1>/dev/null
 			else
 				echo "parameter input out-of-range!"
 				exit 1
@@ -35,14 +35,14 @@ until [[ "$1" != verbose ]] && [[ "$1" != supass ]] && [[ "$1" != bbpass ]] && [
 	fi
 	shift
 done
-readonly skeleton_ver="0.0.1"
+readonly skeleton_ver=
 readonly BASE_NAME=$(basename $0)
 reg_name=$(which $BASE_NAME 2>/dev/null)
 if [[ ! "$reg_name" ]]; then
 	echo "you are not running this program in proper location. this may cause trouble for codes that use this function: DIR_NAME"
 	readonly DIR_NAME="NULL" #'NULL' will go out instead of an actual directory name
 else
-	readonly DIR_NAME=$(dirname $(which $BASE_NAME))
+	readonly DIR_NAME=$(dirname $reg_name)
 fi
 readonly FULL_NAME=$(echo $DIR_NAME/$BASE_NAME)
 print_PARTIAL_DIR_NAME(){
