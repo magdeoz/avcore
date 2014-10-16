@@ -209,21 +209,23 @@ Roll_Down(){
 Roll_Down
 
 # Main script
-case $1 in
-	-h | --help)
-		echo "$BASE_NAME v$chklnk_ver
+while true; do
+	case $1 in
+		-h | --help)
+			echo "$BASE_NAME v$chklnk_ver
 Copyright (C) 2013-2014 hoholee12@naver.com
 Usage: $BASE_NAME [LOCATION] -h
 "
-		shift
-		exit 0
-	;;
-	*)
-		if [[ ! "$1" ]]; then
+			shift
 			exit 0
-		fi
-	;;
-esac
+		;;
+		*)
+			if [[ ! "$1" ]]; then
+				exit 0
+			fi
+		;;
+	esac
+done
 file=$1
 dir=$(dirname $file)
 base=$(basename $file)
