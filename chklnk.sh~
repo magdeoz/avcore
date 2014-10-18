@@ -20,7 +20,7 @@ until [[ "$1" != verbose ]] && [[ "$1" != supass ]] && [[ "$1" != bbpass ]] && [
 	elif [[ "$1" == invrand ]] && [[ "$invert_rand" != 1 ]]; then
 		readonly invert_rand=1
 	elif [[ "$1" == renice ]]; then
-		if [[ ! "$(echo $2 | tr [0-9] ' ' | sed 's/^-//' | sed 's/ //g')" ]]; then
+		if [[ "$(echo $2 | tr [0-9] ' ' | sed 's/-//')" ]]; then
 			if [[ "$2" -le 19 ]] && [[ "$2" -ge -20 ]]; then
 				renice $2 $$ 1>/dev/null
 			else
@@ -35,7 +35,7 @@ until [[ "$1" != verbose ]] && [[ "$1" != supass ]] && [[ "$1" != bbpass ]] && [
 	fi
 	shift
 done
-readonly skeleton_ver=
+readonly chklnk_ver="0.0.2"
 readonly BASE_NAME=$(basename $0)
 reg_name=$(which $BASE_NAME 2>/dev/null)
 if [[ ! "$reg_name" ]]; then
@@ -62,7 +62,7 @@ print_RANDOM_BYTE(){
 	fi
 	echo $rand #output
 }
-# skeleton.sh
+# chklnk.sh
 #
 # Copyright (C) 2013-2015  hoholee12@naver.com
 #
@@ -70,6 +70,12 @@ print_RANDOM_BYTE(){
 # of this code, but changing it is not allowed.
 #
 # Changelogs:
+# alpha version
+# 0.0.1 - first release
+# 0.0.2 - permission error support added.
+#       - revamped return command.
+#       - some codes borrowed from avcore.sh
+#       - skeleton.sh
 
 set +e #error proof
 
@@ -202,12 +208,49 @@ Roll_Down(){
 }
 Roll_Down
 
-#test range!
-echo $skeleton_ver #show version number
-echo $BASE_NAME
-echo $DIR_NAME
-echo $FULL_NAME
-print_PARTIAL_DIR_NAME 1 #print home directory(will work only when DIR_NAME works)
-print_RANDOM_BYTE #print random number upto 32767
+# Main script
+case $1 in
+	-h | --help)
+		echo "$BASE_NAME v$chklnk_ver
+Copyright (C) 2013-2014 hoholee12@naver.com
+Usage: $BASE_NAME [LOCATION] -h
+"
+		shift
+		exit 0
+	;;
+	*)
+		if [[ ! "$1" ]]; then
+			exit 0
+		fi
+	;;
+esac
+file=$1
+dir=$(dirname $file)
+base=$(basename $file)
+if [ ! -e "$file" ] && [ ! -d "$file" ]; then
+	echo "$file: not found"
+	exit 127
+fi
+count=0
+for i in $(ls -l $dir | grep $base | head -1); do
+	count=$((count+1))
+	if [ "$i" == "->" ]; then
+		found=y
+		break
+	fi
+done 2>/dev/null
+return=$?
+if [ "$return" != 0 ]; then
+	echo "$file: operation not permitted"
+	exit $return
+fi
+if [ ! "$found" ] || [ "$file" == "/" ]; then
+	echo "$file: is not a symlink"
+	exit 1
+fi
+#link=$((count-1))
+orig=$((count+1))
+linked_file=$(ls -l $dir | grep $base | head -1 | awk '{print $'"$orig"'}')
+echo "$linked_file"
 
 exit 0 #EOF
