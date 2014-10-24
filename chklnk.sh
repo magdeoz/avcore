@@ -5,9 +5,9 @@ run_Busybox_Applet_Generator=1
 # Check Superuser.
 run_Superuser=
 # Use /dev/urandom for print_RANDOM_BYTE.
-use_urand=
+use_urand=1
 # invert print_RANDOM_BYTE.
-invert_rand=
+invert_rand=1
 until [[ "$1" != verbose ]] && [[ "$1" != supass ]] && [[ "$1" != bbpass ]] && [[ "$1" != urand ]] && [[ "$1" != invrand ]] && [[ "$1" != renice ]]; do
 	if [[ "$1" == verbose ]]; then
 		set -x
@@ -35,7 +35,7 @@ until [[ "$1" != verbose ]] && [[ "$1" != supass ]] && [[ "$1" != bbpass ]] && [
 	fi
 	shift
 done
-readonly chklnk_ver="0.0.2"
+readonly version="0.0.2"
 readonly BASE_NAME=$(basename $0)
 reg_name=$(which $BASE_NAME 2>/dev/null)
 if [[ ! "$reg_name" ]]; then
@@ -61,6 +61,47 @@ print_RANDOM_BYTE(){
 		fi
 	fi
 	echo $rand #output
+}
+debug_shell(){
+	echo "welcome to the debug_shell program!"
+	echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m\$ "
+	while eval read i; do
+		case $i in
+			randtest)
+				while true; do echo -n $(print_RANDOM_BYTE); done
+			;;
+			help)
+				echo -e "this debug shell is \e[1;31mONLY\e[0m used for testing conditions inside this program!
+it is not a complete shell as you CANNOT use any special syntax with it.
+such includes:
+	-functions
+	-calling variables
+	-built-in sh or bash commands
+
+instead, you can use these commands built-in to this program:
+	-print_PARTIAL_DIR_NAME
+	-print_RANDOM_BYTE
+	-Busybox_Applet_Generator
+	-Superuser
+	-any other functions built-in to this program...
+you can use set command to view all the functions and variables built-in to this program.
+
+you can also use these built-in commands in debug_shell:
+	-randtest (tests if print_RANDOM_BYTE is functioning properly)
+	-help (brings out this message)
+
+debug_shell \e[1;33mv$version\e[0m
+Copyright (C) 2013-2014 hoholee12@naver.com"
+			;;
+			return*)
+				exit
+			;;
+			*)
+				$i
+			;;
+		esac
+		echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m\$ "
+	done
 }
 # chklnk.sh
 #
@@ -211,7 +252,7 @@ Roll_Down
 # Main script
 case $1 in
 	-h | --help)
-		echo "$BASE_NAME v$chklnk_ver
+		echo "$BASE_NAME v$version
 Copyright (C) 2013-2014 hoholee12@naver.com
 Usage: $BASE_NAME [LOCATION] -h
 "
