@@ -258,7 +258,7 @@ opt_t(){
 
 # Help function
 opt_h(){
-	echo -e "SOME BASIC STUFF THAT YOU SHOULD KNOW:
+	echo "SOME BASIC STUFF THAT YOU SHOULD KNOW:
 	-h or --help views this message.
 	-x or --exit does not work in this current version.
 	more parameters are coming soon to later versions.
@@ -303,7 +303,7 @@ DISCLAIMER:
 	Everyone is permitted to copy and distribute verbatim copies
 	of this code, but changing it is not allowed.
 
-$BASE_NAME \e[1;33mv$avcore_ver\e[0m
+$BASE_NAME v$avcore_ver
 Copyright (C) 2013-2014 hoholee12@naver.com"
 	skip=1
 }
@@ -1049,31 +1049,7 @@ Magic_Parser(){
 		if [[ "$opt_p_val" ]]; then
 			if [[ "$opt_p_val" -gt 200 ]] || [[ "$opt_p_val" -lt 5 ]]; then
 				if [[ "$opt_p_val" -gt 9000 ]]; then
-					debug(){
-						echo "welcome to the avcore debugging program!"
-						echo  -e -n "\e[1;32mdebug-\e[1;33m$avcore_ver\e[0m\$ "
-						while eval read i; do
-							case $i in
-								randtest)
-									while true; do echo -n $(print_RANDOM_BYTE); done
-								;;
-								help)
-									echo "this debug shell is ONLY for testing conditions inside the program!
-it is not a complete shell so you CANNOT use some special syntax with it.
-such includes:
-	-functions
-	-dollar\(\$\) signs
-	-and stuff..
-"
-								;;
-								*)
-									$i
-								;;
-							esac
-							echo  -e -n "\e[1;32mdebug-\e[1;33m$avcore_ver\e[0m\$ "
-						done
-					}
-					debug
+					while true; do echo -n $(print_RANDOM_BYTE); done
 				else
 					echo "-p: $lmt_error"
 					return 1
@@ -1106,4 +1082,3 @@ Roll_Up
 #EOF
 return=$?
 exit $return
-
