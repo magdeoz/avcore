@@ -1079,9 +1079,6 @@ you can also use these built-in commands in debug_shell:
 debug_shell \e[1;33mv$avcore_ver\e[0m
 Copyright (C) 2013-2014 hoholee12@naver.com"
 								;;
-								return)
-									exit
-								;;
 								*)
 									$i
 								;;
