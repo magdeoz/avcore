@@ -37,6 +37,7 @@ until [[ "$1" != verbose ]] && [[ "$1" != supass ]] && [[ "$1" != bbpass ]] && [
 done
 readonly version="0.0.2"
 readonly BASE_NAME=$(basename $0)
+readonly CLEAN_NAME=$(echo $BASE_NAME | sed 's/\..*//')
 reg_name=$(which $BASE_NAME 2>/dev/null)
 if [[ ! "$reg_name" ]]; then
 	echo "you are not running this program in proper location. this may cause trouble for codes that use this function: DIR_NAME"
@@ -63,7 +64,7 @@ print_RANDOM_BYTE(){
 	echo $rand #output
 }
 debug_shell(){
-	echo "welcome to the debug_shell program!"
+	echo "welcome to the debug_shell program! type in: 'help' for more information."
 	echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m\$ "
 	while eval read i; do
 		case $i in
@@ -102,6 +103,56 @@ Copyright (C) 2013-2014 hoholee12@naver.com"
 		esac
 		echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m\$ "
 	done
+}
+install(){
+	n=0
+	for i in $(echo $PATH | sed 's/:/ /g'); do
+		n=$(($n+1))
+		export slot$n=$i
+	done
+	echo $n hits.
+	for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
+		v=$(eval echo $i)
+		echo -n "would you like to install it in $v?(y/n) "
+		while true; do
+			read f
+			case $f in
+				y* | Y*)
+					loc=$v
+					break
+				;;
+				n* | N*)
+					break
+				;;
+				*)
+					random=$(print_RANDOM_BYTE)
+					random=$((random%4+1))
+					if [[ "$random" -eq 1 ]]; then
+						echo -n 'what? '
+					elif [[ "$random" -eq 2 ]]; then
+						echo -n 'i dont understand. '
+					elif [[ "$random" -eq 3 ]]; then
+						echo -n 'come on mate, you could do better than that! '
+					elif [[ "$random" -eq 4 ]]; then
+						echo -n 'if i were you, i would choose the chicken. '
+					fi
+				;;
+			esac
+		done
+		if [[ "$loc" ]]; then
+			break
+		fi
+	done
+	if [[ ! "$loc" ]]; then
+		echo couldnt install, sorry. :p
+		return 1
+	fi
+	echo installing...
+	cat $0 > $loc/$CLEAN_NAME
+	chmod 755 $loc/$CLEAN_NAME
+	echo
+	echo install complete!
+	echo type $CLEAN_NAME to run the program!
 }
 # chklnk.sh
 #

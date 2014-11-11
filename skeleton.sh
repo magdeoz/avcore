@@ -3,7 +3,7 @@
 # Check Busybox Applet Generator 2.4.
 run_Busybox_Applet_Generator=1
 # Check Superuser.
-run_Superuser=
+run_Superuser=1
 # Use /dev/urandom for print_RANDOM_BYTE.
 use_urand=1
 # invert print_RANDOM_BYTE.
@@ -35,11 +35,12 @@ until [[ "$1" != verbose ]] && [[ "$1" != supass ]] && [[ "$1" != bbpass ]] && [
 	fi
 	shift
 done
-readonly version="NULL"
+readonly version="0.1"
 readonly BASE_NAME=$(basename $0)
+readonly CLEAN_NAME=$(echo $BASE_NAME | sed 's/\..*//')
 reg_name=$(which $BASE_NAME 2>/dev/null)
 if [[ ! "$reg_name" ]]; then
-	echo "you are not running this program in proper location. this may cause trouble for codes that use this function: DIR_NAME"
+	#echo "you are not running this program in proper location. this may cause trouble for codes that use this function: DIR_NAME"
 	readonly DIR_NAME="NULL" #'NULL' will go out instead of an actual directory name
 else
 	readonly DIR_NAME=$(dirname $reg_name)
@@ -63,7 +64,7 @@ print_RANDOM_BYTE(){
 	echo $rand #output
 }
 debug_shell(){
-	echo "welcome to the debug_shell program!"
+	echo "welcome to the debug_shell program! type in: 'help' for more information."
 	echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m\$ "
 	while eval read i; do
 		case $i in
@@ -103,6 +104,56 @@ Copyright (C) 2013-2014 hoholee12@naver.com"
 		echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m\$ "
 	done
 }
+install(){
+	n=0
+	for i in $(echo $PATH | sed 's/:/ /g'); do
+		n=$(($n+1))
+		export slot$n=$i
+	done
+	echo $n hits.
+	for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
+		v=$(eval echo $i)
+		echo -n "would you like to install it in $v?(y/n) "
+		while true; do
+			read f
+			case $f in
+				y* | Y*)
+					loc=$v
+					break
+				;;
+				n* | N*)
+					break
+				;;
+				*)
+					random=$(print_RANDOM_BYTE)
+					random=$((random%4+1))
+					if [[ "$random" -eq 1 ]]; then
+						echo -n 'what? '
+					elif [[ "$random" -eq 2 ]]; then
+						echo -n 'i dont understand. '
+					elif [[ "$random" -eq 3 ]]; then
+						echo -n 'come on mate, you could do better than that! '
+					elif [[ "$random" -eq 4 ]]; then
+						echo -n 'if i were you, i would choose the chicken. '
+					fi
+				;;
+			esac
+		done
+		if [[ "$loc" ]]; then
+			break
+		fi
+	done
+	if [[ ! "$loc" ]]; then
+		echo couldnt install, sorry. :p
+		return 1
+	fi
+	echo installing...
+	cat $0 > $loc/$CLEAN_NAME
+	chmod 755 $loc/$CLEAN_NAME
+	echo
+	echo install complete!
+	echo type $CLEAN_NAME to run the program!
+}
 # skeleton.sh
 #
 # Copyright (C) 2013-2015  hoholee12@naver.com
@@ -126,9 +177,10 @@ cmd6=awk
 cmd7=cat
 cmd8=pgrep
 cmd9=ps
+cmd10=chrt
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 
-silent_mode=1 # enabling this will hide errors.
+silent_mode= # enabling this will hide errors.
 # This feature might not be compatible with some other multi-call binaries.
 # if similar applets are found and Busybox do not have them, it will still continue but leave out some error messages regarding compatibility issues.
 Busybox_Applet_Generator(){
@@ -243,13 +295,187 @@ Roll_Down(){
 }
 Roll_Down
 
+
+process=$1
+suddencharge=$2
+sleep=$3
+
+function task(){
+	stat=$(cat /proc/$1/task/$2/stat)
+	rm=${stat#*)}
+	last_prio=$(echo $rm | cut -d' ' -f17)
+	proctime=$(echo $rm | cut -d' ' -f12)
+	while true
+	do
+		if [[ ! $(cat /proc/$1/task/$2/stat) ]]; then
+			exit
+		fi
+		prev_proctime=$proctime
+		stat=$(cat /proc/$1/task/$2/stat)
+		rm=${stat#*)}
+		proctime=$(echo $rm | cut -d' ' -f12)
+		buffer=$(echo $proctime $prev_proctime $4 | awk '{printf "%d\n", ($1-$2)/$3}')
+		#buffer=$(echo $proctime $prev_proctime $4 | awk '{print ($1-$2)/$3}' | cut -d'.' -f1)
+		if [[ $buffer -gt $3 ]]; then
+			renice $5 $2
+		else
+			renice $last_prio $2
+		fi
+		sleep $4
+	done | tee 2>&1 /data/log/skeleton.log
+}
+
+function fork(){
+	until [[ $(pgrep $1) ]]
+	do
+		sleep 1
+	done
+	pid=$(pgrep $1)
+	if [[ $(ls /proc/$pid/task) ]]; then
+		for i in $(ls /proc/$pid/task)
+		do
+			task $pid $i $2 $3 $4 &
+		done
+	fi 2>/dev/null
+}
+
+#fork $process $suddencharge $sleep $nice
+
+function test_task(){
+	stat=$(cat /proc/$1/task/$2/stat)
+	rm=${stat#*)}
+	last_prio=$(echo $rm | cut -d' ' -f17)
+	proctime=$(echo $rm | cut -d' ' -f12)
+	while true
+	do
+		if [[ ! $(cat /proc/$1/task/$2/stat) ]]; then
+		exit
+	fi
+	prev_proctime=$proctime
+	stat=$(cat /proc/$1/task/$2/stat)
+	rm=${stat#*)}
+	proctime=$(echo $rm | cut -d' ' -f12)
+	buffer=$(echo $proctime $prev_proctime $4 | awk '{printf "%d\n", ($1-$2)/$3}')
+	#buffer=$(echo $proctime $prev_proctime $4 | awk '{print ($1-$2)/$3}' | cut -d'.' -f1)
+	if [[ $buffer -gt $3 ]]; then
+		renice $5 $2
+	else
+		renice $last_prio $2
+	fi
+	sleep $4
+	done | tee 2>&1 /data/log/skeleton.log
+}
+
+
+
+#exit
+
+#todo: limit threads that illegaly use -20.
+#top
+
+testdebug(){
+	process=$1
+	sleep=$2
+	if [[ ! $sleep ]]; then
+		sleep=5
+	fi
+	while true
+	do
+		gprocess=$(pgrep $process)
+		if [[ "$gprocess" ]]; then
+			for i in $(ls /proc/$gprocess/task); do
+				echo -e "\e[1;31m$(cat /proc/$gprocess/task/$i/comm)\e[0m -> \e[1;32m$(cat /proc/$gprocess/task/$i/wchan)\e[0m"
+				stat=$(cat /proc/$gprocess/task/$i/stat)
+				rm=${stat#*)}
+				nicelevel=$(echo $rm | cut -d' ' -f17)
+				echo "nicelevel:$nicelevel"
+				echo -e $(cat /proc/$gprocess/task/$i/stat)
+				if [[ "$3" == 1 ]]; then
+					if [[ $(grep -i 'congestion\|0\|linux' /proc/$gprocess/task/$i/wchan) ]] && [[ $(cat /proc/$gprocess/comm) == $(cat /proc/$gprocess/task/$i/comm) ]]; then
+						pid=$i
+						renice -20 $i
+					else
+						if [[ $pid != $i ]] && [[ $nicelevel -le -16 ]]; then
+							#if [[ $(grep -i 'audio' /proc/$gprocess/task/$i/comm) ]]; then
+								renice 19 $i
+							#else
+								#renice 0 $i
+							#fi
+						fi
+					fi
+				fi
+				echo
+			done
+		else
+			echo waiting...
+		fi
+		sleep $sleep
+		echo
+		echo
+		echo
+		echo ==================================================
+	done | tee 2>&1 /data/log/shit.txt
+}
+
+test(){
+	process=$1
+	sleep=$2
+	if [[ ! $sleep ]]; then
+		sleep=5
+	fi
+	echo waiting...
+	until [[ $(pgrep $process) ]]; do sleep 1; done
+	while true; do
+		gprocess=$(pgrep $process)
+		if [[ "$gprocess" ]]; then
+			clear
+			echo pid $gprocess is being monitored.
+			for i in $(ls /proc/$gprocess/task); do
+				stat=$(cat /proc/$gprocess/task/$i/stat)
+				rm=${stat#*)}
+				nicelevel=$(echo $rm | cut -d' ' -f17)
+				echo $i $nicelevel $(cat /proc/$gprocess/task/$i/wchan)
+				if [[ $(grep -i 'congestion\|0\|linux' /proc/$gprocess/task/$i/wchan) ]] && [[ $(cat /proc/$gprocess/comm) == $(cat /proc/$gprocess/task/$i/comm) ]] && [[ $gprocess != $i  ]]; then
+					pid=$i
+					if [[ $3 != 1 ]]; then
+						renice -20 $i
+					else
+						chrt -f -p 1 $i
+					fi
+				else
+					if [[ $pid != $i ]] && [[ $nicelevel -le -16 ]]; then
+						#if [[ $(grep -i 'audio' /proc/$gprocess/task/$i/comm) ]]; then
+							renice 19 $i
+						#else
+							#renice 0 $i
+						#fi
+					fi
+				fi
+			done
+		else
+			echo process ended.
+			break
+		fi
+		sleep $sleep
+	done
+}
+
 #test range!
-echo $version #show version number
-echo $BASE_NAME
-echo $DIR_NAME
-echo $FULL_NAME
-print_PARTIAL_DIR_NAME 1 #print home directory(will work only when DIR_NAME works)
-print_RANDOM_BYTE #print random number upto 32767
+#echo $version #show version number
+#echo $BASE_NAME
+#echo $DIR_NAME
+#echo $FULL_NAME
+#print_PARTIAL_DIR_NAME 1 #print home directory(will work only when DIR_NAME works)
+#print_RANDOM_BYTE #print random number upto 32767
+
+echo thread priority manager beta v0.1
+echo only tested in applications that use congestion_wait sched!
+echo -------------------------------------------
+if [[ "$DIR_NAME" == 'NULL' ]]; then
+	echo "type 'install' to begin installation!"
+else
+	echo 'test [app name] [interval] [rt_sched]'
+fi
 debug_shell
 
 exit 0 #EOF
