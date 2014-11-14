@@ -374,7 +374,7 @@ while true; do
 	memfree=$(cat /proc/meminfo | grep -i memfree | awk '{print $2}')
 	cached=$(cat /proc/meminfo | grep -i cached | awk '{print $2}')
 	memtotal=$(cat /proc/meminfo | grep -i memtotal | awk '{print $2}')
-	memused=$(($memtotal-$cached-$memfree))
+	memused=$(echo $memtotal $cached $memfree | awk '{print $1-$2-$3}')
 	usedmb=$(($memused/1024))
 	totalmb=$(($memtotal/1024))
 	echo -n -e "\e[3;m" #invert color
