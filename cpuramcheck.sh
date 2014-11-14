@@ -365,32 +365,40 @@ Roll_Down
 prev_total=0
 prev_idle=0
 while true; do
-cpu=$(cat /proc/stat | head -n1 | sed 's/cpu //')
-idle=$(echo $cpu | awk '{print $4}')
-total=$(echo $cpu | awk '{print $1+$2+$3+$4+$5+$6+$7+$8}')
-diff_idle=$(($idle-$prev_idle))
-diff_total=$(($total-$prev_total))
-usage=$(($((1000*$(($diff_total-$diff_idle))/$diff_total+5))/10))
-#meminfo=$(cat /proc/meminfo)
-#memfree=$(echo $meminfo | grep -i memfree | awk '{print $2}')
-#cached=$(echo $meminfo | grep -i cached | awk '{print $2}')
-#memtotal=$(echo $meminfo | grep -i memtotal | awk '{print $2}')
-#memused=$(($memtotal-$cached-$memfree))
-#usedmb=$(($memused/1024))
-#totalmb=$(($memtotal/1024))
-if [[ "$usage" -lt 10 ]]; then
-	echo -n -e "\rCPU usage:  $usage%"
-elif [[ "$usage" -lt 100 ]]; then
-	echo -n -e "\rCPU usage: $usage%"
-else
-	echo -n -e "\rCPU usage:$usage%"
-fi
-#echo -e "RAM usage: $usedmb/$totalmb MB"
-prev_total=$total
-prev_idle=$idle
-if [[ "$1" ]]; then
-	sleep $1
-else
-	sleep 1
-fi
+	cpu=$(cat /proc/stat | head -n1 | sed 's/cpu //')
+	idle=$(echo $cpu | awk '{print $4}')
+	total=$(echo $cpu | awk '{print $1+$2+$3+$4+$5+$6+$7+$8}')
+	diff_idle=$(($idle-$prev_idle))
+	diff_total=$(($total-$prev_total))
+	usage=$(($((1000*$(($diff_total-$diff_idle))/$diff_total+5))/10))
+	memfree=$(cat /proc/meminfo | grep -i memfree | awk '{print $2}')
+	cached=$(cat /proc/meminfo | grep -i cached | awk '{print $2}')
+	memtotal=$(cat /proc/meminfo | grep -i memtotal | awk '{print $2}')
+	memused=$(($memtotal-$cached-$memfree))
+	usedmb=$(($memused/1024))
+	totalmb=$(($memtotal/1024))
+	echo -n -e "\e[3;m" #invert color
+	if [[ "$usage" -lt 10 ]]; then
+		echo -n -e "\rCPU usage:  $usage%"
+	elif [[ "$usage" -lt 100 ]]; then
+		echo -n -e "\rCPU usage: $usage%"
+	else
+		echo -n -e "\rCPU usage:$usage%"
+	fi
+	if [[ "$usedmb" -lt 10 ]]; then
+		echo -n -e "\tRAM usage:   $usedmb/$totalmb MB"
+	elif [[ "$usedmb" -lt 100 ]]; then
+		echo -n -e "\tRAM usage:  $usedmb/$totalmb MB"
+	elif [[ "$usedmb" -lt 1000 ]]; then
+		echo -n -e "\tRAM usage: $usedmb/$totalmb MB"
+	else
+		echo -n -e "\tRAM usage:$usedmb/$totalmb MB"
+	fi
+	prev_total=$total
+	prev_idle=$idle
+	if [[ "$1" ]]; then
+		sleep $1
+	else
+		sleep 1
+	fi
 done
