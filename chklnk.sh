@@ -283,8 +283,11 @@ Busybox_Applet_Generator(){
 }
 
 # Check Superuser.
+su_check= # root availability
 Superuser(){
+	su_check=0
 	if [[ "$(grep -i "^Uid:" /proc/$$/status | awk '{print $2}')" != 0 ]]; then
+		su_check=1
 		echo "Permission denied, are you root?"
 		return 1
 	fi
