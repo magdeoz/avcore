@@ -365,7 +365,9 @@ Roll_Down
 prev_total=0
 prev_idle=0
 while true; do
-total=$(cat /proc/stat | head -n1 | sed 's/cpu //' | awk '{print $1+$2+$3+$4+$5+$6+$7+$8}')
+cpu=$(cat /proc/stat | head -n1 | sed 's/cpu //')
+idle=$(echo $cpu | awk '{print $4}')
+total=$(echo $cpu | awk '{print $1+$2+$3+$4+$5+$6+$7+$8}')
 diff_idle=$(($idle-$prev_idle))
 diff_total=$(($total-$prev_total))
 usage=$(($((1000*$(($diff_total-$diff_idle))/$diff_total+5))/10))
