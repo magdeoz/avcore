@@ -170,26 +170,41 @@ install(){
 		echo couldnt install, sorry. :p
 		return 1
 	fi
-	echo installing...
-	mountstat=$(grep $ROOT_DIR /proc/mounts | head -n1)
-	mountdev=$(echo $mountstat | awk '{print $1}')
+	echo -n -e 'installing      0%\r'
+	loc_DIR_NAME=$(echo $loc | tr -s / \\n | head -n2	| tr -s \\n / | sed 's/\/$//')
+	echo -n -e 'installing.  12.5%\r'
+	mountstat=$(grep $loc_DIR_NAME /proc/mounts | head -n1)
+	echo -n -e 'installing..   25%\r'
 	if [[ "$mountstat" ]]; then
-		mount -o remount,rw $mountdev $ROOT_DIR
+		if [[ "$(echo $mountstat | grep ro)" ]]; then
+			echo -n -e 'installing...37.5%\r'
+			ro=1
+			mount -o remount,rw $loc_DIR_NAME
+		fi
+		echo -n -e 'installing     50%\r'
 		if [[ "$(echo $mountstat | grep rw)" ]]; then
-			cat $0 > $loc/$CLEAN_NAME
+			echo -n -e 'installing.  62.5%\r'
+			cp $0 $loc/$CLEAN_NAME
+			echo -n -e 'installing..   75%\r'
 			chmod 755 $loc/$CLEAN_NAME
-			echo
-			echo install complete!
-			echo type $CLEAN_NAME to run the program!
+			echo -n -e 'installing...87.5%\r'
+			if [[ "$ro" == 1 ]]; then
+				mount -o remount,ro $loc_DIR_NAME
+			fi
+			echo -n -e 'installing....100%\n'
 		else
 			error=1
 		fi
 	else
-		error=1
+		error=1 # exception error
 	fi
 	if [[ "$error" == 1 ]]; then
 		echo "internal error! please use '--verbose' and try again."
 		return 1
+	else
+		echo ==================================================
+		echo install complete!
+		echo type $CLEAN_NAME to run the program!
 	fi
 }
 # skeleton.sh
@@ -216,6 +231,7 @@ cmd7=cat
 cmd8=pgrep
 cmd9=ps
 cmd10=chrt
+cmd11=cp
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 
 silent_mode= # enabling this will hide errors.
