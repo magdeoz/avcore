@@ -158,11 +158,26 @@ install(){
 		return 1
 	fi
 	echo installing...
-	cat $0 > $loc/$CLEAN_NAME
-	chmod 755 $loc/$CLEAN_NAME
-	echo
-	echo install complete!
-	echo type $CLEAN_NAME to run the program!
+	mountstat=$(grep $ROOT_DIR /proc/mounts | head -n1)
+	mountdev=$(echo $mountstat | awk '{print $1}')
+	if [[ "$mountstat" ]]; then
+		mount -o remount,rw $mountdev $ROOT_DIR
+		if [[ "$(echo $mountstat | grep rw)" ]]; then
+			cat $0 > $loc/$CLEAN_NAME
+			chmod 755 $loc/$CLEAN_NAME
+			echo
+			echo install complete!
+			echo type $CLEAN_NAME to run the program!
+		else
+			error=1
+		fi
+	else
+		error=1
+	fi
+	if [[ "$error" == 1 ]]; then
+		echo "internal error! please use '--verbose' and try again."
+		return 1
+	fi
 }
 # skeleton.sh
 #
