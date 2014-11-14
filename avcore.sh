@@ -37,7 +37,7 @@ until [[ "$1" != --verbose ]] && [[ "$1" != --supass ]] && [[ "$1" != --bbpass ]
 done
 readonly version="0.0.6 alpha"
 readonly BASE_NAME=$(basename $0)
-readonly CLEAN_NAME=$(echo $BASE_NAME | sed 's/\..*//')
+readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
 readonly set_PATH=$(dirname $0 | sed 's/^\.//')
 readonly set_PATH2=$(pwd)
@@ -50,7 +50,7 @@ if [[ "$set_PATH" ]]; then
 else
 	export PATH=$PATH:$set_PATH2
 fi
-reg_name=$(which $BASE_NAME 2>/dev/null)
+reg_name=$(which $BASE_NAME 2>/dev/null) # somewhat seems to be incompatible with 1.22.1-stericson.
 if [[ ! "$reg_name" ]]; then
 	echo "you are not running this program in proper location. this may cause trouble for codes that use this function: DIR_NAME"
 	readonly DIR_NAME="NULL" #'NULL' will go out instead of an actual directory name
@@ -177,19 +177,19 @@ install(){
 	echo 'please wait...'
 	loc_DIR_NAME=$(echo $loc | tr -s / \\n | head -n2	| tr -s \\n / | sed 's/\/$//')
 	mountstat=$(grep $loc_DIR_NAME /proc/mounts | head -n1)
-	echo -n 'mounting...'
 	if [[ "$mountstat" ]]; then
 		if [[ "$(echo $mountstat | grep ro)" ]]; then
 			ro=1
+			echo -n -e '\rmounting...'
 			mount -o remount,rw $loc_DIR_NAME
 		fi
 		if [[ "$(echo $mountstat | grep rw)" ]]; then
-			echo -e '\rcopying files...'
-			cp $0 $loc/$CLEAN_NAME
+			echo -n -e '\rcopying files...'
+			cp $0 $loc/$NO_EXTENSION
 			if [[ "$?" == 1 ]]; then
 				return 1
 			fi
-			chmod 755 $loc/$CLEAN_NAME
+			chmod 755 $loc/$NO_EXTENSION
 			if [[ "$ro" == 1 ]]; then
 				mount -o remount,ro $loc_DIR_NAME
 			fi
@@ -203,20 +203,28 @@ install(){
 		echo -e "internal error! please use '--verbose' and try again. \e[1;31m\"error code 1\"\e[0m"
 		return 1
 	else
-		long_line cols 2
+		echo
+		long_line 2
 		echo install complete!
-		echo type $CLEAN_NAME to run the program!
+		echo type $NO_EXTENSION to run the program!
 	fi
 }
 long_line(){
-	tcount=$(tput $1)
-	for i in $(seq 1 $tcount); do
-		if [[ "$2" -le 1 ]]; then
+	for i in $(seq 1 $(tput cols)); do
+		if [[ "$1" -le 1 ]]; then
 			echo -n '-'
 		else
 			echo -n '='
 		fi
 	done
+	if [[ "$?" == 1 ]]; then
+		echo -n -e '\r'
+		if [[ "$1" -le 1 ]]; then # 80 columns
+			echo -n '--------------------------------------------------------------------------------'
+		else
+			echo -n '================================================================================'
+		fi
+	fi
 	echo
 }
 # avcore.sh

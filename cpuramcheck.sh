@@ -3,7 +3,7 @@
 # Check Busybox Applet Generator 2.4.
 run_Busybox_Applet_Generator=1
 # Check Superuser.
-run_Superuser=1
+run_Superuser=
 # Use /dev/urandom for print_RANDOM_BYTE.
 use_urand=1
 # invert print_RANDOM_BYTE.
@@ -227,7 +227,7 @@ long_line(){
 	fi
 	echo
 }
-# skeleton.sh
+# cpuramcheck.sh
 #
 # Copyright (C) 2013-2015  hoholee12@naver.com
 #
@@ -241,17 +241,7 @@ set +e #error proof
 # Busybox Applet Generator 2.4
 # You can type in any commands you would want it to check.
 # It will start by checking from cmd1, and its limit is up to cmd224.
-cmd1=dirname
-cmd2=basename
-cmd3=ls
-cmd4=grep
-cmd5=head
-cmd6=awk
-cmd7=cat
-cmd8=pgrep
-cmd9=ps
-cmd10=chrt
-cmd11=cp
+cmd1=ls
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 
 silent_mode= # enabling this will hide errors.
@@ -372,190 +362,33 @@ Roll_Down(){
 }
 Roll_Down
 
-
-process=$1
-suddencharge=$2
-sleep=$3
-
-task(){
-	stat=$(cat /proc/$1/task/$2/stat)
-	rm=${stat#*)}
-	last_prio=$(echo $rm | cut -d' ' -f17)
-	proctime=$(echo $rm | cut -d' ' -f12)
-	while true
-	do
-		if [[ ! $(cat /proc/$1/task/$2/stat) ]]; then
-			exit
-		fi
-		prev_proctime=$proctime
-		stat=$(cat /proc/$1/task/$2/stat)
-		rm=${stat#*)}
-		proctime=$(echo $rm | cut -d' ' -f12)
-		buffer=$(echo $proctime $prev_proctime $4 | awk '{printf "%d\n", ($1-$2)/$3}')
-		#buffer=$(echo $proctime $prev_proctime $4 | awk '{print ($1-$2)/$3}' | cut -d'.' -f1)
-		if [[ $buffer -gt $3 ]]; then
-			renice $5 $2
-		else
-			renice $last_prio $2
-		fi
-		sleep $4
-	done | tee 2>&1 /data/log/skeleton.log
-}
-
-fork(){
-	until [[ $(pgrep $1) ]]
-	do
-		sleep 1
-	done
-	pid=$(pgrep $1)
-	if [[ $(ls /proc/$pid/task) ]]; then
-		for i in $(ls /proc/$pid/task)
-		do
-			task $pid $i $2 $3 $4 &
-		done
-	fi 2>/dev/null
-}
-
-#fork $process $suddencharge $sleep $nice
-
-test_task(){
-	stat=$(cat /proc/$1/task/$2/stat)
-	rm=${stat#*)}
-	last_prio=$(echo $rm | cut -d' ' -f17)
-	proctime=$(echo $rm | cut -d' ' -f12)
-	while true
-	do
-		if [[ ! $(cat /proc/$1/task/$2/stat) ]]; then
-		exit
-	fi
-	prev_proctime=$proctime
-	stat=$(cat /proc/$1/task/$2/stat)
-	rm=${stat#*)}
-	proctime=$(echo $rm | cut -d' ' -f12)
-	buffer=$(echo $proctime $prev_proctime $4 | awk '{printf "%d\n", ($1-$2)/$3}')
-	#buffer=$(echo $proctime $prev_proctime $4 | awk '{print ($1-$2)/$3}' | cut -d'.' -f1)
-	if [[ $buffer -gt $3 ]]; then
-		renice $5 $2
-	else
-		renice $last_prio $2
-	fi
-	sleep $4
-	done | tee 2>&1 /data/log/skeleton.log
-}
-
-
-
-#exit
-
-#todo: limit threads that illegaly use -20.
-#top
-
-testdebug(){
-	process=$1
-	sleep=$2
-	if [[ ! $sleep ]]; then
-		sleep=5
-	fi
-	while true
-	do
-		gprocess=$(pgrep $process)
-		if [[ "$gprocess" ]]; then
-			for i in $(ls /proc/$gprocess/task); do
-				echo -e "\e[1;31m$(cat /proc/$gprocess/task/$i/comm)\e[0m -> \e[1;32m$(cat /proc/$gprocess/task/$i/wchan)\e[0m"
-				stat=$(cat /proc/$gprocess/task/$i/stat)
-				rm=${stat#*)}
-				nicelevel=$(echo $rm | cut -d' ' -f17)
-				echo "nicelevel:$nicelevel"
-				echo -e $(cat /proc/$gprocess/task/$i/stat)
-				if [[ "$3" == 1 ]]; then
-					if [[ $(grep -i 'congestion\|0\|linux' /proc/$gprocess/task/$i/wchan) ]] && [[ $(cat /proc/$gprocess/comm) == $(cat /proc/$gprocess/task/$i/comm) ]]; then
-						pid=$i
-						renice -20 $i
-					else
-						if [[ $pid != $i ]] && [[ $nicelevel -le -16 ]]; then
-							#if [[ $(grep -i 'audio' /proc/$gprocess/task/$i/comm) ]]; then
-								renice 19 $i
-							#else
-								#renice 0 $i
-							#fi
-						fi
-					fi
-				fi
-				echo
-			done
-		else
-			echo waiting...
-		fi
-		sleep $sleep
-		echo
-		echo
-		echo
-		long_line 2
-	done | tee 2>&1 /data/log/shit.txt
-}
-
-test(){
-	process=$1
-	sleep=$2
-	if [[ ! $sleep ]]; then
-		sleep=5
-	fi
-	echo waiting...
-	until [[ $(pgrep $process) ]]; do sleep 1; done
-	while true; do
-		gprocess=$(pgrep $process)
-		if [[ "$gprocess" ]]; then
-			clear
-			echo pid $gprocess is being monitored.
-			for i in $(ls /proc/$gprocess/task); do
-				stat=$(cat /proc/$gprocess/task/$i/stat)
-				rm=${stat#*)}
-				nicelevel=$(echo $rm | cut -d' ' -f17)
-				echo $i $nicelevel $(cat /proc/$gprocess/task/$i/wchan)
-				if [[ $(grep -i 'congestion\|0\|linux' /proc/$gprocess/task/$i/wchan) ]] && [[ $(cat /proc/$gprocess/comm) == $(cat /proc/$gprocess/task/$i/comm) ]] && [[ $gprocess != $i  ]]; then
-					pid=$i
-					if [[ $3 != 1 ]]; then
-						renice -20 $i
-					else
-						chrt -f -p 1 $i
-					fi
-				else
-					if [[ $pid != $i ]] && [[ $nicelevel -le -16 ]]; then
-						#if [[ $(grep -i 'audio' /proc/$gprocess/task/$i/comm) ]]; then
-							renice 19 $i
-						#else
-							#renice 0 $i
-						#fi
-					fi
-				fi
-			done
-		else
-			echo process ended.
-			break
-		fi
-		sleep $sleep
-	done
-}
-
-#test range!
-#echo $version #show version number
-#echo $BASE_NAME
-#echo $DIR_NAME
-#echo $FULL_NAME
-#print_PARTIAL_DIR_NAME 1 #print home directory(will work only when DIR_NAME works)
-#print_RANDOM_BYTE #print random number upto 32767
-
-echo thread priority manager beta v0.1
-echo only tested in applications that use congestion_wait sched!
-long_line 1
-if [[ "$DIR_NAME" == 'NULL' ]]; then
-	echo "type 'install' to begin installation!"
+prev_total=0
+prev_idle=0
+while true; do
+total=$(cat /proc/stat | head -n1 | sed 's/cpu //' | awk '{print $1+$2+$3+$4+$5+$6+$7+$8}')
+diff_idle=$(($idle-$prev_idle))
+diff_total=$(($total-$prev_total))
+usage=$(($((1000*$(($diff_total-$diff_idle))/$diff_total+5))/10))
+#meminfo=$(cat /proc/meminfo)
+#memfree=$(echo $meminfo | grep -i memfree | awk '{print $2}')
+#cached=$(echo $meminfo | grep -i cached | awk '{print $2}')
+#memtotal=$(echo $meminfo | grep -i memtotal | awk '{print $2}')
+#memused=$(($memtotal-$cached-$memfree))
+#usedmb=$(($memused/1024))
+#totalmb=$(($memtotal/1024))
+if [[ "$usage" -lt 10 ]]; then
+	echo -n -e "\rCPU usage:  $usage%"
+elif [[ "$usage" -lt 100 ]]; then
+	echo -n -e "\rCPU usage: $usage%"
 else
-	echo 'test [app name] [interval] [rt_sched]'
-	echo '-useful for processes that use congestion_wait scheduler'
-	echo 'fork [app name] [throttle] [interval(float)] [niceness]'
-	echo '-useful for preventing processes that randomly spark their thread priority to max'
+	echo -n -e "\rCPU usage:$usage%"
 fi
-debug_shell
-
-exit 0 #EOF
+#echo -e "RAM usage: $usedmb/$totalmb MB"
+prev_total=$total
+prev_idle=$idle
+if [[ "$1" ]]; then
+	sleep $1
+else
+	sleep 1
+fi
+done
