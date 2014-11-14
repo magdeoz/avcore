@@ -372,7 +372,7 @@ Roll_Down
 case $1 in
 	-h | --help)
 		echo "$BASE_NAME v$version
-Copyright (C) 2013-2014 hoholee12@naver.com
+Copyright (C) 2013-2015 hoholee12@naver.com
 Usage: $BASE_NAME [LOCATION] -h
 "
 		shift
