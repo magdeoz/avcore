@@ -8,18 +8,18 @@ run_Superuser=1
 use_urand=1
 # invert print_RANDOM_BYTE.
 invert_rand=1
-until [[ "$1" != verbose ]] && [[ "$1" != supass ]] && [[ "$1" != bbpass ]] && [[ "$1" != urand ]] && [[ "$1" != invrand ]] && [[ "$1" != renice ]]; do
-	if [[ "$1" == verbose ]]; then
+until [[ "$1" != --verbose ]] && [[ "$1" != --supass ]] && [[ "$1" != --bbpass ]] && [[ "$1" != --urand ]] && [[ "$1" != --invrand ]] && [[ "$1" != --renice ]]; do
+	if [[ "$1" == --verbose ]]; then
 		set -x
-	elif [[ "$1" == supass ]] && [[ "$run_Superuser" != 0 ]]; then
+	elif [[ "$1" == --supass ]] && [[ "$run_Superuser" != 0 ]]; then
 		readonly run_Superuser=0
-	elif [[ "$1" == bbpass ]] && [[ "$run_Busybox_Applet_Generator" != 0 ]]; then
+	elif [[ "$1" == --bbpass ]] && [[ "$run_Busybox_Applet_Generator" != 0 ]]; then
 		readonly run_Busybox_Applet_Generator=0
-	elif [[ "$1" == urand ]] && [[ "$use_urand" != 1 ]]; then
+	elif [[ "$1" == --urand ]] && [[ "$use_urand" != 1 ]]; then
 		readonly use_urand=1
-	elif [[ "$1" == invrand ]] && [[ "$invert_rand" != 1 ]]; then
+	elif [[ "$1" == --invrand ]] && [[ "$invert_rand" != 1 ]]; then
 		readonly invert_rand=1
-	elif [[ "$1" == renice ]]; then
+	elif [[ "$1" == --renice ]]; then
 		if [[ ! "$(echo $2 | tr [0-9] ' ' | sed 's/^-//' | sed 's/ //g')" ]]; then
 			if [[ "$2" -le 19 ]] && [[ "$2" -ge -20 ]]; then
 				renice $2 $$ 1>/dev/null
@@ -65,7 +65,12 @@ print_RANDOM_BYTE(){
 }
 debug_shell(){
 	echo "welcome to the debug_shell program! type in: 'help' for more information."
-	echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m\$ "
+	echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m"
+	if [[ "$su_check" == 0 ]]; then
+		echo -n "\# "
+	else
+		echo -n "\$ "
+	fi
 	while eval read i; do
 		case $i in
 			randtest)
@@ -101,7 +106,12 @@ Copyright (C) 2013-2014 hoholee12@naver.com"
 				$i
 			;;
 		esac
-		echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m\$ "
+		echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m"
+		if [[ "$su_check" == 0 ]]; then
+			echo -n "\# "
+		else
+			echo -n "\$ "
+		fi
 	done
 }
 install(){
@@ -268,8 +278,11 @@ Busybox_Applet_Generator(){
 }
 
 # Check Superuser.
+su_check= # root availability
 Superuser(){
+	su_check=0
 	if [[ "$(grep -i "^Uid:" /proc/$$/status | awk '{print $2}')" != 0 ]]; then
+		su_check=1
 		echo "Permission denied, are you root?"
 		return 1
 	fi
@@ -300,7 +313,7 @@ process=$1
 suddencharge=$2
 sleep=$3
 
-function task(){
+task(){
 	stat=$(cat /proc/$1/task/$2/stat)
 	rm=${stat#*)}
 	last_prio=$(echo $rm | cut -d' ' -f17)
@@ -325,7 +338,7 @@ function task(){
 	done | tee 2>&1 /data/log/skeleton.log
 }
 
-function fork(){
+fork(){
 	until [[ $(pgrep $1) ]]
 	do
 		sleep 1
@@ -341,7 +354,7 @@ function fork(){
 
 #fork $process $suddencharge $sleep $nice
 
-function test_task(){
+test_task(){
 	stat=$(cat /proc/$1/task/$2/stat)
 	rm=${stat#*)}
 	last_prio=$(echo $rm | cut -d' ' -f17)

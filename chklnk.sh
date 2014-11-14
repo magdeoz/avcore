@@ -8,18 +8,18 @@ run_Superuser=
 use_urand=1
 # invert print_RANDOM_BYTE.
 invert_rand=1
-until [[ "$1" != verbose ]] && [[ "$1" != supass ]] && [[ "$1" != bbpass ]] && [[ "$1" != urand ]] && [[ "$1" != invrand ]] && [[ "$1" != renice ]]; do
-	if [[ "$1" == verbose ]]; then
+until [[ "$1" != --verbose ]] && [[ "$1" != --supass ]] && [[ "$1" != --bbpass ]] && [[ "$1" != --urand ]] && [[ "$1" != --invrand ]] && [[ "$1" != --renice ]]; do
+	if [[ "$1" == --verbose ]]; then
 		set -x
-	elif [[ "$1" == supass ]] && [[ "$run_Superuser" != 0 ]]; then
+	elif [[ "$1" == --supass ]] && [[ "$run_Superuser" != 0 ]]; then
 		readonly run_Superuser=0
-	elif [[ "$1" == bbpass ]] && [[ "$run_Busybox_Applet_Generator" != 0 ]]; then
+	elif [[ "$1" == --bbpass ]] && [[ "$run_Busybox_Applet_Generator" != 0 ]]; then
 		readonly run_Busybox_Applet_Generator=0
-	elif [[ "$1" == urand ]] && [[ "$use_urand" != 1 ]]; then
+	elif [[ "$1" == --urand ]] && [[ "$use_urand" != 1 ]]; then
 		readonly use_urand=1
-	elif [[ "$1" == invrand ]] && [[ "$invert_rand" != 1 ]]; then
+	elif [[ "$1" == --invrand ]] && [[ "$invert_rand" != 1 ]]; then
 		readonly invert_rand=1
-	elif [[ "$1" == renice ]]; then
+	elif [[ "$1" == --renice ]]; then
 		if [[ ! "$(echo $2 | tr [0-9] ' ' | sed 's/^-//' | sed 's/ //g')" ]]; then
 			if [[ "$2" -le 19 ]] && [[ "$2" -ge -20 ]]; then
 				renice $2 $$ 1>/dev/null
@@ -65,7 +65,12 @@ print_RANDOM_BYTE(){
 }
 debug_shell(){
 	echo "welcome to the debug_shell program! type in: 'help' for more information."
-	echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m\$ "
+	echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m"
+	if [[ "$su_check" == 0 ]]; then
+		echo -n "\# "
+	else
+		echo -n "\$ "
+	fi
 	while eval read i; do
 		case $i in
 			randtest)
@@ -101,7 +106,12 @@ Copyright (C) 2013-2014 hoholee12@naver.com"
 				$i
 			;;
 		esac
-		echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m\$ "
+		echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m"
+		if [[ "$su_check" == 0 ]]; then
+			echo -n "\# "
+		else
+			echo -n "\$ "
+		fi
 	done
 }
 install(){
