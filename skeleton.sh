@@ -38,13 +38,26 @@ done
 readonly version="0.1"
 readonly BASE_NAME=$(basename $0)
 readonly CLEAN_NAME=$(echo $BASE_NAME | sed 's/\..*//')
+readonly backup_PATH=$PATH
+readonly set_PATH=$(dirname $0 | sed 's/^\.//')
+readonly set_PATH2=$(pwd)
+if [[ "$set_PATH" ]]; then
+	if [[ "$(ls / | grep $(echo $set_PATH | tr -s / \\n | head -n2	| tr -s \\n / | sed 's/\/$//' | sed 's/^\///'))" ]] ; then
+		export PATH=$PATH:$set_PATH
+	else
+		export PATH=$PATH:$set_PATH2
+	fi
+else
+	export PATH=$PATH:$set_PATH2
+fi
 reg_name=$(which $BASE_NAME 2>/dev/null)
 if [[ ! "$reg_name" ]]; then
-	#echo "you are not running this program in proper location. this may cause trouble for codes that use this function: DIR_NAME"
+	echo "you are not running this program in proper location. this may cause trouble for codes that use this function: DIR_NAME"
 	readonly DIR_NAME="NULL" #'NULL' will go out instead of an actual directory name
 else
-	readonly DIR_NAME=$(dirname $reg_name)
+	readonly DIR_NAME=$(dirname $reg_name | sed 's/^\.//')
 fi
+export PATH=$backup_PATH # revert back to default
 readonly FULL_NAME=$(echo $DIR_NAME/$BASE_NAME)
 print_PARTIAL_DIR_NAME(){
 	echo $(echo $DIR_NAME | tr -s / \\n | head -n$(($1+1))	| tr -s \\n / | sed 's/\/$//')
@@ -67,9 +80,9 @@ debug_shell(){
 	echo "welcome to the debug_shell program! type in: 'help' for more information."
 	echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m"
 	if [[ "$su_check" == 0 ]]; then
-		echo -n "\# "
+		echo -n '# '
 	else
-		echo -n "\$ "
+		echo -n '$ '
 	fi
 	while eval read i; do
 		case $i in
@@ -108,9 +121,9 @@ Copyright (C) 2013-2014 hoholee12@naver.com"
 		esac
 		echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m"
 		if [[ "$su_check" == 0 ]]; then
-			echo -n "\# "
+			echo -n '# '
 		else
-			echo -n "\$ "
+			echo -n '$ '
 		fi
 	done
 }
