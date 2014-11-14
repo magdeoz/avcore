@@ -91,10 +91,10 @@ debug_shell(){
 			;;
 			help)
 				echo -e "this debug shell is \e[1;31mONLY\e[0m used for testing conditions inside this program!
-it is not a complete shell as you CANNOT use any special syntax with it.
+it is not a complete shell as you CANNOT use any regex with it.
 such includes:
 	-functions
-	-calling variables
+	-variables
 	-built-in sh or bash commands
 
 instead, you can use these commands built-in to this program:
@@ -110,7 +110,7 @@ you can also use these built-in commands in debug_shell:
 	-help (brings out this message)
 
 debug_shell \e[1;33mv$version\e[0m
-Copyright (C) 2013-2014 hoholee12@naver.com"
+Copyright (C) 2013-2015 hoholee12@naver.com"
 			;;
 			return*)
 				exit
@@ -128,6 +128,7 @@ Copyright (C) 2013-2014 hoholee12@naver.com"
 	done
 }
 install(){
+	local loc # prevent breaks
 	n=0
 	for i in $(echo $PATH | sed 's/:/ /g'); do
 		n=$(($n+1))
@@ -136,7 +137,7 @@ install(){
 	echo $n hits.
 	for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
 		v=$(eval echo $i)
-		echo -n "would you like to install it in $v?(y/n) "
+		echo -n "would you like to install it in $v? (y/n) "
 		while true; do
 			read f
 			case $f in
@@ -146,6 +147,9 @@ install(){
 				;;
 				n* | N*)
 					break
+				;;
+				q* | Q*)
+					return 0
 				;;
 				*)
 					random=$(print_RANDOM_BYTE)
@@ -170,28 +174,25 @@ install(){
 		echo couldnt install, sorry. :p
 		return 1
 	fi
-	echo -n -e 'installing      0%\r'
+	echo 'please wait...'
 	loc_DIR_NAME=$(echo $loc | tr -s / \\n | head -n2	| tr -s \\n / | sed 's/\/$//')
-	echo -n -e 'installing.  12.5%\r'
 	mountstat=$(grep $loc_DIR_NAME /proc/mounts | head -n1)
-	echo -n -e 'installing..   25%\r'
+	echo -n 'mounting...'
 	if [[ "$mountstat" ]]; then
 		if [[ "$(echo $mountstat | grep ro)" ]]; then
-			echo -n -e 'installing...37.5%\r'
 			ro=1
 			mount -o remount,rw $loc_DIR_NAME
 		fi
-		echo -n -e 'installing     50%\r'
 		if [[ "$(echo $mountstat | grep rw)" ]]; then
-			echo -n -e 'installing.  62.5%\r'
+			echo -e '\rcopying files...'
 			cp $0 $loc/$CLEAN_NAME
-			echo -n -e 'installing..   75%\r'
+			if [[ "$?" == 1 ]]; then
+				return 1
+			fi
 			chmod 755 $loc/$CLEAN_NAME
-			echo -n -e 'installing...87.5%\r'
 			if [[ "$ro" == 1 ]]; then
 				mount -o remount,ro $loc_DIR_NAME
 			fi
-			echo -n -e 'installing....100%\n'
 		else
 			error=1
 		fi
@@ -199,13 +200,24 @@ install(){
 		error=1 # exception error
 	fi
 	if [[ "$error" == 1 ]]; then
-		echo "internal error! please use '--verbose' and try again."
+		echo -e "internal error! please use '--verbose' and try again. \e[1;31m\"error code 1\"\e[0m"
 		return 1
 	else
-		echo ==================================================
+		long_line cols 2
 		echo install complete!
 		echo type $CLEAN_NAME to run the program!
 	fi
+}
+long_line(){
+	tcount=$(tput $1)
+	for i in $(seq 1 $tcount); do
+		if [[ "$2" -le 1 ]]; then
+			echo -n '-'
+		else
+			echo -n '='
+		fi
+	done
+	echo
 }
 # chklnk.sh
 #
