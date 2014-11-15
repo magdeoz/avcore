@@ -406,23 +406,24 @@ while true; do
 	else
 		itotal="$totalmb"MB
 	fi
-	echo -n -e "\e[3;m" #invert color
+	echo -n -e "\e[3;m\r" #invert color
 	if [[ "$usage" -lt 10 ]]; then
-		echo -n -e "\rCPU usage:  $usage%"
+		echo -n -e "CPU usage:  $usage%"
 	elif [[ "$usage" -lt 100 ]]; then
-		echo -n -e "\rCPU usage: $usage%"
+		echo -n -e "CPU usage: $usage%"
 	else
-		echo -n -e "\rCPU usage:$usage%"
+		echo -n -e "CPU usage:$usage%"
 	fi
+	echo -n -e "  "
 	if [[ "$usedmb" -ge 1000 ]]; then
-		echo -n -e "\tRAM usage:  $iused/$itotal"
+		echo -n -e "RAM usage:  $iused/$itotal"
 	else
 		if [[ "$usedmb" -lt 10 ]]; then
-			echo -n -e "\tRAM usage:   $iused/$itotal"
+			echo -n -e "RAM usage:   $iused/$itotal"
 		elif [[ "$usedmb" -lt 100 ]]; then
-			echo -n -e "\tRAM usage:  $iused/$itotal"
+			echo -n -e "RAM usage:  $iused/$itotal"
 		elif [[ "$usedmb" -lt 1000 ]]; then
-			echo -n -e "\tRAM usage: $iused/$itotal"
+			echo -n -e "RAM usage: $iused/$itotal"
 		fi
 	fi
 	echo -n -e "  "
@@ -432,13 +433,14 @@ while true; do
 		count=25
 	fi
 	ibar=$(echo $usedmb $totalmb $count | awk '{printf "%d", $1/$2*$3}')
-	for x in $(seq 1 $count); do
+	echo -n -e $(for x in $(seq 1 $count); do
 		if [[ "$x" -le "$ibar" ]]; then
-			echo -n -e 'o'
+			echo -n -e '|'
 		else
-			echo -n -e 'x'
+			echo -n -e 'o'
 		fi
-	done
+	done)
+	echo -n -e "\e[0m"
 	prev_total=$total
 	prev_idle=$idle
 	if [[ "$1" ]]; then
