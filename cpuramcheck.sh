@@ -368,6 +368,17 @@ Roll_Down(){
 }
 Roll_Down
 
+# Main script
+case $1 in
+	-h | --help)
+		echo "$BASE_NAME v$version
+Copyright (C) 2013-2015 hoholee12@naver.com
+Usage: $BASE_NAME [interval] [bar_length] -h
+"
+		shift
+		exit 0
+	;;
+esac
 prev_total=0
 prev_idle=0
 while true; do
@@ -382,7 +393,19 @@ while true; do
 	memtotal=$(cat /proc/meminfo | grep -i memtotal | awk '{print $2}')
 	memused=$(echo $memtotal $cached $memfree | awk '{print $1-$2-$3}')
 	usedmb=$(($memused/1024))
+	usedGB=$(echo $usedmb | awk '{printf "%.2f", $1/1024}')
+	if [[ "$usedmb" -ge 1000 ]]; then
+		iused="$usedGB"GB
+	else
+		iused="$usedmb"MB
+	fi
 	totalmb=$(($memtotal/1024))
+	totalGB=$(echo $totalmb | awk '{printf "%.2f", $1/1024}')
+	if [[ "$totalmb" -ge 1000 ]]; then
+		itotal="$totalGB"GB
+	else
+		itotal="$totalmb"MB
+	fi
 	echo -n -e "\e[3;m" #invert color
 	if [[ "$usage" -lt 10 ]]; then
 		echo -n -e "\rCPU usage:  $usage%"
@@ -391,15 +414,31 @@ while true; do
 	else
 		echo -n -e "\rCPU usage:$usage%"
 	fi
-	if [[ "$usedmb" -lt 10 ]]; then
-		echo -n -e "\tRAM usage:   $usedmb/$totalmb MB"
-	elif [[ "$usedmb" -lt 100 ]]; then
-		echo -n -e "\tRAM usage:  $usedmb/$totalmb MB"
-	elif [[ "$usedmb" -lt 1000 ]]; then
-		echo -n -e "\tRAM usage: $usedmb/$totalmb MB"
+	if [[ "$usedmb" -ge 1000 ]]; then
+		echo -n -e "\tRAM usage:  $iused/$itotal"
 	else
-		echo -n -e "\tRAM usage:$usedmb/$totalmb MB"
+		if [[ "$usedmb" -lt 10 ]]; then
+			echo -n -e "\tRAM usage:   $iused/$itotal"
+		elif [[ "$usedmb" -lt 100 ]]; then
+			echo -n -e "\tRAM usage:  $iused/$itotal"
+		elif [[ "$usedmb" -lt 1000 ]]; then
+			echo -n -e "\tRAM usage: $iused/$itotal"
+		fi
 	fi
+	echo -n -e "  "
+	if [[ "$2" ]]; then
+		count=$2
+	else
+		count=25
+	fi
+	ibar=$(echo $usedmb $totalmb $count | awk '{printf "%d", $1/$2*$3}')
+	for x in $(seq 1 $count); do
+		if [[ "$x" -le "$ibar" ]]; then
+			echo -n -e 'o'
+		else
+			echo -n -e 'x'
+		fi
+	done
 	prev_total=$total
 	prev_idle=$idle
 	if [[ "$1" ]]; then
