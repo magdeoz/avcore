@@ -43,12 +43,12 @@ readonly set_PATH=$(dirname $0 | sed 's/^\.//')
 readonly set_PATH2=$(pwd)
 if [[ "$set_PATH" ]]; then
 	if [[ "$(ls / | grep $(echo $set_PATH | tr -s / \\n | head -n2	| tr -s \\n / | sed 's/\/$//' | sed 's/^\///'))" ]] ; then
-		export PATH=$PATH:$set_PATH
+		export PATH=$set_PATH:$PATH
 	else
-		export PATH=$PATH:$set_PATH2
+		export PATH=$set_PATH2:$PATH
 	fi
 else
-	export PATH=$PATH:$set_PATH2
+	export PATH=$set_PATH2:$PATH
 fi
 reg_name=$(which $BASE_NAME 2>/dev/null) # somewhat seems to be incompatible with 1.22.1-stericson.
 if [[ ! "$reg_name" ]]; then
@@ -134,90 +134,96 @@ install(){
 		n=$(($n+1))
 		export slot$n=$i
 	done
-	echo $n hits.
-	for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
-		v=$(eval echo $i)
-		echo -n "would you like to install it in $v? (y/n) "
-		while true; do
-			read f
-			case $f in
-				y* | Y*)
-					loc=$v
-					break
-				;;
-				n* | N*)
-					break
-				;;
-				q* | Q*)
-					return 0
-				;;
-				*)
-					random=$(print_RANDOM_BYTE)
-					random=$((random%4+1))
-					if [[ "$random" -eq 1 ]]; then
-						echo -n 'what? '
-					elif [[ "$random" -eq 2 ]]; then
-						echo -n 'i dont understand. '
-					elif [[ "$random" -eq 3 ]]; then
-						echo -n 'come on mate, you could do better than that! '
-					elif [[ "$random" -eq 4 ]]; then
-						echo -n 'if i were you, i would choose the chicken. '
-					fi
-				;;
-			esac
+	if [[ "$1" == -i ]]; then
+		for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
+			eval echo $i
 		done
-		if [[ "$loc" ]]; then
-			break
-		fi
-	done
-	if [[ ! "$loc" ]]; then
-		echo couldnt install, sorry. :p
-		return 1
-	fi
-	echo 'please wait...'
-	loc_DIR_NAME=$(echo $loc | tr -s / \\n | head -n2	| tr -s \\n / | sed 's/\/$//')
-	mountstat=$(grep $loc_DIR_NAME /proc/mounts | head -n1)
-	if [[ "$mountstat" ]]; then
-		if [[ "$(echo $mountstat | grep ro)" ]]; then
-			ro=1
-			echo -n -e '\rmounting...'
-			mount -o remount,rw $loc_DIR_NAME
-		fi
-		if [[ "$(echo $mountstat | grep rw)" ]]; then
-			echo -n -e '\rcopying files...'
-			cp $0 $loc/$NO_EXTENSION
-			if [[ "$?" == 1 ]]; then
-				return 1
+	else
+		echo $n hits.
+		for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
+			v=$(eval echo $i)
+			echo -n "would you like to install it in $v? (y/n) "
+			while true; do
+				read f
+				case $f in
+					y* | Y*)
+						loc=$v
+						break
+					;;
+					n* | N*)
+						break
+					;;
+					q* | Q*)
+						return 0
+					;;
+					*)
+						random=$(print_RANDOM_BYTE)
+						random=$((random%4+1))
+						if [[ "$random" -eq 1 ]]; then
+							echo -n 'what? '
+						elif [[ "$random" -eq 2 ]]; then
+							echo -n 'i dont understand. '
+						elif [[ "$random" -eq 3 ]]; then
+							echo -n 'come on mate, you could do better than that! '
+						elif [[ "$random" -eq 4 ]]; then
+							echo -n 'if i were you, i would choose the chicken. '
+						fi
+					;;
+				esac
+			done
+			if [[ "$loc" ]]; then
+				break
 			fi
-			chmod 755 $loc/$NO_EXTENSION
-			if [[ "$ro" == 1 ]]; then
-				mount -o remount,ro $loc_DIR_NAME
+		done
+		if [[ ! "$loc" ]]; then
+			echo couldnt install, sorry. :p
+			return 1
+		fi
+		echo 'please wait...'
+		loc_DIR_NAME=$(echo $loc | tr -s / \\n | head -n2	| tr -s \\n / | sed 's/\/$//')
+		mountstat=$(grep $loc_DIR_NAME /proc/mounts | head -n1)
+		if [[ "$mountstat" ]]; then
+			if [[ "$(echo $mountstat | grep ro)" ]]; then
+				ro=1
+				echo -n -e '\rmounting...'
+				mount -o remount,rw $loc_DIR_NAME
+			fi
+			if [[ "$(echo $mountstat | grep rw)" ]]; then
+				echo -n -e '\rcopying files...'
+				cp $0 $loc/$NO_EXTENSION
+				if [[ "$?" == 1 ]]; then
+					return 1
+				fi
+				chmod 755 $loc/$NO_EXTENSION
+				if [[ "$ro" == 1 ]]; then
+					mount -o remount,ro $loc_DIR_NAME
+				fi
+			else
+				error=1
 			fi
 		else
-			error=1
+			error=1 # exception error
 		fi
-	else
-		error=1 # exception error
-	fi
-	if [[ "$error" == 1 ]]; then
-		echo -e "internal error! please use '--verbose' and try again. \e[1;31m\"error code 1\"\e[0m"
-		return 1
-	else
-		echo
-		long_line 2
-		echo install complete!
-		echo type $NO_EXTENSION to run the program!
+		if [[ "$error" == 1 ]]; then
+			echo -e "internal error! please use '--verbose' and try again. \e[1;31m\"error code 1\"\e[0m"
+			return 1
+		else
+			echo
+			long_line 2
+			echo install complete!
+			echo type $NO_EXTENSION to run the program!
+		fi
 	fi
 }
 long_line(){
-	for i in $(seq 1 $(tput cols)); do
+	for i in $(seq 1 $(tput cols 2>/dev/null)); do
 		if [[ "$1" -le 1 ]]; then
 			echo -n '-'
 		else
 			echo -n '='
 		fi
 	done
-	if [[ "$?" == 1 ]]; then
+	if [[ "$i" == 1 ]]; then
 		echo -n -e '\r'
 		if [[ "$1" -le 1 ]]; then # 80 columns
 			echo -n '--------------------------------------------------------------------------------'
