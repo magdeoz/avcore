@@ -406,6 +406,19 @@ while true; do
 	else
 		itotal="$totalmb"MB
 	fi
+	if [[ "$2" ]]; then
+		count=$2
+	else
+		count=25
+	fi
+	ibar=$(echo $usedmb $totalmb $count | awk '{printf "%d", $1/$2*$3}')
+	isheep=$(for x in $(seq 1 $count); do
+		if [[ "$x" -le "$ibar" ]]; then
+			echo -n -e '|'
+		else
+			echo -n -e 'o'
+		fi
+	done)
 	echo -n -e "\e[3;m\r" #invert color
 	if [[ "$usage" -lt 10 ]]; then
 		echo -n -e "CPU usage:  $usage%"
@@ -427,19 +440,7 @@ while true; do
 		fi
 	fi
 	echo -n -e "  "
-	if [[ "$2" ]]; then
-		count=$2
-	else
-		count=25
-	fi
-	ibar=$(echo $usedmb $totalmb $count | awk '{printf "%d", $1/$2*$3}')
-	echo -n -e $(for x in $(seq 1 $count); do
-		if [[ "$x" -le "$ibar" ]]; then
-			echo -n -e '|'
-		else
-			echo -n -e 'o'
-		fi
-	done)
+	echo -n -e $isheep
 	echo -n -e "\e[0m"
 	prev_total=$total
 	prev_idle=$idle
