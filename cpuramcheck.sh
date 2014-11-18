@@ -35,7 +35,7 @@ until [[ "$1" != --verbose ]] && [[ "$1" != --supass ]] && [[ "$1" != --bbpass ]
 	fi
 	shift
 done
-readonly version="0.1"
+readonly version="0.2"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -373,80 +373,171 @@ case $1 in
 	-h | --help)
 		echo "$BASE_NAME v$version
 Copyright (C) 2013-2015 hoholee12@naver.com
-Usage: $BASE_NAME [interval] [bar_length] -h
+Usage: $BASE_NAME [interval] [bar_length] -h -i -d
 "
 		shift
 		exit 0
 	;;
+	-i)
+		proto=1
+		shift
+	;;
+	-d | --debug)
+		debug_shell
+		shift
+	;;
 esac
-prev_total=0
-prev_idle=0
-while true; do
-	cpu=$(cat /proc/stat | head -n1 | sed 's/cpu //')
-	idle=$(echo $cpu | awk '{print $4}')
-	total=$(echo $cpu | awk '{print $1+$2+$3+$4+$5+$6+$7+$8}')
-	diff_idle=$(($idle-$prev_idle))
-	diff_total=$(($total-$prev_total))
-	usage=$(($((1000*$(($diff_total-$diff_idle))/$diff_total+5))/10))
-	memfree=$(cat /proc/meminfo | grep -i memfree | awk '{print $2}')
-	cached=$(cat /proc/meminfo | grep -i cached | awk '{print $2}')
-	memtotal=$(cat /proc/meminfo | grep -i memtotal | awk '{print $2}')
-	memused=$(echo $memtotal $cached $memfree | awk '{print $1-$2-$3}')
-	usedmb=$(($memused/1024))
-	usedGB=$(echo $usedmb | awk '{printf "%.2f", $1/1024}')
-	if [[ "$usedmb" -ge 1000 ]]; then
-		iused="$usedGB"GB
-	else
-		iused="$usedmb"MB
-	fi
-	totalmb=$(($memtotal/1024))
-	totalGB=$(echo $totalmb | awk '{printf "%.2f", $1/1024}')
-	if [[ "$totalmb" -ge 1000 ]]; then
-		itotal="$totalGB"GB
-	else
-		itotal="$totalmb"MB
-	fi
-	if [[ "$2" ]]; then
-		count=$2
-	else
-		count=25
-	fi
-	ibar=$(echo $usedmb $totalmb $count | awk '{printf "%d", $1/$2*$3}')
-	isheep=$(for x in $(seq 1 $count); do
-		if [[ "$x" -le "$ibar" ]]; then
-			echo -n -e '|'
+if [[ "$proto" == 1 ]]; then
+	IFS=','
+	for i in $(grep cpu /proc/stat | tr '\n' ','); do
+		eval prev_$(echo $i | cut -d' ' -f1)_total=$(IFS=' '; x=0; for j in $(echo $i | cut -d' ' -f2-); do x=$((x+j)); done; echo $x)
+		eval prev_$(echo $i | cut -d' ' -f1)_idle=$(echo $i | cut -d' ' -f2- | cut -d' ' -f4)
+	done
+	unset IFS
+	while true; do
+		memfree=$(cat /proc/meminfo | grep -i memfree | awk '{print $2}')
+		cached=$(cat /proc/meminfo | grep -i cached | awk '{print $2}')
+		memtotal=$(cat /proc/meminfo | grep -i memtotal | awk '{print $2}')
+		memused=$(echo $memtotal $cached $memfree | awk '{print $1-$2-$3}')
+		usedmb=$(($memused/1024))
+		usedGB=$(echo $usedmb | awk '{printf "%.2f", $1/1024}')
+		if [[ "$usedmb" -ge 1000 ]]; then
+			iused="$usedGB"GB
 		else
-			echo -n -e 'o'
+			iused="$usedmb"MB
 		fi
-	done)
-	echo -n -e "\e[3;m\r" #invert color
-	if [[ "$usage" -lt 10 ]]; then
-		echo -n -e "CPU usage:  $usage%"
-	elif [[ "$usage" -lt 100 ]]; then
-		echo -n -e "CPU usage: $usage%"
-	else
-		echo -n -e "CPU usage:$usage%"
-	fi
-	echo -n -e "  "
-	if [[ "$usedmb" -ge 1000 ]]; then
-		echo -n -e "RAM usage:  $iused/$itotal"
-	else
-		if [[ "$usedmb" -lt 10 ]]; then
-			echo -n -e "RAM usage:   $iused/$itotal"
-		elif [[ "$usedmb" -lt 100 ]]; then
+		totalmb=$(($memtotal/1024))
+		totalGB=$(echo $totalmb | awk '{printf "%.2f", $1/1024}')
+		if [[ "$totalmb" -ge 1000 ]]; then
+			itotal="$totalGB"GB
+		else
+			itotal="$totalmb"MB
+		fi
+		if [[ "$2" ]]; then
+			count=$2
+		else
+			count=25
+		fi
+		ibar=$(echo $usedmb $totalmb $count | awk '{printf "%d", $1/$2*$3}')
+		isheep=$(for x in $(seq 1 $count); do
+			if [[ "$x" -le "$ibar" ]]; then
+				echo -n -e '|'
+			else
+				echo -n -e 'o'
+			fi
+		done)
+		echo -n -e "\e[3;m\rtotal " #invert color
+		IFS=','
+		for i in $(grep cpu /proc/stat | tr '\n' ','); do
+			total=$(IFS=' '; x=0; for j in $(echo $i | cut -d' ' -f2-); do x=$((x+j)); done; echo $x)
+			idle=$(echo $i | cut -d' ' -f2- | cut -d' ' -f4)
+			eval diff_$(echo $i | cut -d' ' -f1)_total=$(($total-$(eval echo \$prev_$(echo $i | cut -d' ' -f1)_total)))
+			eval diff_$(echo $i | cut -d' ' -f1)_idle=$(($idle-$(eval echo \$prev_$(echo $i | cut -d' ' -f1)_idle)))
+			eval prev_$(echo $i | cut -d' ' -f1)_total=$total
+			eval prev_$(echo $i | cut -d' ' -f1)_idle=$idle
+			usage=$(($((1000*$(($(eval echo \$diff_$(echo $i | cut -d' ' -f1)_total)-$(eval echo \$diff_$(echo $i | cut -d' ' -f1)_idle)))/$(eval echo \$diff_$(echo $i | cut -d' ' -f1)_total)+5))/10))
+			if [[ "$usage" -lt 10 ]]; then
+				echo -n -e "$(echo $i | cut -d' ' -f1) usage:  $usage%"
+			elif [[ "$usage" -lt 100 ]]; then
+				echo -n -e "$(echo $i | cut -d' ' -f1) usage: $usage%"
+			else
+				echo -n -e "$(echo $i | cut -d' ' -f1) usage:$usage%"
+			fi
+			echo -n -e " "
+		done
+		unset IFS
+		if [[ "$usedmb" -ge 1000 ]]; then
 			echo -n -e "RAM usage:  $iused/$itotal"
-		elif [[ "$usedmb" -lt 1000 ]]; then
-			echo -n -e "RAM usage: $iused/$itotal"
+		else
+			if [[ "$usedmb" -lt 10 ]]; then
+				echo -n -e "RAM usage:   $iused/$itotal"
+			elif [[ "$usedmb" -lt 100 ]]; then
+				echo -n -e "RAM usage:  $iused/$itotal"
+			elif [[ "$usedmb" -lt 1000 ]]; then
+				echo -n -e "RAM usage: $iused/$itotal"
+			fi
 		fi
-	fi
-	echo -n -e "  "
-	echo -n -e $isheep
-	echo -n -e "\e[0m"
-	prev_total=$total
-	prev_idle=$idle
-	if [[ "$1" ]]; then
-		sleep $1
-	else
-		sleep 1
-	fi
-done
+		echo -n -e "  "
+		echo -n -e $isheep
+		echo -n -e "\e[0m"
+		if [[ "$1" ]]; then
+			sleep $1
+		else
+			sleep 1
+		fi
+	done
+else
+	prev_total=0
+	prev_idle=0
+	while true; do
+		cpu=$(cat /proc/stat | head -n1 | sed 's/cpu //')
+		idle=$(echo $cpu | awk '{print $4}')
+		total=$(echo $cpu | awk '{print $1+$2+$3+$4+$5+$6+$7+$8}')
+		diff_idle=$(($idle-$prev_idle))
+		diff_total=$(($total-$prev_total))
+		usage=$(($((1000*$(($diff_total-$diff_idle))/$diff_total+5))/10))
+		memfree=$(cat /proc/meminfo | grep -i memfree | awk '{print $2}')
+		cached=$(cat /proc/meminfo | grep -i cached | awk '{print $2}')
+		memtotal=$(cat /proc/meminfo | grep -i memtotal | awk '{print $2}')
+		memused=$(echo $memtotal $cached $memfree | awk '{print $1-$2-$3}')
+		usedmb=$(($memused/1024))
+		usedGB=$(echo $usedmb | awk '{printf "%.2f", $1/1024}')
+		if [[ "$usedmb" -ge 1000 ]]; then
+			iused="$usedGB"GB
+		else
+			iused="$usedmb"MB
+		fi
+		totalmb=$(($memtotal/1024))
+		totalGB=$(echo $totalmb | awk '{printf "%.2f", $1/1024}')
+		if [[ "$totalmb" -ge 1000 ]]; then
+			itotal="$totalGB"GB
+		else
+			itotal="$totalmb"MB
+		fi
+		if [[ "$2" ]]; then
+			count=$2
+		else
+			count=25
+		fi
+		ibar=$(echo $usedmb $totalmb $count | awk '{printf "%d", $1/$2*$3}')
+		isheep=$(for x in $(seq 1 $count); do
+			if [[ "$x" -le "$ibar" ]]; then
+				echo -n -e '|'
+			else
+				echo -n -e 'o'
+			fi
+		done)
+		echo -n -e "\e[3;m\r" #invert color
+		if [[ "$usage" -lt 10 ]]; then
+			echo -n -e "CPU usage:  $usage%"
+		elif [[ "$usage" -lt 100 ]]; then
+			echo -n -e "CPU usage: $usage%"
+		else
+			echo -n -e "CPU usage:$usage%"
+		fi
+		echo -n -e "  "
+		if [[ "$usedmb" -ge 1000 ]]; then
+			echo -n -e "RAM usage:  $iused/$itotal"
+		else
+			if [[ "$usedmb" -lt 10 ]]; then
+				echo -n -e "RAM usage:   $iused/$itotal"
+			elif [[ "$usedmb" -lt 100 ]]; then
+				echo -n -e "RAM usage:  $iused/$itotal"
+			elif [[ "$usedmb" -lt 1000 ]]; then
+				echo -n -e "RAM usage: $iused/$itotal"
+			fi
+		fi
+		echo -n -e "  "
+		echo -n -e $isheep
+		echo -n -e "\e[0m"
+		prev_total=$total
+		prev_idle=$idle
+		if [[ "$1" ]]; then
+			sleep $1
+		else
+			sleep 1
+		fi
+	done
+fi
+
+exit 0 #EOF
