@@ -406,7 +406,7 @@ if [ ! -e "$file" ] && [ ! -d "$file" ]; then
 	exit 127
 fi
 count=0
-for i in $(ls -l $dir | grep $base | head -1); do
+for i in $(ls -l $dir | grep "\<$base\> ->" | head -1); do
 	count=$((count+1))
 	if [ "$i" == "->" ]; then
 		found=y
@@ -424,7 +424,7 @@ if [ ! "$found" ] || [ "$file" == "/" ]; then
 fi
 #link=$((count-1))
 orig=$((count+1))
-linked_file=$(ls -l $dir | grep $base | head -1 | awk '{print $'"$orig"'}')
+linked_file=$(ls -l $dir | grep "\<$base\> ->" | head -1 | awk '{print $'"$orig"'}')
 echo "$linked_file"
 
 exit 0 #EOF
