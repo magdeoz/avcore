@@ -397,17 +397,20 @@ if [[ "$proto" == 1 ]]; then
 	while true; do
 		memfree=$(cat /proc/meminfo | grep -i memfree | awk '{print $2}')
 		cached=$(cat /proc/meminfo | grep -i cached | awk '{print $2}')
+		if [[ ! "$cached" ]]; then #cygwin compatibility
+			cached=0
+		fi
 		memtotal=$(cat /proc/meminfo | grep -i memtotal | awk '{print $2}')
-		memused=$(echo $memtotal $cached $memfree | awk '{print $1-$2-$3}')
+		memused=$(awk 'BEGIN{printf "%d", '"$memtotal"'-'"$cached"'-'"$memfree"'}')
 		usedmb=$(($memused/1024))
-		usedGB=$(echo $usedmb | awk '{printf "%.2f", $1/1024}')
+		usedGB=$(awk 'BEGIN{printf "%.2f", '"$usedmb"'/1024}')
 		if [[ "$usedmb" -ge 1000 ]]; then
 			iused="$usedGB"GB
 		else
 			iused="$usedmb"MB
 		fi
 		totalmb=$(($memtotal/1024))
-		totalGB=$(echo $totalmb | awk '{printf "%.2f", $1/1024}')
+		totalGB=$(awk 'BEGIN{printf "%.2f", '"$totalmb"'/1024}')
 		if [[ "$totalmb" -ge 1000 ]]; then
 			itotal="$totalGB"GB
 		else
@@ -418,7 +421,7 @@ if [[ "$proto" == 1 ]]; then
 		else
 			count=25
 		fi
-		ibar=$(echo $usedmb $totalmb $count | awk '{printf "%d", $1/$2*$3}')
+		ibar=$(awk 'BEGIN{printf "%d", '"$usedmb"'/'"$totalmb"'*'"$count"'}')
 		isheep=$(for x in $(seq 1 $count); do
 			if [[ "$x" -le "$ibar" ]]; then
 				echo -n -e '|'
@@ -478,17 +481,20 @@ else
 		usage=$(($((1000*$(($diff_total-$diff_idle))/$diff_total+5))/10))
 		memfree=$(cat /proc/meminfo | grep -i memfree | awk '{print $2}')
 		cached=$(cat /proc/meminfo | grep -i cached | awk '{print $2}')
+		if [[ ! "$cached" ]]; then #cygwin compatibility
+			cached=0
+		fi
 		memtotal=$(cat /proc/meminfo | grep -i memtotal | awk '{print $2}')
-		memused=$(echo $memtotal $cached $memfree | awk '{print $1-$2-$3}')
+		memused=$(awk 'BEGIN{printf "%d", '"$memtotal"'-'"$cached"'-'"$memfree"'}')
 		usedmb=$(($memused/1024))
-		usedGB=$(echo $usedmb | awk '{printf "%.2f", $1/1024}')
+		usedGB=$(awk 'BEGIN{printf "%.2f", '"$usedmb"'/1024}')
 		if [[ "$usedmb" -ge 1000 ]]; then
 			iused="$usedGB"GB
 		else
 			iused="$usedmb"MB
 		fi
 		totalmb=$(($memtotal/1024))
-		totalGB=$(echo $totalmb | awk '{printf "%.2f", $1/1024}')
+		totalGB=$(awk 'BEGIN{printf "%.2f", '"$totalmb"'/1024}')
 		if [[ "$totalmb" -ge 1000 ]]; then
 			itotal="$totalGB"GB
 		else
@@ -499,7 +505,7 @@ else
 		else
 			count=25
 		fi
-		ibar=$(echo $usedmb $totalmb $count | awk '{printf "%d", $1/$2*$3}')
+		ibar=$(awk 'BEGIN{printf "%d", '"$usedmb"'/'"$totalmb"'*'"$count"'}')
 		isheep=$(for x in $(seq 1 $count); do
 			if [[ "$x" -le "$ibar" ]]; then
 				echo -n -e '|'

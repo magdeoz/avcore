@@ -543,8 +543,8 @@ opt_k(){
 	fi
 	noerror=0
 	error=0
-	renice_val=$(echo $kernel_priority | awk '{printf "%.0f\n", 20-$1/5}')
-	renice_val2=$(echo $driver_priority | awk '{printf "%.0f\n", 20-$1/5}')
+	renice_val=$(awk 'BEGIN{printf "%.0f\n", 20-'"$kernel_priority"'/5}')
+	renice_val2=$(awk 'BEGIN{printf "%.0f\n", 20-'"$driver_priority"'/5}')
 	echo "looking for kernel drivers..."
 	for i in $(pgrep "" | grep -v $(pgrep zygote)); do
 		if [ -f /proc/$i/status ] && [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "^2$")" ]; then
@@ -810,7 +810,7 @@ opt_m(){
 		priority=5
 	fi
 	error=0
-	renice_val=$(echo $priority | awk '{printf "%.0f\n", 20-$1/5}')
+	renice_val=$(awk 'BEGIN{printf "%.0f\n", 20-'"$priority"'/5}')
 	echo "checking for services..."
 	for i in $(pgrep ""); do
 		if [[ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "\<$(pgrep zygote)\>")" ]]; then
