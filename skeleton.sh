@@ -397,7 +397,7 @@ task(){
 		stat=$(cat /proc/$1/task/$2/stat)
 		rm=${stat#*)}
 		proctime=$(echo $rm | cut -d' ' -f12)
-		buffer=$(echo $proctime $prev_proctime $4 | awk '{printf "%d\n", ($1-$2)/$3}')
+		buffer=$(awk 'BEGIN{printf "%d\n", ('"$proctime"'-'"$prev_proctime"')/'"$4"'}')
 		#buffer=$(echo $proctime $prev_proctime $4 | awk '{print ($1-$2)/$3}' | cut -d'.' -f1)
 		if [[ $buffer -gt $3 ]]; then
 			renice $5 $2
@@ -438,7 +438,7 @@ test_task(){
 	stat=$(cat /proc/$1/task/$2/stat)
 	rm=${stat#*)}
 	proctime=$(echo $rm | cut -d' ' -f12)
-	buffer=$(echo $proctime $prev_proctime $4 | awk '{printf "%d\n", ($1-$2)/$3}')
+	buffer=$(awk 'BEGIN{printf "%d\n", ('"$proctime"'-'"$prev_proctime"')/'"$4"'}')
 	#buffer=$(echo $proctime $prev_proctime $4 | awk '{print ($1-$2)/$3}' | cut -d'.' -f1)
 	if [[ $buffer -gt $3 ]]; then
 		renice $5 $2
