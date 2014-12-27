@@ -35,7 +35,7 @@ until [[ "$1" != --verbose ]] && [[ "$1" != --supass ]] && [[ "$1" != --bbpass ]
 	fi
 	shift
 done
-readonly version="0.2"
+readonly version="0.1"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -239,7 +239,7 @@ error(){
 	message=$@
 	date '+date: %m/%d/%y%ttime: %H:%M:%S ->'"$message"'' >> $DIR_NAME/$NO_EXTENSION.log
 }
-# cpuramcheck.sh
+# task.sh
 #
 # Copyright (C) 2013-2015  hoholee12@naver.com
 #
@@ -253,7 +253,15 @@ set +e #error proof
 # Busybox Applet Generator 2.4
 # You can type in any commands you would want it to check.
 # It will start by checking from cmd1, and its limit is up to cmd224.
-cmd1=ls
+cmd1=dirname
+cmd2=basename
+cmd3=ls
+cmd4=grep
+cmd5=head
+cmd6=awk
+cmd7=cat
+cmd8=pgrep
+cmd9=ps
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 
 silent_mode= # enabling this will hide errors.
@@ -374,33 +382,25 @@ Roll_Down(){
 }
 Roll_Down
 
-# Main script
-case $1 in
-	-h | --help)
-		echo "$BASE_NAME v$version
-Copyright (C) 2013-2015 hoholee12@naver.com
-Usage: $BASE_NAME [interval] [bar_length] -h -i -d
-"
-		shift
-		exit 0
-	;;
-	-i)
-		proto=1
-		shift
-	;;
-	-d | --debug)
-		debug_shell
-		shift
-	;;
-esac
-if [[ "$proto" == 1 ]]; then
-	IFS=','
-	for i in $(grep cpu /proc/stat | tr '\n' ','); do
-		eval prev_$(echo $i | cut -d' ' -f1)_total=$(IFS=' '; x=0; for j in $(echo $i | cut -d' ' -f2-); do x=$((x+j)); done; echo $x)
-		eval prev_$(echo $i | cut -d' ' -f1)_idle=$(echo $i | cut -d' ' -f2- | cut -d' ' -f4)
-	done
-	unset IFS
+task_service(){
+	lmk_values=$1
+	exceed_limit=$2
+	latency=$3
+	kill_level=$4
+	memfree=$(cat /proc/meminfo | grep -i memfree | awk '{print $2}')
+	cached=$(cat /proc/meminfo | grep -i cached | awk '{print $2}')
+	if [[ ! "$cached" ]]; then #cygwin compatibility
+		cached=0
+	fi
+	memtotal=$(cat /proc/meminfo | grep -i memtotal | awk '{print $2}')
+	memused=$(awk 'BEGIN{printf "%d", '"$memtotal"'-'"$cached"'-'"$memfree"'}')
+	good_minfree=$(cat /sys/module/lowmemorykiller/parameters/minfree | tr ',' ' ' | awk '{printf"%d,%d,%d,%d,%d,%d", $1,$2,$3,$4,'"$memtotal"'/4,'"$memtotal"'/4}')
+	good_limit=$(echo $lmk_values | tr ',' ' ' | awk '{print $3}')
+	good_limit2=$(echo $lmk_values | tr ',' ' ' | awk '{print $4}')
 	while true; do
+		if [[ "$(cat /sys/module/lowmemorykiller/parameters/minfree)" != $good_minfree ]]; then
+			echo $good_minfree > /sys/module/lowmemorykiller/parameters/minfree
+		fi
 		memfree=$(cat /proc/meminfo | grep -i memfree | awk '{print $2}')
 		cached=$(cat /proc/meminfo | grep -i cached | awk '{print $2}')
 		if [[ ! "$cached" ]]; then #cygwin compatibility
@@ -408,148 +408,217 @@ if [[ "$proto" == 1 ]]; then
 		fi
 		memtotal=$(cat /proc/meminfo | grep -i memtotal | awk '{print $2}')
 		memused=$(awk 'BEGIN{printf "%d", '"$memtotal"'-'"$cached"'-'"$memfree"'}')
-		usedmb=$(($memused/1024))
-		usedGB=$(awk 'BEGIN{printf "%.2f", '"$usedmb"'/1024}')
-		if [[ "$usedmb" -ge 1000 ]]; then
-			iused="$usedGB"GB
-		else
-			iused="$usedmb"MB
-		fi
-		totalmb=$(($memtotal/1024))
-		totalGB=$(awk 'BEGIN{printf "%.2f", '"$totalmb"'/1024}')
-		if [[ "$totalmb" -ge 1000 ]]; then
-			itotal="$totalGB"GB
-		else
-			itotal="$totalmb"MB
-		fi
-		if [[ "$2" ]]; then
-			count=$2
-		else
-			count=25
-		fi
-		ibar=$(awk 'BEGIN{printf "%d", '"$usedmb"'/'"$totalmb"'*'"$count"'}')
-		isheep=$(for x in $(seq 1 $count); do
-			if [[ "$x" -le "$ibar" ]]; then
-				echo -n -e '|'
+		if [[ "$((memused*100/memtotal))" -gt "$exceed_limit" ]]; then
+			if [[ "$kill_level" == 1 ]]; then
+				for i in $(pgrep -l "" | grep ' com\| org\| app' | awk '{print $1}' | grep -v $(pgrep voodoo)); do #this would be the most dirtiest hack i have ever made.:p
+					adj=$(cat /proc/$i/oom_adj)
+					if [[ "$adj" -eq "$good_limit" ]]||[[ "$adj" -gt "$good_limit2" ]]; then
+						kill -9 $i
+					fi
+				done
 			else
-				echo -n -e 'o'
-			fi
-		done)
-		echo -n -e "\e[3;m\rtotal " #invert color
-		IFS=','
-		for i in $(grep cpu /proc/stat | tr '\n' ','); do
-			total=$(IFS=' '; x=0; for j in $(echo $i | cut -d' ' -f2-); do x=$((x+j)); done; echo $x)
-			idle=$(echo $i | cut -d' ' -f2- | cut -d' ' -f4)
-			eval diff_$(echo $i | cut -d' ' -f1)_total=$(($total-$(eval echo \$prev_$(echo $i | cut -d' ' -f1)_total)))
-			eval diff_$(echo $i | cut -d' ' -f1)_idle=$(($idle-$(eval echo \$prev_$(echo $i | cut -d' ' -f1)_idle)))
-			eval prev_$(echo $i | cut -d' ' -f1)_total=$total
-			eval prev_$(echo $i | cut -d' ' -f1)_idle=$idle
-			usage=$(($((1000*$(($(eval echo \$diff_$(echo $i | cut -d' ' -f1)_total)-$(eval echo \$diff_$(echo $i | cut -d' ' -f1)_idle)))/$(eval echo \$diff_$(echo $i | cut -d' ' -f1)_total)+5))/10))
-			if [[ "$usage" -lt 10 ]]; then
-				echo -n -e "$(echo $i | cut -d' ' -f1) usage:  $usage%"
-			elif [[ "$usage" -lt 100 ]]; then
-				echo -n -e "$(echo $i | cut -d' ' -f1) usage: $usage%"
-			else
-				echo -n -e "$(echo $i | cut -d' ' -f1) usage:$usage%"
-			fi
-			echo -n -e " "
-		done
-		unset IFS
-		if [[ "$usedmb" -ge 1000 ]]; then
-			echo -n -e "RAM usage:  $iused/$itotal"
-		else
-			if [[ "$usedmb" -lt 10 ]]; then
-				echo -n -e "RAM usage:   $iused/$itotal"
-			elif [[ "$usedmb" -lt 100 ]]; then
-				echo -n -e "RAM usage:  $iused/$itotal"
-			elif [[ "$usedmb" -lt 1000 ]]; then
-				echo -n -e "RAM usage: $iused/$itotal"
+				for i in $(pgrep -l "" | grep ' com\| org\| app' | awk '{print $1}' | grep -v $(pgrep voodoo)); do
+					adj=$(cat /proc/$i/oom_adj)
+					if [[ "$adj" -eq "$good_limit" ]]; then
+						kill -9 $i
+					fi
+				done
 			fi
 		fi
-		echo -n -e "  "
-		echo -n -e $isheep
-		echo -n -e "\e[0m"
-		if [[ "$1" ]]; then
-			sleep $1
-		else
-			sleep 1
-		fi
+		sleep $latency
 	done
+}
+
+task_settings(){
+	if [[ ! -e /data/task_settings_pid ]]; then #task_settings_pid file missing.
+		error task_settings_pid file missing.
+		exit 1
+	elif [[ ! -f /data/task_settings_pid ]]; then #task_settings_pid is not a file.
+		error task_settings_pid is not a file.
+		exit 1
+	elif [[ ! -r /data/task_settings_pid ]]||[[ ! -w /data/task_settings_pid ]]; then #task_settings_pid file inaccessible
+		error task_settings_pid file inaccessible.
+		exit 1
+	elif [[ ! "$(ps | grep " $(cat /data/task_settings_pid) " | grep -v grep)" ]]; then #identification
+		echo $$ > /data/task_settings_pid
+	else
+		error already running.
+		exit 1
+	fi
+	if [[ ! -e /sys/module/lowmemorykiller/parameters/adj ]]; then
+		error not supported.
+		exit 1
+	fi
+	lmk_values=$(cat /sys/module/lowmemorykiller/parameters/adj)
+	if [[ "$(echo $lmk_values | cut -d',' -f6)" -gt 15 ]]; then
+		lmk_values=$(echo $lmk_values | awk '{printf"%d,%d,%d,%d,%d,%d",$1*15/1000+0.5,$2*15/1000+0.5,$3*15/1000+0.5,$4*15/1000+0.5,$5*15/1000+0.5,$6*15/1000+0.5}')
+	fi
+	if [[ ! -e /data/taskconfig.cfg ]]; then #config file missing.
+		error config file missing.
+		exit 1
+	elif [[ ! -f /data/taskconfig.cfg ]]; then #config is not a file.
+		error config is not a file.
+		exit 1
+	elif [[ ! -s /data/taskconfig.cfg ]]; then #config file empty.
+		error config file empty.
+		exit 1
+	elif [[ ! -r /data/taskconfig.cfg ]]||[[ ! -w /data/taskconfig.cfg ]]; then #config file inaccessible
+		error config file inaccessible
+		exit 1
+	fi
+	exceed_limit=$(cat /data/taskconfig.cfg | grep '^exceed_limit=' | tail -n1 | cut -d'=' -f2)
+	latency=$(cat /data/taskconfig.cfg | grep '^latency=' | tail -n1 | cut -d'=' -f2)
+	kill_level=$(cat /data/taskconfig.cfg | grep '^kill_level=' | tail -n1 | cut -d'=' -f2)
+	if [[ "$(echo $exceed_limit | sed 's/[0-9]//g')" ]]; then
+		error bad parameter.
+		exit 1
+	elif [[ "$exceed_limit" -lt 1 ]]; then
+		sed -i 's/^exceed_limit='"$exceed_limit"'/exceed_limit=1/' /data/taskconfig.cfg
+		exceed_limit=$(cat /data/taskconfig.cfg | grep '^exceed_limit=' | tail -n1 | cut -d'=' -f2)
+	elif [[ "$exceed_limit" -gt 100 ]]; then
+		sed -i 's/^exceed_limit='"$exceed_limit"'/exceed_limit=100/' /data/taskconfig.cfg
+		exceed_limit=$(cat /data/taskconfig.cfg | grep '^exceed_limit=' | tail -n1 | cut -d'=' -f2)
+	fi
+	latency_config=$(echo $latency | sed 's/[0-9]//g' | sed 's/s//')
+	latency_config2=$(echo $latency | sed 's/s//')
+	if [[ "$latency_config" ]]; then
+		if [[ "$latency_config" == m  ]]; then
+			latency=$((latency_config*60))
+		elif [[ "$latency_config" == h  ]]; then
+			latency=$((latency_config*3600))
+		elif [[ "$latency_config" == d  ]]; then
+			latency=$((latency_config*86400))
+		else
+			error bad parameter.
+			exit 1
+		fi
+	elif [[ "$latency_config2" -lt 1 ]]; then
+		sed -i 's/^latency='"$latency_config2"'/latency=1/' /data/taskconfig.cfg
+		latency=$(cat /data/taskconfig.cfg | grep '^latency=' | tail -n1 | cut -d'=' -f2)
+	fi
+	if [[ "$(echo $kill_level | sed 's/[0-9]//g')" ]]; then
+		error bad parameter.
+		exit 1
+	elif [[ "$kill_level" -lt 0 ]]; then
+		sed -i 's/^kill_level='"$kill_level"'/kill_level=0/' /data/taskconfig.cfg
+		kill_level=$(cat /data/taskconfig.cfg | grep '^kill_level=' | tail -n1 | cut -d'=' -f2)
+	elif [[ "$kill_level" -gt 1 ]]; then
+		sed -i 's/^kill_level='"$kill_level"'/kill_level=1/' /data/taskconfig.cfg
+		kill_level=$(cat /data/taskconfig.cfg | grep '^kill_level=' | tail -n1 | cut -d'=' -f2)
+	fi
+	if [[ ! -e /data/task_service_pid ]]; then #task_service_pid file missing.
+		error task_service_pid file missing.
+		exit 1
+	elif [[ ! -f /data/task_service_pid ]]; then #task_service_pid is not a file.
+		error task_service_pid is not a file.
+		exit 1
+	elif [[ ! -r /data/task_service_pid ]]||[[ ! -w /data/task_service_pid ]]; then #task_service_pid file inaccessible
+		error task_service_pid file inaccessible.
+		exit 1
+	elif [[ ! "$(ps | grep " $(cat /data/task_service_pid) " | grep -v grep)" ]]; then #identification
+		task_service $lmk_values $exceed_limit $latency $kill_level & echo $! > /data/task_service_pid
+	fi
+	while true; do
+		prev_lmk_values=lmk_values
+		prev_exceed_limit=exceed_limit
+		prev_latency=latency
+		prev_kill_level=kill_level
+		lmk_values=$(cat /sys/module/lowmemorykiller/parameters/adj)
+		if [[ "$(echo $lmk_values | cut -d',' -f6)" -gt 15 ]]; then
+			lmk_values=$(echo $lmk_values | awk '{printf"%d,%d,%d,%d,%d,%d",$1*15/1000+0.5,$2*15/1000+0.5,$3*15/1000+0.5,$4*15/1000+0.5,$5*15/1000+0.5,$6*15/1000+0.5}')
+		fi
+		if [[ ! -e /data/taskconfig.cfg ]]; then #config file missing.
+			error config file missing.
+			exit 1
+		elif [[ ! -f /data/taskconfig.cfg ]]; then #config is not a file.
+			error config is not a file.
+			exit 1
+		elif [[ ! -s /data/taskconfig.cfg ]]; then #config file empty.
+			error config file empty.
+			exit 1
+		elif [[ ! -r /data/taskconfig.cfg ]]||[[ ! -w /data/taskconfig.cfg ]]; then #config file inaccessible
+			error config file inaccessible
+			exit 1
+		fi
+		exceed_limit=$(cat /data/taskconfig.cfg | grep '^exceed_limit=' | tail -n1 | cut -d'=' -f2)
+		latency=$(cat /data/taskconfig.cfg | grep '^latency=' | tail -n1 | cut -d'=' -f2)
+		kill_level=$(cat /data/taskconfig.cfg | grep '^kill_level=' | tail -n1 | cut -d'=' -f2)
+		if [[ "$(echo $exceed_limit | sed 's/[0-9]//g')" ]]; then
+			error bad parameter.
+			exit 1
+		elif [[ "$exceed_limit" -lt 1 ]]; then
+			sed -i 's/^exceed_limit='"$exceed_limit"'/exceed_limit=1/' /data/taskconfig.cfg
+			exceed_limit=$(cat /data/taskconfig.cfg | grep '^exceed_limit=' | tail -n1 | cut -d'=' -f2)
+		elif [[ "$exceed_limit" -gt 100 ]]; then
+			sed -i 's/^exceed_limit='"$exceed_limit"'/exceed_limit=100/' /data/taskconfig.cfg
+			exceed_limit=$(cat /data/taskconfig.cfg | grep '^exceed_limit=' | tail -n1 | cut -d'=' -f2)
+		fi
+		latency_config=$(echo $latency | sed 's/[0-9]//g' | sed 's/s//')
+		latency_config2=$(echo $latency | sed 's/s//')
+		if [[ "$latency_config" ]]; then
+			if [[ "$latency_config" == m  ]]; then
+				latency=$((latency_config*60))
+			elif [[ "$latency_config" == h  ]]; then
+				latency=$((latency_config*3600))
+			elif [[ "$latency_config" == d  ]]; then
+				latency=$((latency_config*86400))
+			else
+				error bad parameter.
+				exit 1
+			fi
+		elif [[ "$latency_config2" -lt 1 ]]; then
+			sed -i 's/^latency='"$latency_config2"'/latency=1/' /data/taskconfig.cfg
+			latency=$(cat /data/taskconfig.cfg | grep '^latency=' | tail -n1 | cut -d'=' -f2)
+		fi
+		if [[ "$(echo $kill_level | sed 's/[0-9]//g')" ]]; then
+			error bad parameter.
+			exit 1
+		elif [[ "$kill_level" -lt 0 ]]; then
+			sed -i 's/^kill_level='"$kill_level"'/kill_level=0/' /data/taskconfig.cfg
+			kill_level=$(cat /data/taskconfig.cfg | grep '^kill_level=' | tail -n1 | cut -d'=' -f2)
+		elif [[ "$kill_level" -gt 1 ]]; then
+			sed -i 's/^kill_level='"$kill_level"'/kill_level=1/' /data/taskconfig.cfg
+			kill_level=$(cat /data/taskconfig.cfg | grep '^kill_level=' | tail -n1 | cut -d'=' -f2)
+		fi
+		if [[ ! -e /data/task_service_pid ]]; then #task_service_pid file missing.
+			error task_service_pid file missing.
+			exit 1
+		elif [[ ! -f /data/task_service_pid ]]; then #task_service_pid is not a file.
+			error task_service_pid is not a file.
+			exit 1
+		elif [[ ! -s /data/task_service_pid ]]; then #task_service_pid file empty.
+			error task_service_pid file empty.
+			exit 1
+		elif [[ ! -r /data/task_service_pid ]]||[[ ! -w /data/task_service_pid ]]; then #task_service_pid file inaccessible
+			error task_service_pid file inaccessible.
+			exit 1
+		elif [[ "$prev_lmk_values" != "$lmk_values" ]]||[[ "$prev_exceed_limit" != "$exceed_limit" ]]||[[ "$prev_latency" != "$latency" ]]||[[ "$prev_kill_level" != "$kill_level" ]]; then
+			kill -9 $(cat /data/task_service_pid) #needs fixing
+			task_service $lmk_values $exceed_limit $latency $kill_level & echo $! > /data/task_service_pid
+		fi
+		sleep 5
+	done
+}
+
+quick_setup(){
+	echo "" > /data/task_settings_pid
+	echo "" > /data/task_service_pid
+	echo "exceed_limit=50
+latency=5m
+kill_level=1" > /data/taskconfig.cfg
+	chmod 777 /data/task_settings_pid
+	chmod 777 /data/task_service_pid
+	chmod 777 /data/taskconfig.cfg
+	echo "done."
+}
+
+echo task manager v$version
+long_line 1
+if [[ ! "$(echo $(install -i) | grep $DIR_NAME | sed 's/ //g')" ]]; then
+	echo "type 'install' to begin installation!"
 else
-	prev_total=0
-	prev_idle=0
-	while true; do
-		cpu=$(cat /proc/stat | head -n1 | sed 's/cpu //')
-		idle=$(echo $cpu | awk '{print $4}')
-		total=$(echo $cpu | awk '{print $1+$2+$3+$4+$5+$6+$7+$8}')
-		diff_idle=$(($idle-$prev_idle))
-		diff_total=$(($total-$prev_total))
-		usage=$(($((1000*$(($diff_total-$diff_idle))/$diff_total+5))/10))
-		memfree=$(cat /proc/meminfo | grep -i memfree | awk '{print $2}')
-		cached=$(cat /proc/meminfo | grep -i cached | awk '{print $2}')
-		if [[ ! "$cached" ]]; then #cygwin compatibility
-			cached=0
-		fi
-		memtotal=$(cat /proc/meminfo | grep -i memtotal | awk '{print $2}')
-		memused=$(awk 'BEGIN{printf "%d", '"$memtotal"'-'"$cached"'-'"$memfree"'}')
-		usedmb=$(($memused/1024))
-		usedGB=$(awk 'BEGIN{printf "%.2f", '"$usedmb"'/1024}')
-		if [[ "$usedmb" -ge 1000 ]]; then
-			iused="$usedGB"GB
-		else
-			iused="$usedmb"MB
-		fi
-		totalmb=$(($memtotal/1024))
-		totalGB=$(awk 'BEGIN{printf "%.2f", '"$totalmb"'/1024}')
-		if [[ "$totalmb" -ge 1000 ]]; then
-			itotal="$totalGB"GB
-		else
-			itotal="$totalmb"MB
-		fi
-		if [[ "$2" ]]; then
-			count=$2
-		else
-			count=25
-		fi
-		ibar=$(awk 'BEGIN{printf "%d", '"$usedmb"'/'"$totalmb"'*'"$count"'}')
-		isheep=$(for x in $(seq 1 $count); do
-			if [[ "$x" -le "$ibar" ]]; then
-				echo -n -e '|'
-			else
-				echo -n -e 'o'
-			fi
-		done)
-		echo -n -e "\e[3;m\r" #invert color
-		if [[ "$usage" -lt 10 ]]; then
-			echo -n -e "CPU usage:  $usage%"
-		elif [[ "$usage" -lt 100 ]]; then
-			echo -n -e "CPU usage: $usage%"
-		else
-			echo -n -e "CPU usage:$usage%"
-		fi
-		echo -n -e "  "
-		if [[ "$usedmb" -ge 1000 ]]; then
-			echo -n -e "RAM usage:  $iused/$itotal"
-		else
-			if [[ "$usedmb" -lt 10 ]]; then
-				echo -n -e "RAM usage:   $iused/$itotal"
-			elif [[ "$usedmb" -lt 100 ]]; then
-				echo -n -e "RAM usage:  $iused/$itotal"
-			elif [[ "$usedmb" -lt 1000 ]]; then
-				echo -n -e "RAM usage: $iused/$itotal"
-			fi
-		fi
-		echo -n -e "  "
-		echo -n -e $isheep
-		echo -n -e "\e[0m"
-		prev_total=$total
-		prev_idle=$idle
-		if [[ "$1" ]]; then
-			sleep $1
-		else
-			sleep 1
-		fi
-	done
+	echo 'quick_setup, task_settings, task_service.'
 fi
+debug_shell
 
 exit 0 #EOF

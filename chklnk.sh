@@ -235,6 +235,10 @@ long_line(){
 	fi
 	echo
 }
+error(){
+	message=$@
+	date '+date: %m/%d/%y%ttime: %H:%M:%S ->'"$message"'' >> $DIR_NAME/$NO_EXTENSION.log
+}
 # chklnk.sh
 #
 # Copyright (C) 2013-2015  hoholee12@naver.com
