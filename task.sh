@@ -398,6 +398,7 @@ task_service(){
 	good_limit=$(echo $lmk_values | tr ',' ' ' | awk '{print $3}')
 	good_limit2=$(echo $lmk_values | tr ',' ' ' | awk '{print $4}')
 	while true; do
+		awake=$(cat /sys/power/wait_for_fb_wake)
 		if [[ "$(cat /sys/module/lowmemorykiller/parameters/minfree)" != $good_minfree ]]; then
 			echo $good_minfree > /sys/module/lowmemorykiller/parameters/minfree
 		fi
@@ -410,14 +411,14 @@ task_service(){
 		memused=$(awk 'BEGIN{printf "%d", '"$memtotal"'-'"$cached"'-'"$memfree"'}')
 		if [[ "$((memused*100/memtotal))" -gt "$exceed_limit" ]]; then
 			if [[ "$kill_level" == 1 ]]; then
-				for i in $(pgrep -l "" | grep ' com\| org\| app' | awk '{print $1}' | grep -v $(pgrep voodoo)); do #this would be the most dirtiest hack i have ever made.:p
+				for i in $(pgrep -l "" | grep ' com\| org\| app' | awk '{print $1}' | grep -v "$(pgrep voodoo)" | grep -v "$(pgrep tegrak)" | grep -v "$(pgrep launcher)" | grep -v "$(pgrep android)"); do #this would be the most dirtiest hack i have ever made.:p
 					adj=$(cat /proc/$i/oom_adj)
 					if [[ "$adj" -eq "$good_limit" ]]||[[ "$adj" -gt "$good_limit2" ]]; then
 						kill -9 $i
 					fi
 				done
 			else
-				for i in $(pgrep -l "" | grep ' com\| org\| app' | awk '{print $1}' | grep -v $(pgrep voodoo)); do
+				for i in $(pgrep -l "" | grep ' com\| org\| app' | awk '{print $1}' | grep -v "$(pgrep voodoo)" | grep -v "$(pgrep tegrak)" | grep -v "$(pgrep launcher)" | grep -v "$(pgrep android)"); do
 					adj=$(cat /proc/$i/oom_adj)
 					if [[ "$adj" -eq "$good_limit" ]]; then
 						kill -9 $i
@@ -519,6 +520,11 @@ task_settings(){
 		task_service $lmk_values $exceed_limit $latency $kill_level & echo $! > /data/task_service_pid
 	fi
 	while true; do
+		if [[ ! -e /sys/power/wait_for_fb_awake ]]; then
+			error not supported.
+			exit 1
+		fi
+		awake=$(cat /sys/power/wait_for_fb_wake)
 		prev_lmk_values=lmk_values
 		prev_exceed_limit=exceed_limit
 		prev_latency=latency
