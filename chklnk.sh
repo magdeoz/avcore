@@ -407,24 +407,24 @@ esac
 file=$1
 dir=$(dirname $file)
 base=$(basename $file)
-if [ ! -e "$file" ] && [ ! -d "$file" ]; then
+if [[ ! -e "$file" ]] && [[ ! -d "$file" ]]; then
 	echo "$file: not found"
 	exit 127
 fi
 count=0
 for i in $(ls -l $dir | grep "\<$base\> ->" | head -1); do
 	count=$((count+1))
-	if [ "$i" == "->" ]; then
+	if [[ "$i" == "->" ]]; then
 		found=y
 		break
 	fi
 done 2>/dev/null
 return=$?
-if [ "$return" != 0 ]; then
+if [[ "$return" != 0 ]]; then
 	echo "$file: operation not permitted"
 	exit $return
 fi
-if [ ! "$found" ] || [ "$file" == "/" ]; then
+if [[ ! "$found" ]] || [[ "$file" == "/" ]]; then
 	echo "$file: is not a symlink"
 	exit 1
 fi
