@@ -186,11 +186,16 @@ install(){
 		echo 'please wait...'
 		loc_DIR_NAME=$(echo $loc | tr -s / \\n | head -n2	| tr -s \\n / | sed 's/\/$//')
 		mountstat=$(grep $loc_DIR_NAME /proc/mounts | head -n1)
-		if [[ "$mountstat" ]]; then
-			if [[ "$(echo $mountstat | grep ro)" ]]; then
-				ro=1
-				echo -n -e '\rmounting...'
-				mount -o remount,rw $loc_DIR_NAME
+		availperm=$(echo $mountstat | grep 'ro\|rw')
+		if [[ "$mountstat" ]]; then #partition exists
+			if [[ "$availperm" ]]; then #linux else unix
+				if [[ "$(echo $mountstat | grep ro)" ]]; then
+					ro=1
+					echo -n -e '\rmounting...'
+					mount -o remount,rw $loc_DIR_NAME
+				fi
+			else
+				ro=0
 			fi
 			if [[ "$(echo $mountstat | grep rw)" ]]; then
 				echo -n -e '\rcopying files...'
@@ -203,7 +208,16 @@ install(){
 					mount -o remount,ro $loc_DIR_NAME
 				fi
 			else
-				error=1
+				if [[ ! "$availperm" ]]; then
+					echo -n -e '\rcopying files...'
+					cp $0 $loc/$NO_EXTENSION
+					if [[ "$?" == 1 ]]; then
+						return 1
+					fi
+					chmod 755 $loc/$NO_EXTENSION
+				else
+					error=1
+				fi
 			fi
 		else
 			error=1 # exception error
