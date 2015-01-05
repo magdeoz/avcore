@@ -265,10 +265,6 @@ cmd2=basename
 cmd3=ls
 cmd4=grep
 cmd5=head
-cmd6=awk
-cmd7=cat
-cmd8=pgrep
-cmd9=ps
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 
 silent_mode=1 # enabling this will hide errors.
