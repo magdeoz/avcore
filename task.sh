@@ -237,6 +237,7 @@ long_line(){
 }
 error(){
 	message=$@
+	echo $message
 	date '+date: %m/%d/%y%ttime: %H:%M:%S ->'"$message"'' >> $DIR_NAME/$NO_EXTENSION.log
 }
 # task.sh
@@ -355,7 +356,7 @@ Busybox_Applet_Generator(){
 su_check= # root availability
 Superuser(){
 	su_check=0
-	if [[ "$(grep -i "^Uid:" /proc/$$/status | awk '{print $2}')" != 0 ]]; then
+	if [[ "$(id | tr '(' ' ' | tr ' ' '\n' | grep uid | sed 's/uid=//g')" != 0 ]]; then
 		su_check=1
 		echo "Permission denied, are you root?"
 		return 1
@@ -411,14 +412,14 @@ task_service(){
 		memused=$(awk 'BEGIN{printf "%d", '"$memtotal"'-'"$cached"'-'"$memfree"'}')
 		if [[ "$((memused*100/memtotal))" -gt "$exceed_limit" ]]; then
 			if [[ "$kill_level" == 1 ]]; then
-				for i in $(pgrep -l "" | grep ' com\| org\| app' | awk '{print $1}' | grep -v "$(pgrep voodoo)" | grep -v "$(pgrep tegrak)" | grep -v "$(pgrep launcher)" | grep -v "$(pgrep android)"); do #this would be the most dirtiest hack i have ever made.:p
+				for i in $(pgrep -l "" | grep '\.' | grep 'com\|org\|app\|android' | awk '{print $1}' | grep -v "$(pgrep voodoo)" | grep -v "$(pgrep tegrak)" | grep -v "$(pgrep launcher)" | grep -v "$(pgrep android)"); do #this would be the most dirtiest hack i have ever made.:p
 					adj=$(cat /proc/$i/oom_adj)
 					if [[ "$adj" -eq "$good_limit" ]]||[[ "$adj" -gt "$good_limit2" ]]; then
 						kill -9 $i
 					fi
 				done
 			else
-				for i in $(pgrep -l "" | grep ' com\| org\| app' | awk '{print $1}' | grep -v "$(pgrep voodoo)" | grep -v "$(pgrep tegrak)" | grep -v "$(pgrep launcher)" | grep -v "$(pgrep android)"); do
+				for i in $(pgrep -l "" | grep '\.' | grep 'com\|org\|app\|android' | awk '{print $1}' | grep -v "$(pgrep voodoo)" | grep -v "$(pgrep tegrak)" | grep -v "$(pgrep launcher)" | grep -v "$(pgrep android)"); do
 					adj=$(cat /proc/$i/oom_adj)
 					if [[ "$adj" -eq "$good_limit" ]]; then
 						kill -9 $i

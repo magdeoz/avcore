@@ -237,6 +237,7 @@ long_line(){
 }
 error(){
 	message=$@
+	echo $message
 	date '+date: %m/%d/%y%ttime: %H:%M:%S ->'"$message"'' >> $DIR_NAME/$NO_EXTENSION.log
 }
 # cpuramcheck.sh
@@ -347,7 +348,7 @@ Busybox_Applet_Generator(){
 su_check= # root availability
 Superuser(){
 	su_check=0
-	if [[ "$(grep -i "^Uid:" /proc/$$/status | awk '{print $2}')" != 0 ]]; then
+	if [[ "$(id | tr '(' ' ' | tr ' ' '\n' | grep uid | sed 's/uid=//g')" != 0 ]]; then
 		su_check=1
 		echo "Permission denied, are you root?"
 		return 1
