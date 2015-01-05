@@ -8,9 +8,13 @@ run_Superuser=1
 use_urand=1
 # invert print_RANDOM_BYTE.
 invert_rand=1
-until [[ "$1" != --verbose ]] && [[ "$1" != --supass ]] && [[ "$1" != --bbpass ]] && [[ "$1" != --urand ]] && [[ "$1" != --invrand ]] && [[ "$1" != --renice ]]; do
+# launch install() at start.(ONLY FOR REFERENCE, DON'T TOUCH!)
+install=0
+until [[ "$1" != --verbose ]] && [[ "$1" != --supass ]] && [[ "$1" != --bbpass ]] && [[ "$1" != --urand ]] && [[ "$1" != --invrand ]] && [[ "$1" != --renice ]] && [[ "$1" != --install ]]; do
 	if [[ "$1" == --verbose ]]; then
 		set -x
+	elif [[ "$1" == --install ]]; then
+		readonly install=1
 	elif [[ "$1" == --supass ]] && [[ "$run_Superuser" != 0 ]]; then
 		readonly run_Superuser=0
 	elif [[ "$1" == --bbpass ]] && [[ "$run_Busybox_Applet_Generator" != 0 ]]; then
@@ -404,6 +408,11 @@ Roll_Down(){
 		if [[ "$return" -ne 0 ]]; then
 			exit $return
 		fi
+	fi
+	if [[ "$install" == 1 ]]; then
+		install
+		return=$?
+		exit $return
 	fi
 }
 
