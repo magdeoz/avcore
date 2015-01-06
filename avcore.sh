@@ -185,42 +185,38 @@ install(){
 		fi
 		echo 'please wait...'
 		loc_DIR_NAME=$(echo $loc | tr -s / \\n | head -n2	| tr -s \\n / | sed 's/\/$//')
-		mountstat=$(grep $loc_DIR_NAME /proc/mounts | head -n1)
+		mountstat=$(mount | grep $loc_DIR_NAME | head -n1)
 		availperm=$(echo $mountstat | grep 'ro\|rw')
-		if [[ "$mountstat" ]]; then #partition exists
-			if [[ "$availperm" ]]; then #linux else unix
-				if [[ "$(echo $mountstat | grep ro)" ]]; then
-					ro=1
-					echo -n -e '\rmounting...'
-					mount -o remount,rw $loc_DIR_NAME
-				fi
-			else
-				ro=0
+		if [[ "$availperm" ]]; then #linux else unix
+			if [[ "$(echo $mountstat | grep ro)" ]]; then
+				ro=1
+				echo -n -e '\rmounting...'
+				mount -o remount,rw $loc_DIR_NAME
 			fi
-			if [[ "$(echo $mountstat | grep rw)" ]]; then
+		else
+			ro=0
+		fi
+		if [[ "$(echo $mountstat | grep rw)" ]]; then
+			echo -n -e '\rcopying files...'
+			cp $0 $loc/$NO_EXTENSION
+			if [[ "$?" == 1 ]]; then
+				return 1
+			fi
+			chmod 755 $loc/$NO_EXTENSION
+			if [[ "$ro" == 1 ]]; then
+				mount -o remount,ro $loc_DIR_NAME
+			fi
+		else
+			if [[ ! "$availperm" ]]; then
 				echo -n -e '\rcopying files...'
 				cp $0 $loc/$NO_EXTENSION
 				if [[ "$?" == 1 ]]; then
 					return 1
 				fi
 				chmod 755 $loc/$NO_EXTENSION
-				if [[ "$ro" == 1 ]]; then
-					mount -o remount,ro $loc_DIR_NAME
-				fi
 			else
-				if [[ ! "$availperm" ]]; then
-					echo -n -e '\rcopying files...'
-					cp $0 $loc/$NO_EXTENSION
-					if [[ "$?" == 1 ]]; then
-						return 1
-					fi
-					chmod 755 $loc/$NO_EXTENSION
-				else
-					error=1
-				fi
+				error=1
 			fi
-		else
-			error=1 # exception error
 		fi
 		if [[ "$error" == 1 ]]; then
 			echo -e "internal error! please use '--verbose' and try again. \e[1;31m\"error code 1\"\e[0m"
