@@ -282,9 +282,12 @@ cmd= # It notifies the generator how many cmds are available for check. Leave it
 silent_mode= # enabling this will hide errors.
 # This feature might not be compatible with some other multi-call binaries.
 # if similar applets are found and Busybox do not have them, it will still continue but leave out some error messages regarding compatibility issues.
+bb_check= # BB availability.
 Busybox_Applet_Generator(){
+	bb_check=0
 	local n i busyboxloc busyboxenv fail
 	if [[ ! "$(busybox)" ]]; then #allow non-Busybox users to continue.
+		bb_check=1
 		if [[ "$silent_mode" != 1 ]]; then
 			echo "Busybox does not exist! Busybox is required for best compatibility!"
 		fi

@@ -3,7 +3,7 @@
 # Check Busybox Applet Generator 2.4.
 run_Busybox_Applet_Generator=1
 # Check Superuser.
-run_Superuser=
+run_Superuser=1
 # Use /dev/urandom for print_RANDOM_BYTE.
 use_urand=1
 # invert print_RANDOM_BYTE.
@@ -39,7 +39,7 @@ until [[ "$1" != --verbose ]] && [[ "$1" != --supass ]] && [[ "$1" != --bbpass ]
 	fi
 	shift
 done
-readonly version="0.0.2"
+readonly version="0.0.1"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -254,7 +254,7 @@ error(){
 	echo $message
 	date '+date: %m/%d/%y%ttime: %H:%M:%S ->'"$message"'' >> $DIR_NAME/$NO_EXTENSION.log
 }
-# chklnk.sh
+# sched_tuner.sh
 #
 # Copyright (C) 2013-2015  hoholee12@naver.com
 #
@@ -262,12 +262,7 @@ error(){
 # of this code, but changing it is not allowed.
 #
 # Changelogs:
-# alpha version
 # 0.0.1 - first release
-# 0.0.2 - permission error support added.
-#       - revamped return command.
-#       - some codes borrowed from avcore.sh
-#       - skeleton.sh
 
 set +e #error proof
 
@@ -279,9 +274,15 @@ cmd2=basename
 cmd3=ls
 cmd4=grep
 cmd5=head
+cmd6=awk
+cmd7=cat
+cmd8=pgrep
+cmd9=ps
+cmd10=chrt
+cmd11=cp
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 
-silent_mode=1 # enabling this will hide errors.
+silent_mode= # enabling this will hide errors.
 # This feature might not be compatible with some other multi-call binaries.
 # if similar applets are found and Busybox do not have them, it will still continue but leave out some error messages regarding compatibility issues.
 bb_check= # BB availability.
@@ -412,7 +413,8 @@ case $1 in
 	-h | --help)
 		echo "$BASE_NAME v$version
 Copyright (C) 2013-2015 hoholee12@naver.com
-Usage: $BASE_NAME [LOCATION] -h
+Usage: $BASE_NAME -n [SCHED_TYPE] | -a [on/off] -h | --help
+       $BASE_NAME -l lists all sched_features.
 "
 		shift
 		exit 0
@@ -423,33 +425,11 @@ Usage: $BASE_NAME [LOCATION] -h
 		fi
 	;;
 esac
-file=$1
-dir=$(dirname $file)
-base=$(basename $file)
-if [[ ! -e "$file" ]] && [[ ! -d "$file" ]]; then
-	echo "$file: not found"
-	exit 127
-fi
-count=0
-for i in $(ls -l $dir | grep "\<$base\> ->" | head -1); do
-	count=$((count+1))
-	if [[ "$i" == "->" ]]; then
-		found=y
-		break
-	fi
-done 2>/dev/null
-return=$?
-if [[ "$return" != 0 ]]; then
-	echo "$file: operation not permitted"
-	exit $return
-fi
-if [[ ! "$found" ]] || [[ "$file" == "/" ]]; then
-	echo "$file: is not a symlink"
-	exit 1
-fi
-#link=$((count-1))
-orig=$((count+1))
-linked_file=$(ls -l $dir | grep "\<$base\> ->" | head -1 | awk '{print $'"$orig"'}')
-echo "$linked_file"
+
+#WIP
+for i in $(cat /sys/kernel/debug/sched_features | sed 's/NO_//g'); do
+	echo NO_$i > /sys/kernel/debug/sched_features
+done
+echo done!
 
 exit 0 #EOF
