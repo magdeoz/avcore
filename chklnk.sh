@@ -146,7 +146,7 @@ install(){
 		echo $n hits.
 		for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
 			v=$(eval echo $i)
-			echo "would you like to install it in $v? (y/n) "
+			echo -e "\rwould you like to install it in $v? (y/n) "
 			while true; do
 				stty cbreak -echo
 				f=$(dd bs=1 count=1 2>/dev/null)
@@ -160,23 +160,24 @@ install(){
 						break
 					;;
 					q* | Q*)
+						echo canceled.
 						return 0
 					;;
 					*)
 						random=$(print_RANDOM_BYTE)
 						random=$((random%4+1))
 						if [[ "$random" -eq 1 ]]; then
-							echo -n 'what? '
+							echo -n -e '\rwhat? '
 						elif [[ "$random" -eq 2 ]]; then
-							echo -n 'i dont understand. '
+							echo -n -e '\ri dont understand. '
 						elif [[ "$random" -eq 3 ]]; then
-							echo -n 'come on mate, you could do better than that! '
+							echo -n -e '\rcome on mate, you could do better than that! '
 						elif [[ "$random" -eq 4 ]]; then
-							echo -n 'if i were you, i would choose the chicken. '
+							echo -n -e '\rif i were you, i would choose the broccoli. '
 						fi
 					;;
 				esac
-				echo press \'q\' to quit.
+				echo -n press \'q\' to quit.
 			done
 			if [[ "$loc" ]]; then
 				break
@@ -186,8 +187,8 @@ install(){
 			echo couldnt install, sorry. :p
 			return 1
 		fi
-		echo 'please wait...'
-		loc_DIR_NAME=$(echo $loc | tr -s / \\n | head -n2	| tr -s \\n / | sed 's/\/$//')
+		echo -e '\rplease wait...'
+		loc_DIR_NAME=$(echo $loc | tr -s / \\n | head -n2 | tr -s \\n / | sed 's/\/$//')
 		mountstat=$(mount | grep $loc_DIR_NAME | head -n1)
 		availperm=$(echo $mountstat | grep 'ro\|rw')
 		if [[ "$availperm" ]]; then #linux else unix
@@ -198,6 +199,36 @@ install(){
 			fi
 		else
 			ro=0
+		fi
+		if [[ -f "$loc/$NO_EXTENSION" ]]; then
+			echo 'program file already exists. overwrite? (y/n) '
+			while true; do
+				stty cbreak -echo
+				f=$(dd bs=1 count=1 2>/dev/null)
+				stty -cbreak echo
+				case $f in
+					y* | Y*)
+						break
+					;;
+					n* | N* | q* | Q*)
+						echo canceled.
+						return 0
+					;;
+					*)
+						random=$(print_RANDOM_BYTE)
+						random=$((random%4+1))
+						if [[ "$random" -eq 1 ]]; then
+							echo -n -e '\rwhat? '
+						elif [[ "$random" -eq 2 ]]; then
+							echo -n -e '\ri really dont understand. '
+						elif [[ "$random" -eq 3 ]]; then
+							echo -n -e '\rtry again. '
+						elif [[ "$random" -eq 4 ]]; then
+							echo -n -e '\rnya~ '
+						fi
+					;;
+				esac
+			done
 		fi
 		if [[ "$(echo $mountstat | grep rw)" ]]; then
 			echo -n -e '\rcopying files...'
@@ -228,7 +259,7 @@ install(){
 			echo
 			long_line 2
 			echo install complete!
-			echo type $NO_EXTENSION to run the program!
+			echo type \'$NO_EXTENSION\' to run the program!
 		fi
 	fi
 }
