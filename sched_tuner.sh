@@ -453,11 +453,6 @@ Usage: $BASE_NAME -n [SCHED_TYPE] | -a [on/off] -h | --help
 		shift
 		exit 0
 	;;
-	*)
-		if [[ ! "$1" ]]; then
-			exit 0
-		fi
-	;;
 esac
 
 detect_feature(){
@@ -528,14 +523,62 @@ apply_SS(){
 	for i in $(cat /sys/kernel/debug/sched_features | sed 's/^NO_//'); do
 		echo NO_$i > /sys/kernel/debug/sched_features
 	done
-	echo done!
 }
 main(){
-	echo "scheduling features tuner v$version
-
+	while true; do
+		clear
+		echo "scheduling features tuner v$version
 "
+		backup_feature
+		echo current scheduling features:
+		list_feature
+		echo -e '
+generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK.
+'
+		long_line 1
+		echo 'select an option:
+1)disable everything(speedhack!)
+2)backup list
+3)restore list
+4)refresh list
+5)exit'
+		stty cbreak -echo
+		f=$(dd bs=1 count=1 2>/dev/null)
+		stty -cbreak echo
+		case $f in
+			1)
+				apply_SS
+				echo done!
+				sleep 5
+			;;
+			2)
+				echo already backed up.
+				sleep 5
+			;;
+			3)
+				apply_backup
+				if [[ $? -eq 1 ]]; then
+					echo error!
+					return 1
+				fi
+				echo done!
+				sleep 5
+			;;
+			4)
+				echo refreshing...
+				sleep 0.5
+			;;
+			5)
+				return 0
+			;;
+			*)
+				echo typo.
+				sleep 5
+			;;
+		esac
+	done
 }
-
+main
 
 
 exit 0 #EOF
