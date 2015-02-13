@@ -464,7 +464,7 @@ detect_feature(){
 }
 detect_feature $(cat /sys/kernel/debug/sched_features) #init neccessary!
 list_feature(){
-	for j in $(seq -s ' mslot' 0 $n_cycle | sed 's/^0 //'); do #retrieve mslot#
+	for j in $(seq -s ' $mslot' 0 $n_cycle | sed 's/^0 //'); do #retrieve mslot#
 		v=$(eval echo $j)
 		echo -n "$v " | sed 's/^NO_//'
 		if [[ ! "$(echo $v | grep '^NO_')" ]]; then
@@ -532,7 +532,7 @@ main(){
 		echo "scheduling features tuner v$version
 "
 		backup_feature
-		echo current scheduling features:
+		echo current scheduling features list:
 		list_feature
 		echo -e '
 generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK.
@@ -570,7 +570,7 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 				echo refreshing...
 				sleep 0.5
 			;;
-			5)
+			5| q |Q)
 				return 0
 			;;
 			*)
