@@ -462,7 +462,7 @@ detect_feature(){
 		export mslot$n_cycle=$i #export to mslot# since slot# is taken.
 	done
 }
-detect_feature #init neccessary!
+detect_feature $(cat /sys/kernel/debug/sched_features) #init neccessary!
 list_feature(){
 	for j in $(seq -s ' mslot' 0 $n_cycle | sed 's/^0 //'); do #retrieve mslot#
 		v=$(eval echo $j)
@@ -477,10 +477,12 @@ list_feature(){
 backup_feature(){
 	if [[ "$EXTERNAL_STORAGE" ]]; then
 		if [[ ! -f $EXTERNAL_STORAGE/schedTunerBackup/init.bak ]]; then
+			mkdir $EXTERNAL_STORAGE/schedTunerBackup
 			echo $(cat /sys/kernel/debug/sched_features) > $EXTERNAL_STORAGE/schedTunerBackup/init.bak
 		fi
 	else
 		if [[ ! -f /data/schedTunerBackup/init.bak ]]; then
+			mkdir /data/schedTunerBackup
 			echo $(cat /sys/kernel/debug/sched_features) > /data/schedTunerBackup/init.bak
 		fi
 	fi
@@ -572,7 +574,7 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 				return 0
 			;;
 			*)
-				echo typo.
+				echo typo! try again.
 				sleep 5
 			;;
 		esac
