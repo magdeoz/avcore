@@ -146,9 +146,11 @@ install(){
 		echo $n hits.
 		for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
 			v=$(eval echo $i)
-			echo -n "would you like to install it in $v? (y/n) "
+			echo "would you like to install it in $v? (y/n) "
 			while true; do
-				read f
+				stty cbreak -echo
+				f=$(dd bs=1 count=1 2>/dev/null)
+				stty -cbreak echo
 				case $f in
 					y* | Y*)
 						loc=$v
@@ -174,6 +176,7 @@ install(){
 						fi
 					;;
 				esac
+				echo press \'q\' to quit.
 			done
 			if [[ "$loc" ]]; then
 				break

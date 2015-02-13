@@ -146,9 +146,11 @@ install(){
 		echo $n hits.
 		for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
 			v=$(eval echo $i)
-			echo -n "would you like to install it in $v? (y/n) "
+			echo "would you like to install it in $v? (y/n) "
 			while true; do
-				read f
+				stty cbreak -echo
+				f=$(dd bs=1 count=1 2>/dev/null)
+				stty -cbreak echo
 				case $f in
 					y* | Y*)
 						loc=$v
@@ -174,6 +176,7 @@ install(){
 						fi
 					;;
 				esac
+				echo press \'q\' to quit.
 			done
 			if [[ "$loc" ]]; then
 				break
@@ -426,8 +429,32 @@ Usage: $BASE_NAME -n [SCHED_TYPE] | -a [on/off] -h | --help
 	;;
 esac
 
+detect_feature(){
+	n_cycle=0
+	for i in $@; do #needs special input
+		n_cycle=$((n_cycle+1))
+		export mslot$n_cycle=$i #export to mslot# since slot# is taken.
+	done
+}
+list_feature(){
+	for j in $(seq -s ' mslot' 0 $n_cycle | sed 's/^0 //'); do #retrieve mslot#
+		v=$(eval echo $j)
+		echo -n "$v " | sed 's/^NO_//'
+		if [[ ! "$(echo $v | grep '^NO_')" ]]; then
+			echo -e '\e[1;31mis ON.\e[0m'
+		else
+			echo -e '\e[1;32mis OFF.\e[0m'
+		fi
+	done
+}
+main(){
+	echo "scheduling features tuner v$version
+
+"
+}
+
 #WIP
-for i in $(cat /sys/kernel/debug/sched_features | sed 's/NO_//g'); do
+for i in $(cat /sys/kernel/debug/sched_features | sed 's/^NO_//'); do
 	echo NO_$i > /sys/kernel/debug/sched_features
 done
 echo done!
