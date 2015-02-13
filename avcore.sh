@@ -1,5 +1,5 @@
 # Custom settings for session behaviour
-# values for all settings should either be 1 or 0.
+# values for all settings should either be 1 or 0.(boolean)
 # Check Busybox Applet Generator 2.4.
 run_Busybox_Applet_Generator=1
 # Check Superuser.

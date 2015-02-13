@@ -1,5 +1,5 @@
 # Custom settings for session behaviour
-# values for all settings should either be 1 or 0.
+# values for all settings should either be 1 or 0.(boolean)
 # Check Busybox Applet Generator 2.4.
 run_Busybox_Applet_Generator=1
 # Check Superuser.
@@ -467,6 +467,7 @@ detect_feature(){
 		export mslot$n_cycle=$i #export to mslot# since slot# is taken.
 	done
 }
+detect_feature #init neccessary!
 list_feature(){
 	for j in $(seq -s ' mslot' 0 $n_cycle | sed 's/^0 //'); do #retrieve mslot#
 		v=$(eval echo $j)
@@ -478,16 +479,63 @@ list_feature(){
 		fi
 	done
 }
+backup_feature(){
+	if [[ "$EXTERNAL_STORAGE" ]]; then
+		if [[ ! -f $EXTERNAL_STORAGE/schedTunerBackup/init.bak ]]; then
+			echo $(cat /sys/kernel/debug/sched_features) > $EXTERNAL_STORAGE/schedTunerBackup/init.bak
+		fi
+	else
+		if [[ ! -f /data/schedTunerBackup/init.bak ]]; then
+			echo $(cat /sys/kernel/debug/sched_features) > /data/schedTunerBackup/init.bak
+		fi
+	fi
+}
+apply_backup(){
+	if [[ "$EXTERNAL_STORAGE" ]]; then
+		if [[ ! -f $EXTERNAL_STORAGE/schedTunerBackup/init.bak ]]; then
+			if [[ ! -f /data/schedTunerBackup/init.bak ]]; then
+				echo there is no backup!
+				return 1
+			else
+				for i in $(cat /data/schedTunerBackup/init.bak); do
+					echo $i > /sys/kernel/debug/sched_features
+				done
+			fi
+		else
+			for i in $(cat $EXTERNAL_STORAGE/schedTunerBackup/init.bak); do
+				echo $i > /sys/kernel/debug/sched_features
+			done
+		fi
+	else
+		if [[ ! -f /data/schedTunerBackup/init.bak ]]; then
+			if [[ ! -f $EXTERNAL_STORAGE/schedTunerBackup/init.bak ]]; then
+				echo there is no backup!
+				return 1
+			else
+				for i in $(cat $EXTERNAL_STORAGE/schedTunerBackup/init.bak); do
+					echo $i > /sys/kernel/debug/sched_features
+				done
+			fi
+		else
+			for i in $(cat /data/schedTunerBackup/init.bak); do
+				echo $i > /sys/kernel/debug/sched_features
+			done
+		fi
+	fi
+}
+apply_SS(){
+	#WIP
+	for i in $(cat /sys/kernel/debug/sched_features | sed 's/^NO_//'); do
+		echo NO_$i > /sys/kernel/debug/sched_features
+	done
+	echo done!
+}
 main(){
 	echo "scheduling features tuner v$version
 
 "
 }
 
-#WIP
-for i in $(cat /sys/kernel/debug/sched_features | sed 's/^NO_//'); do
-	echo NO_$i > /sys/kernel/debug/sched_features
-done
-echo done!
+
 
 exit 0 #EOF
