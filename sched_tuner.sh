@@ -583,10 +583,15 @@ main(){
 "
 		backup_feature
 		echo current scheduling features list:
+		detect_feature $(cat /sys/kernel/debug/sched_features) #recycled crap
 		list_feature
-		echo -e '
+		if [[ -f /system/etc/init.d/sched_tuner_task ]]; then
+			echo -e '\e[1;33mlooks like the mod is already installed.\e[0m'
+		else
+			echo -e '
 generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK.
 '
+		fi
 		long_line 1
 		echo 'select an option:
 1)disable everything(speedhack!)
@@ -599,26 +604,29 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 		f=$(dd bs=1 count=1 2>/dev/null)
 		stty -cbreak echo
 		echo $f
-		long_line 1
+		long_line 2
 		case $f in
 			1)
+				echo applying tweaks...
 				apply_SS
 				echo done!
 				sleep 5
 			;;
 			2)
+				echo setting on boot...
 				initialize
 				echo done!
 				sleep 5
 			;;
 			3)
-				echo already backed up.
+				echo backup already exists.
 				sleep 5
 			;;
 			4)
+				echo restoring backup...
 				apply_backup
 				if [[ $? -eq 1 ]]; then
-					echo could not restore backup.
+					echo -e '\rcould not restore backup.'
 					return 1
 				fi
 				echo done!
