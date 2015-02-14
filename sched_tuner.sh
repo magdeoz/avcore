@@ -550,27 +550,29 @@ apply_backup(){
 			done
 		fi
 	fi
-	if [[ -f /system/etc/sched_tuner_task ]]; then
+	if [[ -f /system/etc/init.d/sched_tuner_task ]]; then
 		cp $external/init.rc.bak /init.rc
 		chmod 755 /init.rc
-		chmod 755 /system/etc/sched_tuner_task
-		rm /system/etc/sched_tuner_task
+		chmod 755 /system/etc/init.d/sched_tuner_task
+		rm /system/etc/init.d/sched_tuner_task
 	fi
 }
 initialize(){
+	mkdir -p /system/etc/init.d
+	chmod 755 /system/etc/init.d
 	echo "#!/system/bin/sh
 until [[ -f $FULL_NAME ]]; do
 	sleep 1
 done
-$FULL_NAME -a" > /system/etc/sched_tuner_task
-	chmod 755 /system/etc/sched_tuner_task
+$FULL_NAME -a" > /system/etc/init.d/sched_tuner_task
+	chmod 755 /system/etc/init.d/sched_tuner_task
 	chmod 755 /init.rc
 	if [[ ! -f $external/init.rc.bak ]]; then
 		cp /init.rc $external/init.rc.bak
 	fi
 	echo "
 
-service sched_tuner_task /system/etc/sched_tuner_task
+service sched_tuner_task /system/etc/init.d/sched_tuner_task
      user root
      oneshot" >> /init.rc
 }
