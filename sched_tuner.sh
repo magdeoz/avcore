@@ -607,13 +607,13 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 		long_line 2
 		case $f in
 			1)
-				echo applying tweaks...
+				echo -n applying tweaks...
 				apply_SS
 				echo done!
 				sleep 5
 			;;
 			2)
-				echo setting on boot...
+				echo -n setting on boot...
 				initialize
 				echo done!
 				sleep 5
@@ -623,7 +623,7 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 				sleep 5
 			;;
 			4)
-				echo restoring backup...
+				echo -n restoring backup...
 				apply_backup
 				if [[ $? -eq 1 ]]; then
 					echo -e '\rcould not restore backup.'
