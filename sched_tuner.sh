@@ -471,7 +471,7 @@ list_feature(){
 }
 apply_SS(){
 	#WIP
-	for i in $(cat /sys/kernel/debug/sched_features | sed 's/^NO_//g'); do
+	for i in $(cat /sys/kernel/debug/sched_features | sed 's/\<NO_//g'); do
 		echo NO_$i > /sys/kernel/debug/sched_features
 	done
 }
