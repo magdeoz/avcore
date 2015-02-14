@@ -501,52 +501,70 @@ esac
 
 backup_feature(){
 	if [[ "$EXTERNAL_STORAGE" ]]; then
-		if [[ ! -f $EXTERNAL_STORAGE/schedTunerBackup/init.bak ]]; then
-			mkdir $EXTERNAL_STORAGE/schedTunerBackup
-			echo $(cat /sys/kernel/debug/sched_features) > $EXTERNAL_STORAGE/schedTunerBackup/init.bak
+		if [[ ! -f $EXTERNAL_STORAGE/sched_tuner/init.bak ]]; then
+			mkdir $EXTERNAL_STORAGE/sched_tuner
+			echo $(cat /sys/kernel/debug/sched_features) > $EXTERNAL_STORAGE/sched_tuner/init.bak
 		fi
+		external="$EXTERNAL_STORAGE/sched_tuner"
 	else
-		if [[ ! -f /data/schedTunerBackup/init.bak ]]; then
-			mkdir /data/schedTunerBackup
-			echo $(cat /sys/kernel/debug/sched_features) > /data/schedTunerBackup/init.bak
+		if [[ ! -f /data/sched_tuner/init.bak ]]; then
+			mkdir /data/sched_tuner
+			echo $(cat /sys/kernel/debug/sched_features) > /data/sched_tuner/init.bak
 		fi
+		external=/data/sched_tuner
 	fi
 }
 apply_backup(){
 	if [[ "$EXTERNAL_STORAGE" ]]; then
-		if [[ ! -f $EXTERNAL_STORAGE/schedTunerBackup/init.bak ]]; then
-			if [[ ! -f /data/schedTunerBackup/init.bak ]]; then
+		if [[ ! -f $EXTERNAL_STORAGE/sched_tuner/init.bak ]]; then
+			if [[ ! -f /data/sched_tuner/init.bak ]]; then
 				echo there is no backup!
 				return 1
 			else
-				for i in $(cat /data/schedTunerBackup/init.bak); do
+				for i in $(cat /data/sched_tuner/init.bak); do
 					echo $i > /sys/kernel/debug/sched_features
 				done
 			fi
 		else
-			for i in $(cat $EXTERNAL_STORAGE/schedTunerBackup/init.bak); do
+			for i in $(cat $EXTERNAL_STORAGE/sched_tuner/init.bak); do
 				echo $i > /sys/kernel/debug/sched_features
 			done
 		fi
 	else
-		if [[ ! -f /data/schedTunerBackup/init.bak ]]; then
-			if [[ ! -f $EXTERNAL_STORAGE/schedTunerBackup/init.bak ]]; then
+		if [[ ! -f /data/sched_tuner/init.bak ]]; then
+			if [[ ! -f $EXTERNAL_STORAGE/sched_tuner/init.bak ]]; then
 				echo there is no backup!
 				return 1
 			else
-				for i in $(cat $EXTERNAL_STORAGE/schedTunerBackup/init.bak); do
+				for i in $(cat $EXTERNAL_STORAGE/sched_tuner/init.bak); do
 					echo $i > /sys/kernel/debug/sched_features
 				done
 			fi
 		else
-			for i in $(cat /data/schedTunerBackup/init.bak); do
+			for i in $(cat /data/sched_tuner/init.bak); do
 				echo $i > /sys/kernel/debug/sched_features
 			done
 		fi
 	fi
+	if [[ -f /system/etc/sched_tuner_task ]]; then
+		cp $external/init.rc.bak /init.rc
+		chmod 755 /init.rc
+		chmod 755 /system/etc/sched_tuner_task
+		rm /system/etc/sched_tuner_task
+	fi
 }
 initialize(){
-	
+	echo "#!/system/bin/sh
+until [[ -f $FULL_NAME ]]; do
+	sleep 1
+done
+$FULL_NAME -a" > /system/etc/sched_tuner_task
+	chmod 755 /system/etc/sched_tuner_task
+	chmod 755 /init.rc
+	cp /init.rc $external/init.rc.bak
+	echo "service sched_tuner_task /system/etc/sched_tuner_task
+user root
+oneshot" >> /init.rc
 }
 main(){
 	while true; do
