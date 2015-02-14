@@ -562,9 +562,10 @@ $FULL_NAME -a" > /system/etc/sched_tuner_task
 	chmod 755 /system/etc/sched_tuner_task
 	chmod 755 /init.rc
 	cp /init.rc $external/init.rc.bak
-	echo "service sched_tuner_task /system/etc/sched_tuner_task
-user root
-oneshot" >> /init.rc
+	echo "
+service sched_tuner_task /system/etc/sched_tuner_task
+		user root
+		oneshot" >> /init.rc
 }
 main(){
 	while true; do
