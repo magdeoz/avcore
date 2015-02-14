@@ -489,6 +489,10 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help
 	-a | --activate)
 		apply_SS
 		CUSTOM_DIR=/data/log
+		if [[ "$?" == 1 ]]; then
+			error something went wrong.
+			exit 1
+		fi
 		error init complete!
 		exit 0
 	;;
@@ -581,7 +585,7 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 		long_line 1
 		echo 'select an option:
 1)disable everything(speedhack!)
-2)set the tweak on boot(init.d)
+2)set the tweak on boot(init.rc)
 3)backup list
 4)restore list
 5)refresh list
@@ -609,7 +613,7 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 			4)
 				apply_backup
 				if [[ $? -eq 1 ]]; then
-					echo error!
+					echo could not restore backup.
 					return 1
 				fi
 				echo done!
