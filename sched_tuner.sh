@@ -146,11 +146,12 @@ install(){
 		echo $n hits.
 		for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
 			v=$(eval echo $i)
-			echo -e "\rwould you like to install it in $v? (y/n) "
+			echo -n -e "\rwould you like to install it in $v? (y/n) "
 			while true; do
 				stty cbreak -echo
 				f=$(dd bs=1 count=1 2>/dev/null)
 				stty -cbreak echo
+				echo $f
 				case $f in
 					y* | Y*)
 						loc=$v
@@ -201,11 +202,12 @@ install(){
 			ro=0
 		fi
 		if [[ -f "$loc/$NO_EXTENSION" ]]; then
-			echo 'program file already exists. overwrite? (y/n) '
+			echo -n 'program file already exists. overwrite? (y/n) '
 			while true; do
 				stty cbreak -echo
 				f=$(dd bs=1 count=1 2>/dev/null)
 				stty -cbreak echo
+				echo $f
 				case $f in
 					y* | Y*)
 						break
@@ -286,7 +288,12 @@ long_line(){
 error(){
 	message=$@
 	echo $message
-	date '+date: %m/%d/%y%ttime: %H:%M:%S ->'"$message"'' >> $DIR_NAME/$NO_EXTENSION.log
+	CUSTOM_DIR=$(echo $CUSTOM_DIR | sed 's/\/$//')
+	if [[ "$CUSTOM_DIR" ]]; then
+		date '+date: %m/%d/%y%ttime: %H:%M:%S ->'"$message"'' >> $CUSTOM_DIR/$NO_EXTENSION.log
+	else
+		date '+date: %m/%d/%y%ttime: %H:%M:%S ->'"$message"'' >> $DIR_NAME/$NO_EXTENSION.log
+	fi
 }
 # sched_tuner.sh
 #
@@ -297,6 +304,7 @@ error(){
 #
 # Changelogs:
 # 0.0.1 - first release
+# 0.0.2 - init.d added
 
 set +e #error proof
 
@@ -442,19 +450,6 @@ Roll_Down(){
 }
 Roll_Down
 
-# Main script
-case $1 in
-	-h | --help)
-		echo "$BASE_NAME v$version
-Copyright (C) 2013-2015 hoholee12@naver.com
-Usage: $BASE_NAME -n [SCHED_TYPE] | -a [on/off] -h | --help
-       $BASE_NAME -l lists all sched_features.
-"
-		shift
-		exit 0
-	;;
-esac
-
 detect_feature(){
 	n_cycle=0
 	for i in $@; do #needs special input
@@ -474,6 +469,36 @@ list_feature(){
 		fi
 	done
 }
+apply_SS(){
+	#WIP
+	for i in $(cat /sys/kernel/debug/sched_features | sed 's/^NO_//'); do
+		echo NO_$i > /sys/kernel/debug/sched_features
+	done
+}
+# Main script
+case $1 in
+	-h | --help)
+		echo "$BASE_NAME v$version
+Copyright (C) 2013-2015 hoholee12@naver.com
+Usage: $BASE_NAME -a | --activate [on/off] -h | --help
+       $BASE_NAME -l lists all sched_features.
+"
+		shift
+		exit 0
+	;;
+	-a | --activate)
+		apply_SS
+		CUSTOM_DIR=/data/log
+		error init complete!
+		exit 0
+	;;
+	-l | --list)
+		list_feature
+		exit 0
+	;;
+esac
+
+
 backup_feature(){
 	if [[ "$EXTERNAL_STORAGE" ]]; then
 		if [[ ! -f $EXTERNAL_STORAGE/schedTunerBackup/init.bak ]]; then
@@ -520,11 +545,8 @@ apply_backup(){
 		fi
 	fi
 }
-apply_SS(){
-	#WIP
-	for i in $(cat /sys/kernel/debug/sched_features | sed 's/^NO_//'); do
-		echo NO_$i > /sys/kernel/debug/sched_features
-	done
+initialize(){
+	
 }
 main(){
 	while true; do
@@ -540,13 +562,16 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 		long_line 1
 		echo 'select an option:
 1)disable everything(speedhack!)
-2)backup list
-3)restore list
-4)refresh list
-5)exit'
+2)set the tweak on boot(init.d)
+3)backup list
+4)restore list
+5)refresh list
+6)exit'
 		stty cbreak -echo
 		f=$(dd bs=1 count=1 2>/dev/null)
 		stty -cbreak echo
+		echo $f
+		long_line 1
 		case $f in
 			1)
 				apply_SS
@@ -554,10 +579,15 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 				sleep 5
 			;;
 			2)
-				echo already backed up.
+				initialize
+				echo done!
 				sleep 5
 			;;
 			3)
+				echo already backed up.
+				sleep 5
+			;;
+			4)
 				apply_backup
 				if [[ $? -eq 1 ]]; then
 					echo error!
@@ -566,16 +596,16 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 				echo done!
 				sleep 5
 			;;
-			4)
+			5)
 				echo refreshing...
 				sleep 0.5
 			;;
-			5| q |Q)
+			6| q |Q)
 				return 0
 			;;
 			*)
 				echo typo! try again.
-				sleep 5
+				sleep 1
 			;;
 		esac
 	done

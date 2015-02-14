@@ -146,11 +146,12 @@ install(){
 		echo $n hits.
 		for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
 			v=$(eval echo $i)
-			echo -e "\rwould you like to install it in $v? (y/n) "
+			echo -n -e "\rwould you like to install it in $v? (y/n) "
 			while true; do
 				stty cbreak -echo
 				f=$(dd bs=1 count=1 2>/dev/null)
 				stty -cbreak echo
+				echo $f
 				case $f in
 					y* | Y*)
 						loc=$v
@@ -201,11 +202,12 @@ install(){
 			ro=0
 		fi
 		if [[ -f "$loc/$NO_EXTENSION" ]]; then
-			echo 'program file already exists. overwrite? (y/n) '
+			echo -n 'program file already exists. overwrite? (y/n) '
 			while true; do
 				stty cbreak -echo
 				f=$(dd bs=1 count=1 2>/dev/null)
 				stty -cbreak echo
+				echo $f
 				case $f in
 					y* | Y*)
 						break
@@ -286,7 +288,12 @@ long_line(){
 error(){
 	message=$@
 	echo $message
-	date '+date: %m/%d/%y%ttime: %H:%M:%S ->'"$message"'' >> $DIR_NAME/$NO_EXTENSION.log
+	CUSTOM_DIR=$(echo $CUSTOM_DIR | sed 's/\/$//')
+	if [[ "$CUSTOM_DIR" ]]; then
+		date '+date: %m/%d/%y%ttime: %H:%M:%S ->'"$message"'' >> $CUSTOM_DIR/$NO_EXTENSION.log
+	else
+		date '+date: %m/%d/%y%ttime: %H:%M:%S ->'"$message"'' >> $DIR_NAME/$NO_EXTENSION.log
+	fi
 }
 # skeleton.sh
 #
