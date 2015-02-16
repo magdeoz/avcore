@@ -464,6 +464,7 @@ list_feature(){
 		echo -n "$v " | sed 's/^NO_//'
 		if [[ ! "$(echo $v | grep '^NO_')" ]]; then
 			echo -e '\e[1;31mis ON.\e[0m'
+			notapplied=1 #for extra check
 		else
 			echo -e '\e[1;32mis OFF.\e[0m'
 		fi
@@ -561,10 +562,29 @@ initialize(){
 	mkdir -p /system/etc/init.d
 	chmod 755 /system/etc/init.d
 	echo "#!/system/bin/sh
+renice 19 \$\$ #run in lowest priority for multiple loops on boot.
+#execute sched_tuner
 until [[ -f $FULL_NAME ]]; do
 	sleep 1
 done
-$FULL_NAME -a" > /system/etc/init.d/sched_tuner_task
+$FULL_NAME -a
+
+#set system_server in lowest priority.
+until [[ \"\$(pgrep zygote)\" ]]; do
+	sleep 0.1
+done
+renice 19 \$(pgrep zygote)
+until [[ \"\$(pgrep system_server)\" ]]; do
+	sleep 0.1
+done
+renice 0 \$(pgrep zygote)
+
+#set android.process.media in lowest priority.
+until [[ \"\$(pgrep android.process.media)\" ]]; do
+	sleep 0.1
+done
+renice 19 \$(pgrep android.process.media)
+" > /system/etc/init.d/sched_tuner_task
 	chmod 755 /system/etc/init.d/sched_tuner_task
 	chmod 755 /init.rc
 	if [[ ! -f $external/init.rc.bak ]]; then
@@ -586,7 +606,12 @@ main(){
 		detect_feature $(cat /sys/kernel/debug/sched_features) #recycled crap
 		list_feature
 		if [[ -f /system/etc/init.d/sched_tuner_task ]]; then
-			echo -e '\e[1;33mlooks like the mod is already installed.\e[0m'
+			echo -n -e '\e[1;33mlooks like the mod is already installed\e[0m'
+			if [[ "$notapplied" ]]; then
+				echo -e '\e[1;33m,\e[1;31m but it did not run on boot.\e[0m'
+			else
+				echo -e '\e[1;33m.\e[0m'
+			fi
 		else
 			echo -e '
 generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK.
@@ -595,9 +620,9 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 		long_line 1
 		echo 'select an option:
 1)disable everything(speedhack!)
-2)set the tweak on boot(init.rc)
+2)set the tweak on boot(init.rc with few extra tweaks)
 3)backup list
-4)restore list
+4)restore list/uninstall
 5)refresh list
 6)exit'
 		stty cbreak -echo
@@ -634,7 +659,7 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 			;;
 			5)
 				echo refreshing...
-				sleep 0.5
+				sleep 0.1
 			;;
 			6| q |Q)
 				return 0
