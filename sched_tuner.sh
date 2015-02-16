@@ -39,7 +39,7 @@ until [[ "$1" != --verbose ]] && [[ "$1" != --supass ]] && [[ "$1" != --bbpass ]
 	fi
 	shift
 done
-readonly version="0.0.2"
+readonly version="0.0.3"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -305,6 +305,7 @@ error(){
 # Changelogs:
 # 0.0.1 - first release
 # 0.0.2 - init.d added
+# 0.0.3 - new bootup tweaks and bugfixes added
 
 set +e #error proof
 
@@ -562,12 +563,15 @@ initialize(){
 	mkdir -p /system/etc/init.d
 	chmod 755 /system/etc/init.d
 	echo "#!/system/bin/sh
-renice 19 \$\$ #run in lowest priority for multiple loops on boot.
-#execute sched_tuner
-until [[ -f $FULL_NAME ]]; do
-	sleep 1
-done
-$FULL_NAME -a
+
+background_task(){
+	#execute sched_tuner
+	until [[ -f $FULL_NAME ]]; do
+		sleep 1
+	done
+	$FULL_NAME -a
+}
+background_task & #in case the target was stored in external storage...
 
 #set system_server in lowest priority.
 until [[ \"\$(pgrep zygote)\" ]]; do
@@ -579,12 +583,14 @@ until [[ \"\$(pgrep system_server)\" ]]; do
 done
 renice 0 \$(pgrep zygote)
 
+renice 19 \$\$ #run in lowest priority for multiple loops after boot completed.
 #set android.process.media in lowest priority.
 until [[ \"\$(pgrep android.process.media)\" ]]; do
 	sleep 0.1
 done
 renice 19 \$(pgrep android.process.media)
-" > /system/etc/init.d/sched_tuner_task
+
+exit 0 #EOF" > /system/etc/init.d/sched_tuner_task
 	chmod 755 /system/etc/init.d/sched_tuner_task
 	chmod 755 /init.rc
 	if [[ ! -f $external/init.rc.bak ]]; then
