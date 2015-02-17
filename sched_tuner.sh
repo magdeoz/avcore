@@ -452,6 +452,7 @@ Roll_Down(){
 Roll_Down
 
 mount -t debugfs none /sys/kernel/debug 2>/dev/null #some kernels have locked debugfs, so we reopen them.(NEED BUSYBOX FOR -t OPTION TO WORK!!!)
+mount -o remount,rw /system 2>/dev/null #remount system to rw
 
 detect_feature(){
 	n_cycle=0
