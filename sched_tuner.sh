@@ -451,6 +451,8 @@ Roll_Down(){
 }
 Roll_Down
 
+mount -t debugfs none /sys/kernel/debug 2>/dev/null #some kernels have locked debugfs, so we reopen them.(NEED BUSYBOX FOR -t OPTION TO WORK!!!)
+
 detect_feature(){
 	n_cycle=0
 	for i in $@; do #needs special input
