@@ -639,11 +639,13 @@ exit 0 #EOF" > /system/etc/sched_tuner_task
 		if [[ ! -f $external/init.rc.bak ]]; then
 			cp /init.rc $external/init.rc.bak
 		fi
-		echo "
+		if [[ "$(stat -c %s /init.rc)" == "$(stat -c %s $external/init.rc.bak)" ]]; then #compare two sizes
+			echo "
 
 service sched_tuner_task /system/etc/init.d/sched_tuner_task
      user root
      oneshot" >> /init.rc
+		fi
 	fi
 }
 main(){
@@ -689,7 +691,12 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 				sleep 5
 			;;
 			2)
-				echo -n press y to install on init.d, or press n for init.rc(may not work properly):
+				if [[ -f /system/etc/sched_tuner_task ]]||[[ -f /system/etc/init.d/sched_tuner_task ]]; then
+					echo program already installed.
+					sleep 5
+					continue
+				fi
+				echo -n 'press y to install on init.d, or press n for init.rc(may not work properly):'
 				while true; do
 					stty cbreak -echo
 					f=$(dd bs=1 count=1 2>/dev/null)
