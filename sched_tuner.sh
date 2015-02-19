@@ -452,6 +452,7 @@ Roll_Down(){
 Roll_Down
 
 mount -t debugfs none /sys/kernel/debug 2>/dev/null #some kernels have locked debugfs, so we reopen them.(NEED BUSYBOX FOR -t OPTION TO WORK!!!)
+mount -o remount,rw rootfs 2>/dev/null #remount rootfs to rw
 mount -o remount,rw /system 2>/dev/null #remount system to rw
 
 detect_feature(){
@@ -556,16 +557,24 @@ apply_backup(){
 		fi
 	fi
 	if [[ -f /system/etc/init.d/sched_tuner_task ]]; then
-		cp $external/init.rc.bak /init.rc
-		chmod 755 /init.rc
 		chmod 755 /system/etc/init.d/sched_tuner_task
 		rm /system/etc/init.d/sched_tuner_task
+	elif [[ -f /system/etc/sched_tuner_task ]]; then
+		chmod 755 /init.rc
+		cp $external/init.rc.bak /init.rc
+		chmod 755 /init.rc
+		chmod 755 /system/etc/sched_tuner_task
+		rm /system/etc/sched_tuner_task
+	else
+		return=1
 	fi
 }
 initialize(){
-	mkdir -p /system/etc/init.d
-	chmod 755 /system/etc/init.d
-	echo "#!/system/bin/sh
+	if [[ "$type" ]]; then
+		unset type
+		mkdir -p /system/etc/init.d
+		chmod 755 /system/etc/init.d
+		echo "#!/system/bin/sh
 
 background_task(){
 	#execute sched_tuner
@@ -594,16 +603,48 @@ done
 renice 19 \$(pgrep android.process.media)
 
 exit 0 #EOF" > /system/etc/init.d/sched_tuner_task
-	chmod 755 /system/etc/init.d/sched_tuner_task
-	chmod 755 /init.rc
-	if [[ ! -f $external/init.rc.bak ]]; then
-		cp /init.rc $external/init.rc.bak
-	fi
-	echo "
+		chmod 755 /system/etc/init.d/sched_tuner_task
+	else
+		echo "#!/system/bin/sh
+
+background_task(){
+	#execute sched_tuner
+	until [[ -f $FULL_NAME ]]; do
+		sleep 1
+	done
+	$FULL_NAME -a
+}
+background_task & #in case the target was stored in external storage...
+
+#set system_server in lowest priority.
+until [[ \"\$(pgrep zygote)\" ]]; do
+	sleep 0.1
+done
+renice 19 \$(pgrep zygote)
+until [[ \"\$(pgrep system_server)\" ]]; do
+	sleep 0.1
+done
+renice 0 \$(pgrep zygote)
+
+renice 19 \$\$ #run in lowest priority for multiple loops after boot completed.
+#set android.process.media in lowest priority.
+until [[ \"\$(pgrep android.process.media)\" ]]; do
+	sleep 0.1
+done
+renice 19 \$(pgrep android.process.media)
+
+exit 0 #EOF" > /system/etc/sched_tuner_task
+		chmod 755 /system/etc/sched_tuner_task
+		chmod 755 /init.rc
+		if [[ ! -f $external/init.rc.bak ]]; then
+			cp /init.rc $external/init.rc.bak
+		fi
+		echo "
 
 service sched_tuner_task /system/etc/init.d/sched_tuner_task
      user root
      oneshot" >> /init.rc
+	fi
 }
 main(){
 	while true; do
@@ -630,7 +671,7 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 		long_line 1
 		echo 'select an option:
 1)disable everything(speedhack!)
-2)set the tweak on boot(init.rc with few extra tweaks)
+2)set the tweak on boot(init with few extra tweaks)
 3)backup list
 4)restore list/uninstall
 5)refresh list
@@ -648,6 +689,45 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 				sleep 5
 			;;
 			2)
+				echo -n press y to install on init.d, or press n for init.rc(may not work properly):
+				while true; do
+					stty cbreak -echo
+					f=$(dd bs=1 count=1 2>/dev/null)
+					stty -cbreak echo
+					echo $f
+					case $f in
+						y* | Y*)
+							type=1
+							break
+						;;
+						n* | N*)
+							break
+						;;
+						q* | Q*)
+							echo canceled.
+							return=1
+							break
+						;;
+						*)
+							random=$(print_RANDOM_BYTE)
+							random=$((random%4+1))
+							if [[ "$random" -eq 1 ]]; then
+								echo -n -e '\rwhat? '
+							elif [[ "$random" -eq 2 ]]; then
+								echo -n -e '\ri dont understand. '
+							elif [[ "$random" -eq 3 ]]; then
+								echo -n -e '\rcome on mate, you could do better than that! '
+							elif [[ "$random" -eq 4 ]]; then
+								echo -n -e '\rif i were you, i would choose the broccoli. '
+							fi
+						;;
+					esac
+					echo -n press \'q\' to quit.
+				done
+				if [[ "$return" ]]; then
+					unset return
+					break
+				fi
 				echo -n setting on boot...
 				initialize
 				echo done!
@@ -664,7 +744,12 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 					echo -e '\rcould not restore backup.'
 					return 1
 				fi
-				echo done!
+				if [[ "$return" ]];then
+					unset return
+					echo program not installed.
+				else
+					echo done!
+				fi
 				sleep 5
 			;;
 			5)
