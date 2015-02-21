@@ -470,7 +470,7 @@ Roll_Down
 CUSTOM_DIR=/data/log #log location
 if [[ ! -f /sys/kernel/debug/sched_features ]]; then
 	mount -t debugfs none /sys/kernel/debug 2>/dev/null #some kernels have locked debugfs, so we reopen them.(NEED BUSYBOX FOR -t OPTION TO WORK!!!)
-	if [[ "$?" != 0 ]]; then
+	if [[ "$?" != 0 ]]||[[ ! -f /sys/kernel/debug/sched_features ]]; then
 		error your kernel is not supported. sorry:p
 		return 1
 	fi
