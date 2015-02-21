@@ -472,7 +472,7 @@ if [[ ! -f /sys/kernel/debug/sched_features ]]; then
 	mount -t debugfs none /sys/kernel/debug 2>/dev/null #some kernels have locked debugfs, so we reopen them.(NEED BUSYBOX FOR -t OPTION TO WORK!!!)
 	if [[ "$?" != 0 ]]||[[ ! -f /sys/kernel/debug/sched_features ]]; then
 		error your kernel is not supported. sorry:p
-		return 1
+		exit 1
 	fi
 fi
 mount -o remount,rw rootfs 2>/dev/null #remount rootfs to rw
