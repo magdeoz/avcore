@@ -468,10 +468,12 @@ Roll_Down(){
 Roll_Down
 
 CUSTOM_DIR=/data/log #log location
-mount -t debugfs none /sys/kernel/debug 2>/dev/null #some kernels have locked debugfs, so we reopen them.(NEED BUSYBOX FOR -t OPTION TO WORK!!!)
-if [[ "$?" != 0 ]]; then
-	error your kernel is not supported. sorry:p
-	return 1
+if [[ ! -f /sys/kernel/debug/sched_features ]]; then
+	mount -t debugfs none /sys/kernel/debug 2>/dev/null #some kernels have locked debugfs, so we reopen them.(NEED BUSYBOX FOR -t OPTION TO WORK!!!)
+	if [[ "$?" != 0 ]]; then
+		error your kernel is not supported. sorry:p
+		return 1
+	fi
 fi
 mount -o remount,rw rootfs 2>/dev/null #remount rootfs to rw
 mount -o remount,rw /system 2>/dev/null #remount system to rw
