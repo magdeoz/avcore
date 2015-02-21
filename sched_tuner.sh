@@ -235,7 +235,7 @@ install(){
 		if [[ "$(echo $mountstat | grep rw)" ]]; then
 			echo -n -e '\rcopying files...'
 			cp $0 $loc/$NO_EXTENSION
-			if [[ "$?" == 1 ]]; then
+			if [[ "$?" != 0 ]]; then
 				return 1
 			fi
 			chmod 755 $loc/$NO_EXTENSION
@@ -246,7 +246,7 @@ install(){
 			if [[ ! "$availperm" ]]; then
 				echo -n -e '\rcopying files...'
 				cp $0 $loc/$NO_EXTENSION
-				if [[ "$?" == 1 ]]; then
+				if [[ "$?" != 0 ]]; then
 					return 1
 				fi
 				chmod 755 $loc/$NO_EXTENSION
@@ -321,8 +321,7 @@ cmd6=awk
 cmd7=cat
 cmd8=pgrep
 cmd9=ps
-cmd10=chrt
-cmd11=cp
+cmd10=cp
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 
 silent_mode= # enabling this will hide errors.
@@ -451,7 +450,12 @@ Roll_Down(){
 }
 Roll_Down
 
+CUSTOM_DIR=/data/log #log location
 mount -t debugfs none /sys/kernel/debug 2>/dev/null #some kernels have locked debugfs, so we reopen them.(NEED BUSYBOX FOR -t OPTION TO WORK!!!)
+if [[ "$?" != 0 ]]; then
+	error your kernel isnt supported. sorry:p
+	return 1
+fi
 mount -o remount,rw rootfs 2>/dev/null #remount rootfs to rw
 mount -o remount,rw /system 2>/dev/null #remount system to rw
 
@@ -494,8 +498,7 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help
 	;;
 	-a | --activate)
 		apply_SS
-		CUSTOM_DIR=/data/log
-		if [[ "$?" == 1 ]]; then
+		if [[ "$?" != 0 ]]; then
 			error something went wrong.
 			exit 1
 		fi
@@ -747,7 +750,7 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 			4)
 				echo -n restoring backup...
 				apply_backup
-				if [[ $? -eq 1 ]]; then
+				if [[ "$?" != 0 ]]; then
 					echo -e '\rcould not restore backup.'
 					return 1
 				fi
@@ -774,6 +777,5 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 	done
 }
 main
-
 
 exit 0 #EOF
