@@ -685,7 +685,7 @@ main(){
 			if [[ "$notapplied" ]]; then
 				echo -e '\e[1;33m,\e[1;31m but it did not run on boot.\e[0m
 
-reminder: if you did not apply \'1)disable everything(speedhack!)\' before \'2)set the tweak on boot(init with few extra tweaks)\', this message may appear.'
+reminder: if you did not apply the first option before setting the tweak on boot, this message may appear.'
 				unset notapplied
 			else
 				echo -e '\e[1;33m.\e[0m'
