@@ -673,6 +673,7 @@ service sched_tuner_task /system/etc/init.d/sched_tuner_task
 main(){
 	while true; do
 		clear
+		unset notapplied
 		echo "scheduling features tuner v$version
 "
 		backup_feature
@@ -682,7 +683,9 @@ main(){
 		if [[ -f /system/etc/sched_tuner_task ]]||[[ -f /system/etc/init.d/sched_tuner_task ]]; then
 			echo -n -e '\e[1;33mlooks like the mod is already installed\e[0m'
 			if [[ "$notapplied" ]]; then
-				echo -e '\e[1;33m,\e[1;31m but it did not run on boot.\e[0m'
+				echo -e '\e[1;33m,\e[1;31m but it did not run on boot.\e[0m
+
+reminder: if you did not apply \'1)disable everything(speedhack!)\' before \'2)set the tweak on boot(init with few extra tweaks)\', this message may appear.'
 				unset notapplied
 			else
 				echo -e '\e[1;33m.\e[0m'
