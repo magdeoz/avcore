@@ -51,7 +51,7 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 	fi
 	shift
 done
-readonly version="0.0.3"
+readonly version="0.0.4"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -318,6 +318,7 @@ error(){
 # 0.0.1 - first release
 # 0.0.2 - init.d added
 # 0.0.3 - new bootup tweaks and bugfixes added
+# 0.0.4 - future-proof bugfixes
 
 set +e #error proof
 
@@ -599,6 +600,14 @@ initialize(){
 		echo "#!/system/bin/sh
 
 background_task(){
+	# spawn a duplicate daemon(works everytime lol)
+	if [ "\$1" != "BG" ]; then
+		\$0 BG & exit 0
+	fi
+	sleep 90 # wait a good 90 seconds and start making sdcards executable
+	for i in $(grep noexec /proc/mounts | awk '{print $2}'); do
+		mount -o remount exec $i
+	done
 	#execute sched_tuner
 	until [[ -f $FULL_NAME ]]; do
 		sleep 1
@@ -630,6 +639,14 @@ exit 0 #EOF" > /system/etc/init.d/sched_tuner_task
 		echo "#!/system/bin/sh
 
 background_task(){
+	# spawn a duplicate daemon(works everytime lol)
+	if [ "\$1" != "BG" ]; then
+		\$0 BG & exit 0
+	fi
+	sleep 90 # wait a good 90 seconds and start making sdcards executable
+	for i in $(grep noexec /proc/mounts | awk '{print $2}'); do
+		mount -o remount exec $i
+	done
 	#execute sched_tuner
 	until [[ -f $FULL_NAME ]]; do
 		sleep 1
