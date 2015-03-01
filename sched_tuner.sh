@@ -605,8 +605,8 @@ background_task(){
 		\$0 BG & exit 0
 	fi
 	sleep 90 # wait a good 90 seconds and start making sdcards executable
-	for i in $(grep noexec /proc/mounts | awk '{print $2}'); do
-		mount -o remount exec $i
+	for i in \$(grep noexec /proc/mounts | awk '{print \$2}'); do
+		mount -o remount exec \$i
 	done
 	#execute sched_tuner
 	until [[ -f $FULL_NAME ]]; do
@@ -644,8 +644,8 @@ background_task(){
 		\$0 BG & exit 0
 	fi
 	sleep 90 # wait a good 90 seconds and start making sdcards executable
-	for i in $(grep noexec /proc/mounts | awk '{print $2}'); do
-		mount -o remount exec $i
+	for i in \$(grep noexec /proc/mounts | awk '{print \$2}'); do
+		mount -o remount exec \$i
 	done
 	#execute sched_tuner
 	until [[ -f $FULL_NAME ]]; do
