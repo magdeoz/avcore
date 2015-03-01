@@ -601,10 +601,10 @@ initialize(){
 
 background_task(){
 	# spawn a duplicate daemon(works everytime lol)
-	if [ "\$1" != "BG" ]; then
+	if [ \"\$1\" != \"BG\" ]; then
 		\$0 BG & exit 0
 	fi
-	sleep 90 # wait a good 90 seconds and start making sdcards executable
+	sleep 90 # wait a good 90 seconds before making external devices executable
 	for i in \$(grep noexec /proc/mounts | awk '{print \$2}'); do
 		mount -o remount exec \$i
 	done
@@ -640,10 +640,10 @@ exit 0 #EOF" > /system/etc/init.d/sched_tuner_task
 
 background_task(){
 	# spawn a duplicate daemon(works everytime lol)
-	if [ "\$1" != "BG" ]; then
+	if [ \"\$1\" != \"BG\" ]; then
 		\$0 BG & exit 0
 	fi
-	sleep 90 # wait a good 90 seconds and start making sdcards executable
+	sleep 90 # wait a good 90 seconds before making external devices executable
 	for i in \$(grep noexec /proc/mounts | awk '{print \$2}'); do
 		mount -o remount exec \$i
 	done
