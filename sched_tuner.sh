@@ -319,6 +319,7 @@ error(){
 # 0.0.2 - init.d added
 # 0.0.3 - new bootup tweaks and bugfixes added
 # 0.0.4 - future-proof bugfixes
+# 0.0.5 - more boot tweaks added
 
 set +e #error proof
 
@@ -612,6 +613,7 @@ background_task(){
 }
 background_task & #in case the target was stored in external storage...
 
+renice -20 \$(pgrep kswapd0) #renice kernel mm thread
 #set system_server in lowest priority.
 until [[ \"\$(pgrep zygote)\" ]]; do
 	sleep 0.1
@@ -647,6 +649,7 @@ background_task(){
 }
 background_task & #in case the target was stored in external storage...
 
+renice -20 \$(pgrep kswapd0) #renice kernel mm thread
 #set system_server in lowest priority.
 until [[ \"\$(pgrep zygote)\" ]]; do
 	sleep 0.1
