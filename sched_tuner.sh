@@ -714,11 +714,16 @@ main(){
 "
 		backup_feature
 		if [[ ! -f $external/mpengine_pid ]]; then
-			touch $external/mpengine_pid
+			echo null > $external/mpengine_pid
 		fi
 		if [[ "$?" != 0 ]]; then
 			error something went wrong.
 			exit 1
+		fi
+		if [[ "$(cat $external/mpengine_pid)" != null ]]&&[[ "$(ps | grep $(cat $external/mpengine_pid))" ]]; then
+			echo -e 'mpengine status: \e[1;32mrunning\e[0m'
+		else
+			echo -e 'mpengine status: \e[1;31mnot running\e[0m'
 		fi
 		echo current scheduling features list:
 		detect_feature $(cat /sys/kernel/debug/sched_features) #recycled crap
@@ -742,7 +747,7 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 		echo 'select an option:
 1)disable everything(speedhack!)
 2)set the tweak on boot(init with few extra tweaks & mpengine)'
-		if [[ "$(ps | grep $(cat $external/mpengine_pid))" ]]; then
+		if [[ "$(cat $external/mpengine_pid)" != null ]]&&[[ "$(ps | grep $(cat $external/mpengine_pid))" ]]; then
 			echo '3)stop mpengine'
 		else
 			echo '3)run mpengine in the background'
@@ -813,7 +818,7 @@ echo '4)restore list/uninstall
 				sleep 5
 			;;
 			3)
-				if [[ "$(ps | grep $(cat $external/mpengine_pid))" ]]; then
+				if [[ "$(cat $external/mpengine_pid)" != null ]]&&[[ "$(ps | grep $(cat $external/mpengine_pid))" ]]; then
 					kill -9 $(cat $external/mpengine_pid)
 				else
 					mpengine 2>/dev/null
