@@ -614,7 +614,7 @@ mpengine(){
 		sleep 1
 	done
 }
-mpengine & #good old mpengine is back!!
+mpengine & echo \$! > $external/mpengine_pid #good old mpengine is back!!
 
 background_task(){
 	sleep 90 # wait a good 90 seconds before making external devices executable
@@ -658,7 +658,7 @@ mpengine(){
 		sleep 1
 	done
 }
-mpengine & #good old mpengine is back!!
+mpengine & echo \$! > $external/mpengine_pid #good old mpengine is back!!
 
 background_task(){
 	sleep 90 # wait a good 90 seconds before making external devices executable
@@ -720,7 +720,7 @@ main(){
 			error something went wrong.
 			exit 1
 		fi
-		if [[ "$(cat $external/mpengine_pid)" != null ]]&&[[ "$(ps | grep $(cat $external/mpengine_pid))" ]]; then
+		if [[ "$(cat $external/mpengine_pid)" != null ]]&&[[ "$(ps | grep $(cat $external/mpengine_pid) | grep -v grep)" ]]; then
 			echo -e 'mpengine status: \e[1;32mrunning\e[0m'
 		else
 			echo -e 'mpengine status: \e[1;31mnot running\e[0m'
@@ -747,7 +747,7 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 		echo 'select an option:
 1)disable everything(speedhack!)
 2)set the tweak on boot(init with few extra tweaks & mpengine)'
-		if [[ "$(cat $external/mpengine_pid)" != null ]]&&[[ "$(ps | grep $(cat $external/mpengine_pid))" ]]; then
+		if [[ "$(cat $external/mpengine_pid)" != null ]]&&[[ "$(ps | grep $(cat $external/mpengine_pid) | grep -v grep)" ]]; then
 			echo '3)stop mpengine'
 		else
 			echo '3)run mpengine in the background'
@@ -818,7 +818,7 @@ echo '4)restore list/uninstall
 				sleep 5
 			;;
 			3)
-				if [[ "$(cat $external/mpengine_pid)" != null ]]&&[[ "$(ps | grep $(cat $external/mpengine_pid))" ]]; then
+				if [[ "$(cat $external/mpengine_pid)" != null ]]&&[[ "$(ps | grep $(cat $external/mpengine_pid) | grep -v grep)" ]]; then
 					kill -9 $(cat $external/mpengine_pid)
 				else
 					mpengine 2>/dev/null
