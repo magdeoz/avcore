@@ -515,31 +515,45 @@ apply_SS(){
 	done
 }
 # Main script
-case $1 in
-	-h | --help)
-		echo "$BASE_NAME v$version
+while $1; do
+	case $1 in
+		-h | --help)
+			echo "$BASE_NAME v$version
 Copyright (C) 2013-2015 hoholee12@naver.com
 Usage: $BASE_NAME -a | --activate [on/off] -h | --help
        $BASE_NAME -l lists all sched_features.
 "
-		shift
-		exit 0
-	;;
-	-a | --activate)
-		apply_SS
-		if [[ "$?" != 0 ]]; then
-			error something went wrong.
-			exit 1
-		fi
-		error init complete!
-		exit 0
-	;;
-	-l | --list)
-		list_feature
-		exit 0
-	;;
-esac
-
+			shift
+			exit 0
+		;;
+		-a | --activate)
+			apply_SS
+			if [[ "$?" != 0 ]]; then
+				error something went wrong.
+				exit 1
+			fi
+			error init complete!
+			loop=1
+		;;
+		-m | --mpengine)
+			mpengine
+			if [[ "$?" != 0 ]]; then
+				error something went wrong.
+				exit 1
+			fi
+			error mpengine init complete!
+			loop=1
+		;;
+		-l | --list)
+			list_feature
+			exit 0
+		;;
+	esac
+	shift
+done
+if [[ "$loop" ]]; then
+	exit 0
+fi
 
 backup_feature(){
 	if [[ "$EXTERNAL_STORAGE" ]]; then
@@ -608,14 +622,6 @@ initialize(){
 		chmod 755 /system/etc/init.d
 		echo "#!/system/bin/sh
 
-mpengine(){
-	while [[ \"\$(cat /sys/power/wait_for_fb_wake)\" ]]; do
-		echo 1 > /proc/sys/vm/drop_caches
-		sleep 1
-	done
-}
-mpengine & echo \$! > $external/mpengine_pid #good old mpengine is back!!
-
 background_task(){
 	sleep 90 # wait a good 90 seconds before making external devices executable
 	for i in \$(grep noexec /proc/mounts | awk '{print \$2}'); do
@@ -625,7 +631,7 @@ background_task(){
 	until [[ -f $FULL_NAME ]]; do
 		sleep 1
 	done
-	$FULL_NAME -a
+	$FULL_NAME -a -m
 }
 background_task & #in case the target was stored in external storage...
 
@@ -652,14 +658,6 @@ exit 0 #EOF" > /system/etc/init.d/sched_tuner_task
 	else
 		echo "#!/system/bin/sh
 
-mpengine(){
-	while [[ \"\$(cat /sys/power/wait_for_fb_wake)\" ]]; do
-		echo 1 > /proc/sys/vm/drop_caches
-		sleep 1
-	done
-}
-mpengine & echo \$! > $external/mpengine_pid #good old mpengine is back!!
-
 background_task(){
 	sleep 90 # wait a good 90 seconds before making external devices executable
 	for i in \$(grep noexec /proc/mounts | awk '{print \$2}'); do
@@ -669,7 +667,7 @@ background_task(){
 	until [[ -f $FULL_NAME ]]; do
 		sleep 1
 	done
-	$FULL_NAME -a
+	$FULL_NAME -a -m
 }
 background_task & #in case the target was stored in external storage...
 
