@@ -515,6 +515,21 @@ apply_SS(){
 		echo NO_$i > /sys/kernel/debug/sched_features
 	done
 }
+backup_feature(){
+	if [[ "$EXTERNAL_STORAGE" ]]; then
+		if [[ ! -f $EXTERNAL_STORAGE/sched_tuner/init.bak ]]; then
+			mkdir $EXTERNAL_STORAGE/sched_tuner
+			echo $(cat /sys/kernel/debug/sched_features) > $EXTERNAL_STORAGE/sched_tuner/init.bak
+		fi
+		external="$EXTERNAL_STORAGE/sched_tuner"
+	else
+		if [[ ! -f /data/sched_tuner/init.bak ]]; then
+			mkdir /data/sched_tuner
+			echo $(cat /sys/kernel/debug/sched_features) > /data/sched_tuner/init.bak
+		fi
+		external=/data/sched_tuner
+	fi
+}
 # Main script
 while [[ "$1" ]]; do
 	case $1 in
@@ -537,6 +552,7 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help
 			loop=1
 		;;
 		-m | --mpengine)
+			backup_feature
 			mpengine
 			if [[ "$?" != 0 ]]; then
 				error something went wrong.
@@ -556,21 +572,6 @@ if [[ "$loop" ]]; then
 	exit 0
 fi
 
-backup_feature(){
-	if [[ "$EXTERNAL_STORAGE" ]]; then
-		if [[ ! -f $EXTERNAL_STORAGE/sched_tuner/init.bak ]]; then
-			mkdir $EXTERNAL_STORAGE/sched_tuner
-			echo $(cat /sys/kernel/debug/sched_features) > $EXTERNAL_STORAGE/sched_tuner/init.bak
-		fi
-		external="$EXTERNAL_STORAGE/sched_tuner"
-	else
-		if [[ ! -f /data/sched_tuner/init.bak ]]; then
-			mkdir /data/sched_tuner
-			echo $(cat /sys/kernel/debug/sched_features) > /data/sched_tuner/init.bak
-		fi
-		external=/data/sched_tuner
-	fi
-}
 apply_backup(){
 	if [[ "$EXTERNAL_STORAGE" ]]; then
 		if [[ ! -f $EXTERNAL_STORAGE/sched_tuner/init.bak ]]; then
