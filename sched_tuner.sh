@@ -51,7 +51,7 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 	fi
 	shift
 done
-readonly version="0.0.5"
+readonly version="0.0.6"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -320,6 +320,7 @@ error(){
 # 0.0.3 - new bootup tweaks and bugfixes added
 # 0.0.4 - future-proof bugfixes
 # 0.0.5 - more boot tweaks added
+# 0.0.6 - mpengine added for performance
 
 set +e #error proof
 
@@ -472,7 +473,7 @@ Roll_Down
 CUSTOM_DIR=/data/log #log location
 if [[ ! -f /sys/kernel/debug/sched_features ]]; then
 	mount -t debugfs none /sys/kernel/debug 2>/dev/null #some kernels have locked debugfs, so we reopen them.(NEED BUSYBOX FOR -t OPTION TO WORK!!!)
-	if [[ "$?" != 0 ]]||[[ ! -f /sys/kernel/debug/sched_features ]]; then
+	if [[ "$?" != 0 ]]||[[ ! -f /sys/kernel/debug/sched_features ]]||[[ ! -f /sys/power/wait_for_fb_wake ]]; then #wait_for_fb_wake added for mpengine
 		error your kernel is not supported. sorry:p
 		exit 1
 	fi
@@ -499,6 +500,13 @@ list_feature(){
 			echo -e '\e[1;32mis OFF.\e[0m'
 		fi
 	done
+}
+
+mpengine(){
+	while [[ "$(cat /sys/power/wait_for_fb_wake)" ]]; do
+		echo 1 > /proc/sys/vm/drop_caches
+		sleep 1
+	done & echo $! > $external/mpengine_pid
 }
 apply_SS(){
 	#WIP
@@ -600,6 +608,14 @@ initialize(){
 		chmod 755 /system/etc/init.d
 		echo "#!/system/bin/sh
 
+mpengine(){
+	while [[ \"\$(cat /sys/power/wait_for_fb_wake)\" ]]; do
+		echo 1 > /proc/sys/vm/drop_caches
+		sleep 1
+	done
+}
+mpengine & #good old mpengine is back!!
+
 background_task(){
 	sleep 90 # wait a good 90 seconds before making external devices executable
 	for i in \$(grep noexec /proc/mounts | awk '{print \$2}'); do
@@ -635,6 +651,14 @@ exit 0 #EOF" > /system/etc/init.d/sched_tuner_task
 		chmod 755 /system/etc/init.d/sched_tuner_task
 	else
 		echo "#!/system/bin/sh
+
+mpengine(){
+	while [[ \"\$(cat /sys/power/wait_for_fb_wake)\" ]]; do
+		echo 1 > /proc/sys/vm/drop_caches
+		sleep 1
+	done
+}
+mpengine & #good old mpengine is back!!
 
 background_task(){
 	sleep 90 # wait a good 90 seconds before making external devices executable
@@ -689,6 +713,13 @@ main(){
 		echo "scheduling features tuner v$version
 "
 		backup_feature
+		if [[ ! -f $external/mpengine_pid ]]; then
+			touch $external/mpengine_pid
+		fi
+		if [[ "$?" != 0 ]]; then
+			error something went wrong.
+			exit 1
+		fi
 		echo current scheduling features list:
 		detect_feature $(cat /sys/kernel/debug/sched_features) #recycled crap
 		list_feature
@@ -710,9 +741,13 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 		long_line 1
 		echo 'select an option:
 1)disable everything(speedhack!)
-2)set the tweak on boot(init with few extra tweaks)
-3)backup list
-4)restore list/uninstall
+2)set the tweak on boot(init with few extra tweaks & mpengine)'
+		if [[ "$(ps | grep $(cat $external/mpengine_pid))" ]]; then
+			echo '3)stop mpengine'
+		else
+			echo '3)run mpengine in the background'
+		fi
+echo '4)restore list/uninstall
 5)refresh list
 6)exit'
 		stty cbreak -echo
@@ -778,7 +813,16 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 				sleep 5
 			;;
 			3)
-				echo backup already exists.
+				if [[ "$(ps | grep $(cat $external/mpengine_pid))" ]]; then
+					kill -9 $(cat $external/mpengine_pid)
+				else
+					mpengine 2>/dev/null
+				fi
+				if [[ "$?" != 0 ]]; then
+					error something went wrong.
+					exit 1
+				fi
+				error mpengine init complete!
 				sleep 5
 			;;
 			4)
@@ -801,6 +845,7 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 				sleep 0.1
 			;;
 			6| q |Q)
+				echo check out \'flag_tuner\' by Pizza_Dox@xda, highly recommended for perfect combination!:D
 				return 0
 			;;
 			*)
