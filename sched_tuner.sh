@@ -515,7 +515,7 @@ apply_SS(){
 	done
 }
 # Main script
-while $1; do
+while [[ "$1" ]]; do
 	case $1 in
 		-h | --help)
 			echo "$BASE_NAME v$version
