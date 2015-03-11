@@ -632,6 +632,7 @@ background_task(){
 		sleep 1
 	done
 	$FULL_NAME -a -m
+	echo \$! > $external/mpengine_pid #dirty fix
 }
 background_task & #in case the target was stored in external storage...
 
@@ -668,6 +669,7 @@ background_task(){
 		sleep 1
 	done
 	$FULL_NAME -a -m
+	echo \$! > $external/mpengine_pid #dirty fix
 }
 background_task & #in case the target was stored in external storage...
 
