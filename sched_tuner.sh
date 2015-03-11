@@ -721,7 +721,7 @@ main(){
 		fi
 		#TODO: fix this goddamn dirty hack!!!
 		for i in $(pgrep -l '' | grep 'sh$' | cut -d' ' -f1); do
-			if [[ "$(cat /proc/$i/comm)" == sched_tuner_tas ]]; then
+			if [[ "$(cat /proc/$i/comm)" == sched_tuner_tas ]] 2>/dev/null; then
 				echo $i > $external/mpengine_pid
 				break
 			fi
