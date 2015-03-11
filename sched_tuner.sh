@@ -337,6 +337,7 @@ cmd7=cat
 cmd8=pgrep
 cmd9=ps
 cmd10=cp
+cmd11=cut
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 
 silent_mode= # enabling this will hide errors.
@@ -632,7 +633,6 @@ background_task(){
 		sleep 1
 	done
 	$FULL_NAME -a -m
-	echo \$! > $external/mpengine_pid #dirty fix
 }
 background_task & #in case the target was stored in external storage...
 
@@ -669,7 +669,6 @@ background_task(){
 		sleep 1
 	done
 	$FULL_NAME -a -m
-	echo \$! > $external/mpengine_pid #dirty fix
 }
 background_task & #in case the target was stored in external storage...
 
@@ -720,6 +719,13 @@ main(){
 			error something went wrong.
 			exit 1
 		fi
+		#TODO: fix this goddamn dirty hack!!!
+		for i in $(pgrep -l '' | grep 'sh$' | cut -d' ' -f1); do
+			if [[ "$(cat /proc/$i/comm)" == sched_tuner_tas ]]; then
+				echo $i > $external/mpengine_pid
+				break
+			fi
+		done
 		if [[ "$(cat $external/mpengine_pid)" != null ]]&&[[ "$(ps | grep $(cat $external/mpengine_pid) | grep -v grep)" ]]; then
 			echo -e 'mpengine status: \e[1;32mrunning\e[0m'
 		else
