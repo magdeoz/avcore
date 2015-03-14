@@ -720,13 +720,10 @@ main(){
 			error something went wrong.
 			exit 1
 		fi
-		#TODO: fix this goddamn dirty hack!!!
-		for i in $(pgrep -l '' | grep 'sh$' | cut -d' ' -f1); do
-			if [[ "$(cat /proc/$i/comm)" == sched_tuner_tas ]] 2>/dev/null; then
-				echo $i > $external/mpengine_pid
-				break
-			fi
-		done
+		appliedonboot=$(ps | grep '{sched_tuner_tas}' | grep -v grep | awk '{print $1}')
+		if [[ "$appliedonboot" ]]; then
+			echo $appliedonboot > $external/mpengine_pid
+		fi
 		if [[ "$(cat $external/mpengine_pid)" != null ]]&&[[ "$(ps | grep $(cat $external/mpengine_pid) | grep -v grep)" ]]; then
 			echo -e 'mpengine status: \e[1;32mrunning\e[0m'
 		else
