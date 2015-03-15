@@ -301,6 +301,14 @@ error(){
 	message=$@
 	echo $message
 	CUSTOM_DIR=$(echo $CUSTOM_DIR | sed 's/\/$//')
+	cd /
+	for i in $(echo $CUSTOM_DIR | sed 's/\//\n/g'); do
+		if [[ ! -d $i ]]; then
+			mkdir $i
+			chmod 755 $i
+		fi
+		cd $i
+	done
 	if [[ "$CUSTOM_DIR" ]]; then
 		date '+date: %m/%d/%y%ttime: %H:%M:%S ->'"$message"'' >> $CUSTOM_DIR/$NO_EXTENSION.log
 	else
