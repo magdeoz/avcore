@@ -665,13 +665,14 @@ done
 
 #mediaserver boost
 renice 19 $$
-default=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq)
-scaling=$((default*2))
+min_freq=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq)
+max_freq=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq)
 while true; do
-	if [[ "$(dumpsys cpuinfo | grep mediaserver)" ]]; then
-		echo $scaling > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+	scaling=$(dumpsys cpuinfo | grep mediaserver | awk '{print $1}' | sed 's/%$//')
+	if [[ "$scaling" ]]; then
+		echo $(($(($((max_freq-min_freq))*scaling/100))+min_freq)) > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
 	else
-		echo $default > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+		echo $min_freq > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
 	fi
 	sleep 1
 done
