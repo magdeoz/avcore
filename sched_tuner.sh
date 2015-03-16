@@ -647,24 +647,26 @@ background_task(){
 }
 background_task & #in case the target was stored in external storage...
 
-renice -20 \$(pgrep kswapd0) #renice kernel mm thread
-#set system_server in lowest priority.
-until [[ \"\$(pgrep zygote)\" ]]; do
-	sleep 0.1
-done
-renice 19 \$(pgrep zygote)
-until [[ \"\$(pgrep system_server)\" ]]; do
-	sleep 0.1
-done
-renice 0 \$(pgrep zygote)
+renice_task(){
+	renice -20 \$(pgrep kswapd0) #renice kernel mm thread
+	#set system_server in lowest priority.
+	until [[ \"\$(pgrep zygote)\" ]]; do
+		sleep 0.1
+	done
+	renice 19 \$(pgrep zygote)
+	until [[ \"\$(pgrep system_server)\" ]]; do
+		sleep 0.1
+	done
+	renice 0 \$(pgrep zygote)
 
-renice 19 \$\$ #run in lowest priority for multiple loops after boot completed.
-#set android.process.media in lowest priority.
-until [[ \"\$(pgrep android.process.media)\" ]]; do
-	sleep 0.1
-done
-renice 19 \$(pgrep android.process.media)
-
+	renice 19 \$\$ #run in lowest priority for multiple loops after boot completed.
+	#set android.process.media in lowest priority.
+	until [[ \"\$(pgrep android.process.media)\" ]]; do
+		sleep 0.1
+	done
+	renice 19 \$(pgrep android.process.media)
+}
+renice_task & #possible bootloop fix
 exit 0 #EOF" > /system/etc/init.d/sched_tuner_task
 		chmod 755 /system/etc/init.d/sched_tuner_task
 	else
@@ -685,24 +687,26 @@ background_task(){
 }
 background_task & #in case the target was stored in external storage...
 
-renice -20 \$(pgrep kswapd0) #renice kernel mm thread
-#set system_server in lowest priority.
-until [[ \"\$(pgrep zygote)\" ]]; do
-	sleep 0.1
-done
-renice 19 \$(pgrep zygote)
-until [[ \"\$(pgrep system_server)\" ]]; do
-	sleep 0.1
-done
-renice 0 \$(pgrep zygote)
+renice_task(){
+	renice -20 \$(pgrep kswapd0) #renice kernel mm thread
+	#set system_server in lowest priority.
+	until [[ \"\$(pgrep zygote)\" ]]; do
+		sleep 0.1
+	done
+	renice 19 \$(pgrep zygote)
+	until [[ \"\$(pgrep system_server)\" ]]; do
+		sleep 0.1
+	done
+	renice 0 \$(pgrep zygote)
 
-renice 19 \$\$ #run in lowest priority for multiple loops after boot completed.
-#set android.process.media in lowest priority.
-until [[ \"\$(pgrep android.process.media)\" ]]; do
-	sleep 0.1
-done
-renice 19 \$(pgrep android.process.media)
-
+	renice 19 \$\$ #run in lowest priority for multiple loops after boot completed.
+	#set android.process.media in lowest priority.
+	until [[ \"\$(pgrep android.process.media)\" ]]; do
+		sleep 0.1
+	done
+	renice 19 \$(pgrep android.process.media)
+}
+renice_task & #possible bootloop fix
 exit 0 #EOF" > /system/etc/sched_tuner_task
 		chmod 755 /system/etc/sched_tuner_task
 		chmod 755 /init.rc
