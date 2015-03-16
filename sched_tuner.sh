@@ -633,7 +633,9 @@ initialize(){
 		echo "#!/system/bin/sh
 
 background_task(){
-	sleep 90 # wait a good 90 seconds before making external devices executable
+	until [[ -d $external ]]; do
+		sleep 1
+	done
 	for i in \$(grep noexec /proc/mounts | awk '{print \$2}'); do
 		mount -o remount exec \$i
 	done
@@ -669,7 +671,9 @@ exit 0 #EOF" > /system/etc/init.d/sched_tuner_task
 		echo "#!/system/bin/sh
 
 background_task(){
-	sleep 90 # wait a good 90 seconds before making external devices executable
+	until [[ -d $external ]]; do
+		sleep 1
+	done
 	for i in \$(grep noexec /proc/mounts | awk '{print \$2}'); do
 		mount -o remount exec \$i
 	done
@@ -705,7 +709,8 @@ exit 0 #EOF" > /system/etc/sched_tuner_task
 		if [[ ! -f $external/init.rc.bak ]]; then
 			cp /init.rc $external/init.rc.bak
 		fi
-		if [[ "$(stat -c %s /init.rc)" == "$(stat -c %s $external/init.rc.bak)" ]]; then #compare two sizes
+		cmp /init.rc $external/init.rc.bak 1>/dev/null
+		if [[ "$?" == 0 ]]; then #compare two sizes
 			echo "
 
 service sched_tuner_task /system/etc/init.d/sched_tuner_task
