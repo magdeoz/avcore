@@ -668,11 +668,17 @@ renice 19 $$
 min_freq=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq)
 max_freq=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq)
 while true; do
-	scaling=$(dumpsys cpuinfo | grep mediaserver | awk '{print $1}' | sed 's/%$//')
+	scaling=$(dumpsys cpuinfo | grep mediaserver | awk '{print $1}' | sed 's/%$//' | cut -d'.' -f1)
 	if [[ "$scaling" ]]; then
+		applied=1
 		echo $(($(($((max_freq-min_freq))*scaling/100))+min_freq)) > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
 	else
 		echo $min_freq > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+	fi
+	if [[ "$applied" ]]; then
+		unset applied
+	else
+		awake=$(cat /sys/power/wait_for_fb_wake)
 	fi
 	sleep 1
 done
