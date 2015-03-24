@@ -596,7 +596,7 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help
 			fi
 			error mpengine init complete!
 			loop=1
-		-a | --audiofix)
+		-s | --singlecorefix)
 			backup_feature
 			singlecorefix
 			if [[ "$?" != 0 ]]; then
@@ -683,7 +683,7 @@ background_task(){
 	until [[ -f $FULL_NAME ]]; do
 		sleep 1
 	done
-	$FULL_NAME -a -m
+	$FULL_NAME -a -m -s
 }
 background_task & #in case the target was stored in external storage...
 
@@ -723,7 +723,7 @@ background_task(){
 	until [[ -f $FULL_NAME ]]; do
 		sleep 1
 	done
-	$FULL_NAME -a -m
+	$FULL_NAME -a -m -s
 }
 background_task & #in case the target was stored in external storage...
 
