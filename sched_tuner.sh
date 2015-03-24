@@ -537,7 +537,7 @@ singlecorefix(){
 			awake=$(cat /sys/power/wait_for_fb_wake)
 		fi
 		sleep $sleep
-	done
+	done & echo $! > $external/singlecorefix_pid
 }
 mpengine(){
 	while [[ "$(cat /sys/power/wait_for_fb_wake)" ]]; do
@@ -595,6 +595,15 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help
 				exit 1
 			fi
 			error mpengine init complete!
+			loop=1
+		-a | --audiofix)
+			backup_feature
+			singlecorefix
+			if [[ "$?" != 0 ]]; then
+				error something went wrong.
+				exit 1
+			fi
+			error singlecorefix init complete!
 			loop=1
 		;;
 		-l | --list)
@@ -764,6 +773,9 @@ main(){
 		if [[ ! -f $external/mpengine_pid ]]; then
 			echo null > $external/mpengine_pid
 		fi
+		if [[ ! -f $external/singlecorefix_pid ]]; then
+			echo null > $external/singlecorefix_pid
+		fi
 		if [[ "$?" != 0 ]]; then
 			error something went wrong.
 			exit 1
@@ -771,11 +783,17 @@ main(){
 		appliedonboot=$(ps | grep '{sched_tuner_tas}' | grep -v grep | awk '{print $1}')
 		if [[ "$appliedonboot" ]]; then
 			echo $appliedonboot > $external/mpengine_pid
+			echo $appliedonboot > $external/singlecorefix_pid
 		fi
 		if [[ "$(cat $external/mpengine_pid)" != null ]]&&[[ "$(ps | grep $(cat $external/mpengine_pid) | grep -v grep)" ]]; then
 			echo -e 'mpengine status: \e[1;32mrunning\e[0m'
 		else
 			echo -e 'mpengine status: \e[1;31mnot running\e[0m'
+		fi
+		if [[ "$(cat $external/singlecorefix_pid)" != null ]]&&[[ "$(ps | grep $(cat $external/singlecorefix_pid) | grep -v grep)" ]]; then
+			echo -e 'audiofix status: \e[1;32mrunning\e[0m'
+		else
+			echo -e 'audiofix status: \e[1;31mnot running\e[0m'
 		fi
 		echo current scheduling features list:
 		detect_feature $(cat /sys/kernel/debug/sched_features) #recycled crap
@@ -804,9 +822,14 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 		else
 			echo '3)run mpengine in the background'
 		fi
-echo '4)restore list/uninstall
-5)refresh list
-6)exit'
+		if [[ "$(cat $external/singlecorefix_pid)" != null ]]&&[[ "$(ps | grep $(cat $external/singlecorefix_pid) | grep -v grep)" ]]; then
+			echo '4)stop audiofix'
+		else
+			echo '4)run audiofix in the background'
+		fi
+echo '5)restore list/uninstall
+6)refresh list
+q)exit'
 		stty cbreak -echo
 		f=$(dd bs=1 count=1 2>/dev/null)
 		stty -cbreak echo
@@ -883,6 +906,19 @@ echo '4)restore list/uninstall
 				sleep 5
 			;;
 			4)
+				if [[ "$(cat $external/singlecorefix_pid)" != null ]]&&[[ "$(ps | grep $(cat $external/singlecorefix_pid) | grep -v grep)" ]]; then
+					kill -9 $(cat $external/singlecorefix_pid)
+				else
+					singlecorefix 2>/dev/null
+				fi
+				if [[ "$?" != 0 ]]; then
+					error something went wrong.
+					exit 1
+				fi
+				error singlecorefix init complete!
+				sleep 5
+			;;
+			5)
 				echo -n restoring backup...
 				apply_backup
 				if [[ "$?" != 0 ]]; then
@@ -897,11 +933,11 @@ echo '4)restore list/uninstall
 				fi
 				sleep 5
 			;;
-			5)
+			6)
 				echo refreshing...
 				sleep 0.1
 			;;
-			6| q |Q)
+			7| q |Q)
 				echo check out \'flag_tuner\' by Pizza_Dox@xda, highly recommended for perfect combination!:D
 				return 0
 			;;
