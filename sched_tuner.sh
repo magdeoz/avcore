@@ -596,6 +596,7 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help
 			fi
 			error mpengine init complete!
 			loop=1
+		;;
 		-s | --singlecorefix)
 			backup_feature
 			singlecorefix
