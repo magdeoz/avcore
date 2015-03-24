@@ -319,8 +319,8 @@ error(){
 #
 # Copyright (C) 2013-2015  hoholee12@naver.com
 #
-# Everyone is permitted to copy and distribute verbatim copies
-# of this code, but changing it is not allowed.
+# May be freely distributed and modified as long as copyright
+# is retained.
 #
 # Changelogs:
 # 0.0.1 - first release
