@@ -511,6 +511,30 @@ list_feature(){
 	done
 }
 
+singlecorefix(){
+	sleep=$1
+	if [[ ! "$sleep" ]]; then
+		sleep=1
+	fi
+	renice 19 $$
+	min_freq=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq)
+	max_freq=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq)
+	while true; do
+		scaling=$(dumpsys cpuinfo | grep mediaserver | awk '{print $1}' | sed 's/%$//' | cut -d'.' -f1)
+		if [[ "$scaling" ]]; then
+			applied=1
+			echo $(($(($((max_freq-min_freq))*scaling/100))+min_freq)) > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+		else
+			echo $min_freq > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
+		fi
+		if [[ "$applied" ]]; then
+			unset applied
+		else
+			awake=$(cat /sys/power/wait_for_fb_wake)
+		fi
+		sleep $sleep
+	done
+}
 mpengine(){
 	while [[ "$(cat /sys/power/wait_for_fb_wake)" ]]; do
 		echo 1 > /proc/sys/vm/drop_caches
@@ -572,6 +596,9 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help
 		-l | --list)
 			list_feature
 			exit 0
+		;;
+		-d | --debug)
+			debug_shell
 		;;
 	esac
 	shift
