@@ -781,10 +781,10 @@ main(){
 			error something went wrong.
 			exit 1
 		fi
-		appliedonboot=$(ps | grep '{sched_tuner_tas}' | grep -v grep | awk '{print $1}')
+		appliedonboot=$(ps | grep '{sched_tuner_tas}' | grep -v grep | awk '{print $1}') #good fix for multiple tasks.
 		if [[ "$appliedonboot" ]]; then
-			echo $appliedonboot > $external/mpengine_pid
-			echo $appliedonboot > $external/singlecorefix_pid
+			echo $(echo $appliedonboot | awk '{print $1}') > $external/mpengine_pid
+			echo $(echo $appliedonboot | awk '{print $2}') > $external/singlecorefix_pid
 		fi
 		if [[ "$(cat $external/mpengine_pid)" != null ]]&&[[ "$(ps | grep $(cat $external/mpengine_pid) | grep -v grep)" ]]; then
 			echo -e 'mpengine status: \e[1;32mrunning\e[0m'
