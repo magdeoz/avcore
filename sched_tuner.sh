@@ -782,7 +782,7 @@ main(){
 			exit 1
 		fi
 		appliedonboot=$(ps | grep '{sched_tuner_tas}' | grep -v grep | awk '{print $1}') #good fix for multiple tasks.
-		if [[ "$appliedonboot" ]]; then
+		if [[ "$appliedonboot" ]]&&[[ ! -s $external/mpengine_pid ]]&&[[ ! -s $external/singlecorefix_pid ]]; then
 			echo $(echo $appliedonboot | awk '{print $1}') > $external/mpengine_pid
 			echo $(echo $appliedonboot | awk '{print $2}') > $external/singlecorefix_pid
 		fi
