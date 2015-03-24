@@ -516,6 +516,10 @@ singlecorefix(){
 	if [[ ! "$sleep" ]]; then
 		sleep=1
 	fi
+	until [[ -f /proc/$(pgrep mediaserv)/status ]]; do
+		sleep 1
+	done
+	echo "cpu$(($(grep -i "Cpus_allowed:" /proc/$(pgrep mediaserv)/status | awk '{print $2}')-1))"
 	renice 19 $$
 	min_freq=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq)
 	max_freq=$(cat /sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq)
