@@ -717,7 +717,7 @@ renice_task & renice_pid=$! #possible bootloop fix
 
 taskdog(){
 	sleep 90 #to be adjusted for various devices.
-	kill -9 $renice_pid
+	kill -9 \$renice_pid
 }
 taskdog & #in case renice_task did not end properly
 
@@ -764,7 +764,7 @@ renice_task & renice_pid=$! #possible bootloop fix
 
 taskdog(){
 	sleep 90 #to be adjusted for various devices.
-	kill -9 $renice_pid
+	kill -9 \$renice_pid
 }
 taskdog & #in case renice_task did not end properly
 
