@@ -51,7 +51,7 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 	fi
 	shift
 done
-readonly version="0.0.6"
+readonly version="0.0.7"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -329,6 +329,8 @@ error(){
 # 0.0.4 - future-proof bugfixes
 # 0.0.5 - more boot tweaks added
 # 0.0.6 - mpengine added for performance
+# 0.0.7 - audiofix added for single core devices
+#       - changed license policy
 
 set +e #error proof
 
@@ -523,6 +525,10 @@ singlecorefix(){
 	renice 19 $$
 	min_freq=$(cat /sys/devices/system/cpu/$cpuloc/cpufreq/cpuinfo_min_freq)
 	max_freq=$(cat /sys/devices/system/cpu/$cpuloc/cpufreq/cpuinfo_max_freq)
+	if [[ "$1" == -f ]]; then
+		echo $min_freq > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
+		return 0
+	fi
 	while true; do
 		scaling=$(dumpsys cpuinfo | grep mediaserver | awk '{print $1}' | sed 's/%$//' | cut -d'.' -f1)
 		if [[ "$scaling" ]]; then
@@ -707,7 +713,14 @@ renice_task(){
 	done
 	renice 19 \$(pgrep android.process.media)
 }
-renice_task & #possible bootloop fix
+renice_task & renice_pid=$! #possible bootloop fix
+
+taskdog(){
+	sleep 90 #to be adjusted for various devices.
+	kill -9 $renice_pid
+}
+taskdog & #in case renice_task did not end properly
+
 exit 0 #EOF" > /system/etc/init.d/sched_tuner_task
 		chmod 755 /system/etc/init.d/sched_tuner_task
 	else
@@ -747,7 +760,14 @@ renice_task(){
 	done
 	renice 19 \$(pgrep android.process.media)
 }
-renice_task & #possible bootloop fix
+renice_task & renice_pid=$! #possible bootloop fix
+
+taskdog(){
+	sleep 90 #to be adjusted for various devices.
+	kill -9 $renice_pid
+}
+taskdog & #in case renice_task did not end properly
+
 exit 0 #EOF" > /system/etc/sched_tuner_task
 		chmod 755 /system/etc/sched_tuner_task
 		chmod 755 /init.rc
@@ -768,7 +788,7 @@ main(){
 	while true; do
 		clear
 		unset notapplied
-		echo "scheduling features tuner v$version
+		echo "system performance enhancer for android v$version
 "
 		backup_feature
 		if [[ ! -f $external/mpengine_pid ]]; then
@@ -909,6 +929,7 @@ q)exit'
 			4)
 				if [[ "$(cat $external/singlecorefix_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/singlecorefix_pid)" | grep -v grep)" ]]; then
 					kill -9 $(cat $external/singlecorefix_pid)
+					singlecorefix -f
 				else
 					singlecorefix 2>/dev/null
 				fi
