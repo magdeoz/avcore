@@ -713,7 +713,7 @@ renice_task(){
 	done
 	renice 19 \$(pgrep android.process.media)
 }
-renice_task & renice_pid=$! #possible bootloop fix
+renice_task & renice_pid=\$! #possible bootloop fix
 
 taskdog(){
 	sleep 90 #to be adjusted for various devices.
@@ -760,7 +760,7 @@ renice_task(){
 	done
 	renice 19 \$(pgrep android.process.media)
 }
-renice_task & renice_pid=$! #possible bootloop fix
+renice_task & renice_pid=\$! #possible bootloop fix
 
 taskdog(){
 	sleep 90 #to be adjusted for various devices.
