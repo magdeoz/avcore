@@ -1,9 +1,9 @@
 # Custom settings for session behaviour
 # values for all settings should either be 1 or 0.(boolean)
-# Check Busybox Applet Generator 2.4.
-run_Busybox_Applet_Generator=1
+# run bb_apg_2 at start.
+run_bb_apg_2=1
 # Check Superuser.
-run_Superuser=1
+run_as_root=
 # Use /dev/urandom for print_RANDOM_BYTE.
 use_urand=1
 # invert print_RANDOM_BYTE.
@@ -12,6 +12,8 @@ invert_rand=1
 install=0
 # launch debug_shell() at start.
 debug=0
+# Bourne-again Shell only.
+bash_only=1
 until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]] && [[ "$1" != --bbpass ]] && [[ "$1" != --urand ]] && [[ "$1" != --invrand ]] && [[ "$1" != --renice ]] && [[ "$1" != --install ]]; do
 	if [[ "$1" == --debug ]]; then
 		if [[ "$install" == 1 ]]; then
@@ -27,10 +29,10 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 			break
 		fi
 		readonly install=1
-	elif [[ "$1" == --supass ]] && [[ "$run_Superuser" != 0 ]]; then
-		readonly run_Superuser=0
-	elif [[ "$1" == --bbpass ]] && [[ "$run_Busybox_Applet_Generator" != 0 ]]; then
-		readonly run_Busybox_Applet_Generator=0
+	elif [[ "$1" == --supass ]] && [[ "$run_as_root" != 0 ]]; then
+		readonly run_as_root=0
+	elif [[ "$1" == --bbpass ]] && [[ "$run_bb_apg_2" != 0 ]]; then
+		readonly run_bb_apg_2=0
 	elif [[ "$1" == --urand ]] && [[ "$use_urand" != 1 ]]; then
 		readonly use_urand=1
 	elif [[ "$1" == --invrand ]] && [[ "$invert_rand" != 1 ]]; then
@@ -51,7 +53,7 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 	fi
 	shift
 done
-readonly version="0.0.1"
+readonly version=
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -116,8 +118,8 @@ such includes:
 instead, you can use these commands built-in to this program:
 	-print_PARTIAL_DIR_NAME
 	-print_RANDOM_BYTE
-	-Busybox_Applet_Generator
-	-Superuser
+	-bb_apg_2
+	-as_root
 	-any other functions built-in to this program...
 you can use set command to view all the functions and variables built-in to this program.
 
@@ -299,7 +301,13 @@ long_line(){
 }
 error(){
 	message=$@
-	echo $message
+	if [[ "$(echo $message | grep \")" ]]; then
+		echo -n $message | sed 's/".*//'
+		errmsg=$(echo $message | cut -d'"' -f2)
+		echo -e "\e[1;31m\"$errmsg\"\e[0m"
+	else
+		echo $message
+	fi
 	CUSTOM_DIR=$(echo $CUSTOM_DIR | sed 's/\/$//')
 	cd /
 	for i in $(echo $CUSTOM_DIR | sed 's/\//\n/g'); do
@@ -315,15 +323,20 @@ error(){
 		date '+date: %m/%d/%y%ttime: %H:%M:%S ->'"$message"'' >> $DIR_NAME/$NO_EXTENSION.log
 	fi
 }
+if [[ "$bash_only" == 1 ]]; then
+	if [[ ! "$BASH" ]]; then
+		error Please re-run this program with BASH. \"error code 1\" #to pass the double-quote character to the error function, you must use the inverted-slash character.
+		exit 1
+	fi
+fi
 # standard.sh
 #
 # Copyright (C) 2013-2015  hoholee12@naver.com
 #
-# Everyone is permitted to copy and distribute verbatim copies
-# of this code, but changing it is not allowed.
+# May be freely distributed and modified as long as copyright
+# is retained.
 #
 # Changelogs:
-# 0.0.1 - first release
 
 set +e #error proof
 
@@ -340,13 +353,44 @@ cmd7=cat
 cmd8=pgrep
 cmd9=ps
 cmd10=cp
+cmd11=cut
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 
 silent_mode= # enabling this will hide errors.
 # This feature might not be compatible with some other multi-call binaries.
 # if similar applets are found and Busybox do not have them, it will still continue but leave out some error messages regarding compatibility issues.
 bb_check= # BB availability.
-Busybox_Applet_Generator(){
+bb_apg_2(){
+	if [[ "$1" == -f ]]; then
+		shift
+		used_fopt=1
+		silent_mode=1
+		if [[ "$cmd" ]]; then
+			if [[ "$cmd" -lt 0 ]]; then
+				cmd=0
+			fi
+		else
+			cmd=224
+		fi
+		for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
+			v=$(eval echo $i)
+			x=$(echo $i | sed 's/^\$//')
+			export $x=$v #export everything.
+			if [[ "$v" ]]; then
+				unset $x
+			else
+				break #reduce cycle
+			fi
+		done
+		for j in $(seq 1 $cmd); do
+			if [[ ! "$1" ]]; then
+				break
+			fi
+			export cmd$j=$1
+			shift
+		done
+		export cmd=$j #this will reduce more cycles.
+	fi
 	bb_check=0
 	local n i busyboxloc busyboxenv fail
 	if [[ ! "$(busybox)" ]]; then #allow non-Busybox users to continue.
@@ -363,6 +407,8 @@ Busybox_Applet_Generator(){
 		fi
 		for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
 			v=$(eval echo $i)
+			x=$(echo $i | sed 's/^\$//')
+			export $x=$v #export everything.
 			if [[ "$v" ]]; then
 				if [[ ! "$(which $v)" ]]; then
 					if [[ "$silent_mode" != 1 ]]; then
@@ -402,6 +448,8 @@ Busybox_Applet_Generator(){
 		fi
 		for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
 			v=$(eval echo $i)
+			x=$(echo $i | sed 's/^\$//')
+			export $x=$v #export everything.
 			if [[ "$v" ]]; then
 				if [[ ! "$(busybox | grep "\<$v\>")" ]]; then
 					if [[ "$silent_mode" != 1 ]]; then
@@ -427,6 +475,10 @@ Busybox_Applet_Generator(){
 		done
 	fi 2>/dev/null
 	if [[ "$fail" == 1 ]]; then #the fail manager!
+		if [[ "$used_fopt" == 1 ]]; then
+			unset used_fopt
+			return 1
+		fi
 		echo -e "process terminated. \e[1;31m\"error code 1\"\e[0m"
 		return 1
 	fi
@@ -434,7 +486,12 @@ Busybox_Applet_Generator(){
 
 # Check Superuser.
 su_check= # root availability
-Superuser(){
+as_root(){
+	bb_apg_2 -f id tr grep sed
+	if [[ "$?" == 1 ]]; then
+		error critical command missing. run with --supass for bypassing root check. \"error code 2\"
+		exit 2
+	fi
 	su_check=0
 	if [[ "$(id | tr '(' ' ' | tr ' ' '\n' | grep uid | sed 's/uid=//g')" != 0 ]]; then
 		su_check=1
@@ -446,15 +503,15 @@ Superuser(){
 # Session behaviour
 Roll_Down(){
 	local return
-	if [[ "$run_Busybox_Applet_Generator" == 1 ]]; then
-		Busybox_Applet_Generator
+	if [[ "$run_bb_apg_2" == 1 ]]; then
+		bb_apg_2
 		return=$?
 		if [[ "$return" -ne 0 ]]; then
 			exit $return
 		fi
 	fi
-	if [[ "$run_Superuser" == 1 ]]; then
-		Superuser
+	if [[ "$run_as_root" == 1 ]]; then
+		as_root
 		return=$?
 		if [[ "$return" -ne 0 ]]; then
 			exit $return

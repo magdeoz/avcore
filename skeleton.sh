@@ -1,9 +1,9 @@
 # Custom settings for session behaviour
 # values for all settings should either be 1 or 0.(boolean)
-# Check Busybox Applet Generator 2.4.
-run_Busybox_Applet_Generator=1
+# run bb_apg_2 at start.
+run_bb_apg_2=1
 # Check Superuser.
-run_Superuser=1
+run_as_root=1
 # Use /dev/urandom for print_RANDOM_BYTE.
 use_urand=1
 # invert print_RANDOM_BYTE.
@@ -15,10 +15,10 @@ until [[ "$1" != --verbose ]] && [[ "$1" != --supass ]] && [[ "$1" != --bbpass ]
 		set -x
 	elif [[ "$1" == --install ]]; then
 		readonly install=1
-	elif [[ "$1" == --supass ]] && [[ "$run_Superuser" != 0 ]]; then
-		readonly run_Superuser=0
-	elif [[ "$1" == --bbpass ]] && [[ "$run_Busybox_Applet_Generator" != 0 ]]; then
-		readonly run_Busybox_Applet_Generator=0
+	elif [[ "$1" == --supass ]] && [[ "$run_as_root" != 0 ]]; then
+		readonly run_as_root=0
+	elif [[ "$1" == --bbpass ]] && [[ "$run_bb_apg_2" != 0 ]]; then
+		readonly run_bb_apg_2=0
 	elif [[ "$1" == --urand ]] && [[ "$use_urand" != 1 ]]; then
 		readonly use_urand=1
 	elif [[ "$1" == --invrand ]] && [[ "$invert_rand" != 1 ]]; then
@@ -104,8 +104,8 @@ such includes:
 instead, you can use these commands built-in to this program:
 	-print_PARTIAL_DIR_NAME
 	-print_RANDOM_BYTE
-	-Busybox_Applet_Generator
-	-Superuser
+	-bb_apg_2
+	-as_root
 	-any other functions built-in to this program...
 you can use set command to view all the functions and variables built-in to this program.
 
@@ -326,7 +326,7 @@ silent_mode= # enabling this will hide errors.
 # This feature might not be compatible with some other multi-call binaries.
 # if similar applets are found and Busybox do not have them, it will still continue but leave out some error messages regarding compatibility issues.
 bb_check= # BB availability.
-Busybox_Applet_Generator(){
+bb_apg_2(){
 	bb_check=0
 	local n i busyboxloc busyboxenv fail
 	if [[ ! "$(busybox)" ]]; then #allow non-Busybox users to continue.
@@ -414,7 +414,7 @@ Busybox_Applet_Generator(){
 
 # Check Superuser.
 su_check= # root availability
-Superuser(){
+as_root(){
 	su_check=0
 	if [[ "$(id | tr '(' ' ' | tr ' ' '\n' | grep uid | sed 's/uid=//g')" != 0 ]]; then
 		su_check=1
@@ -426,15 +426,15 @@ Superuser(){
 # Session behaviour
 Roll_Down(){
 	local return
-	if [[ "$run_Busybox_Applet_Generator" == 1 ]]; then
-		Busybox_Applet_Generator
+	if [[ "$run_bb_apg_2" == 1 ]]; then
+		bb_apg_2
 		return=$?
 		if [[ "$return" -ne 0 ]]; then
 			exit $return
 		fi
 	fi
-	if [[ "$run_Superuser" == 1 ]]; then
-		Superuser
+	if [[ "$run_as_root" == 1 ]]; then
+		as_root
 		return=$?
 		if [[ "$return" -ne 0 ]]; then
 			exit $return
