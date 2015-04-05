@@ -289,7 +289,7 @@ install(){
 	fi
 }
 long_line(){
-	for i in $(seq 1 $(tput cols 2>/dev/null)); do
+	for i in $(seq 1 $(stty size | awk '{print $2}' 2>/dev/null)); do
 		if [[ "$1" -le 1 ]]; then
 			echo -n '-'
 		else
