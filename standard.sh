@@ -82,17 +82,26 @@ print_PARTIAL_DIR_NAME(){
 }
 readonly ROOT_DIR=$(print_PARTIAL_DIR_NAME 1)
 print_RANDOM_BYTE(){
-	if [[ "$use_urand" != 1 ]]; then
-		rand=$(($(od -An -N2 -i /dev/random)%32767))
+	if [[ "$BASH" ]]&&[[ "$RANDOM" ]]; then
+		echo $RANDOM
 	else
-		rand=$(($(od -An -N2 -i /dev/urandom)%32767))
-	fi
-	if [[ "$invert_rand" == 1 ]]; then
-		if [[ "$rand" -lt 0 ]]; then
-			rand=$(($((rand*-1))-1))
+		bb_apg_2 -f od
+		if [[ "$?" == 1 ]]; then
+			error critical command missing. run with --supass for bypassing root check. \"error code 2\"
+			exit 2
 		fi
+		if [[ "$use_urand" != 1 ]]; then
+			rand=$(($(od -An -N2 -i /dev/random)%32767))
+		else
+			rand=$(($(od -An -N2 -i /dev/urandom)%32767))
+		fi
+		if [[ "$invert_rand" == 1 ]]; then
+			if [[ "$rand" -lt 0 ]]; then
+				rand=$(($((rand*-1))-1))
+			fi
+		fi
+		echo $rand #output
 	fi
-	echo $rand #output
 }
 debug_shell(){
 	echo "welcome to the debug_shell program! type in: 'help' for more information."
