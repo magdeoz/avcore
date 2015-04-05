@@ -743,7 +743,7 @@ initialize(){
 		unset type
 		mkdir -p /system/etc/init.d
 		chmod 755 /system/etc/init.d
-		echo "#!/system/bin/sh
+		echo "#!$BASH
 
 background_task(){
 	until [[ -d $external ]]; do
@@ -790,7 +790,7 @@ taskdog & #in case renice_task did not end properly
 exit 0 #EOF" > /system/etc/init.d/sched_tuner_task
 		chmod 755 /system/etc/init.d/sched_tuner_task
 	else
-		echo "#!/system/bin/sh
+		echo "#!$BASH
 
 background_task(){
 	until [[ -d $external ]]; do
