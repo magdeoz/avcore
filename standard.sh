@@ -38,7 +38,7 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 	elif [[ "$1" == --invrand ]] && [[ "$invert_rand" != 1 ]]; then
 		readonly invert_rand=1
 	elif [[ "$1" == --renice ]]; then
-		if [[ ! "$(echo $2 | tr [0-9] ' ' | sed 's/^-//' | sed 's/ //g')" ]]; then
+		if [[ ! "$(echo $2 | sed 's/[0-9]//g' | sed 's/^-//')" ]]; then
 			if [[ "$2" -le 19 ]] && [[ "$2" -ge -20 ]]; then
 				renice $2 $$ 1>/dev/null
 			else
@@ -60,7 +60,7 @@ readonly backup_PATH=$PATH
 readonly set_PATH=$(dirname $0 | sed 's/^\.//')
 readonly set_PATH2=$(pwd)
 if [[ "$set_PATH" ]]; then
-	if [[ "$(ls / | grep $(echo $set_PATH | tr -s / \\n | head -n2	| tr -s \\n / | sed 's/\/$//' | sed 's/^\///'))" ]] ; then
+	if [[ "$(ls / | grep $(echo $set_PATH | sed 's/\//\n/g' | head -n2 | sed ':a;N;s/\n//g;ba'))" ]] ; then
 		export PATH=$set_PATH:$PATH
 	else
 		export PATH=$set_PATH2:$PATH
@@ -78,7 +78,7 @@ fi
 export PATH=$backup_PATH # revert back to default
 readonly FULL_NAME=$(echo $DIR_NAME/$BASE_NAME)
 print_PARTIAL_DIR_NAME(){
-	echo $(echo $DIR_NAME | tr -s / \\n | head -n$(($1+1))	| tr -s \\n / | sed 's/\/$//')
+	echo $(echo $DIR_NAME | sed 's/\//\n/g' | head -n$(($1+1)) | sed ':a;N;s/\n/\//g;ba')
 }
 readonly ROOT_DIR=$(print_PARTIAL_DIR_NAME 1)
 print_RANDOM_BYTE(){
@@ -212,7 +212,7 @@ install(){
 			return 1
 		fi
 		echo -e '\rplease wait...'
-		loc_DIR_NAME=$(echo $loc | tr -s / \\n | head -n2 | tr -s \\n / | sed 's/\/$//')
+		loc_DIR_NAME=$(echo $loc | sed 's/\//\n/g' | head -n2 | sed ':a;N;s/\n/\//g;ba')
 		mountstat=$(mount | grep $loc_DIR_NAME | head -n1)
 		availperm=$(echo $mountstat | grep 'ro\|rw')
 		if [[ "$availperm" ]]; then #linux else unix
@@ -496,13 +496,13 @@ bb_apg_2(){
 # Check Superuser.
 su_check= # root availability
 as_root(){
-	bb_apg_2 -f id tr grep sed
+	bb_apg_2 -f id grep sed
 	if [[ "$?" == 1 ]]; then
 		error critical command missing. run with --supass for bypassing root check. \"error code 2\"
 		exit 2
 	fi
 	su_check=0
-	if [[ "$(id | tr '(' ' ' | tr ' ' '\n' | grep uid | sed 's/uid=//g')" != 0 ]]; then
+	if [[ "$(id | sed 's/(/ /g' | sed 's/ /\n/g' | grep uid | sed 's/uid=//g')" != 0 ]]; then
 		su_check=1
 		echo "Permission denied, are you root?"
 		return 1
