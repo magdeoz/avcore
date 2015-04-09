@@ -582,7 +582,7 @@ list_feature(){
 singlecorefix(){
 	sleep=$1
 	if [[ ! "$sleep" ]]; then
-		sleep=1
+		sleep=10 #dumpsys refresh time is 10 secs.
 	fi
 	until [[ -f /proc/$(pgrep mediaserv)/status ]]; do
 		sleep 1
@@ -613,7 +613,7 @@ singlecorefix(){
 }
 mpengine(){
 	while [[ "$(cat /sys/power/wait_for_fb_wake)" ]]; do
-		echo 1 > /proc/sys/vm/drop_caches
+		sync; echo 1 > /proc/sys/vm/drop_caches #this does wonders to i/o problems.
 		sleep 1
 	done & echo $! > $external/mpengine_pid
 }
