@@ -491,6 +491,9 @@ bb_apg_2(){
 			fi
 		done
 	fi 2>/dev/null
+	if [[ "$used_fopt" == 1 ]]&&[[ "$bb_check" == 1 ]]; then
+		fail=1
+	fi
 	if [[ "$fail" == 1 ]]; then #the fail manager!
 		if [[ "$used_fopt" == 1 ]]; then
 			unset used_fopt
@@ -549,6 +552,11 @@ Roll_Down
 
 CUSTOM_DIR=/data/log #log location
 if [[ ! -f /sys/kernel/debug/sched_features ]]; then
+	bb_apg_2 -f mount
+	if [[ "$?" == 1 ]]; then
+		error critical command missing. make sure you have busybox installed. \"error code 2\"
+		exit 2
+	fi
 	mount -t debugfs none /sys/kernel/debug 2>/dev/null #some kernels have locked debugfs, so we reopen them.(NEED BUSYBOX FOR -t OPTION TO WORK!!!)
 	if [[ "$?" != 0 ]]||[[ ! -f /sys/kernel/debug/sched_features ]]||[[ ! -f /sys/power/wait_for_fb_wake ]]; then #wait_for_fb_wake added for mpengine
 		error your kernel is not supported. sorry:p

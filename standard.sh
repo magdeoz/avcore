@@ -483,6 +483,9 @@ bb_apg_2(){
 			fi
 		done
 	fi 2>/dev/null
+	if [[ "$used_fopt" == 1 ]]&&[[ "$bb_check" == 1 ]]; then
+		fail=1
+	fi
 	if [[ "$fail" == 1 ]]; then #the fail manager!
 		if [[ "$used_fopt" == 1 ]]; then
 			unset used_fopt
