@@ -373,6 +373,11 @@ bb_apg_2(){
 	if [[ "$1" == -f ]]; then
 		shift
 		used_fopt=1
+	elif [[ "$1" == -g ]]; then
+		shift
+		used_gopt=1
+	fi
+	if [[ "$used_fopt" == 1 ]]||[[ "$used_gopt" == 1 ]]; then
 		silent_mode=1
 		if [[ "$cmd" ]]; then
 			if [[ "$cmd" -lt 0 ]]; then
@@ -483,12 +488,13 @@ bb_apg_2(){
 			fi
 		done
 	fi 2>/dev/null
-	if [[ "$used_fopt" == 1 ]]&&[[ "$bb_check" == 1 ]]; then
-		fail=1
+	if [[ "$used_gopt" == 1 ]]&&[[ "$bb_check" == 1 ]]; then
+		fail=1 #used_gopt is NOT recommended, unless needed for specific use.
 	fi
 	if [[ "$fail" == 1 ]]; then #the fail manager!
-		if [[ "$used_fopt" == 1 ]]; then
+		if [[ "$used_fopt" == 1 ]]||[[ "$used_gopt" == 1 ]]; then
 			unset used_fopt
+			unset used_gopt
 			return 1
 		fi
 		echo -e "process terminated. \e[1;31m\"error code 1\"\e[0m"
