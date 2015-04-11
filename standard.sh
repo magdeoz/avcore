@@ -87,7 +87,7 @@ print_RANDOM_BYTE(){
 	else
 		bb_apg_2 -f od
 		if [[ "$?" == 1 ]]; then
-			error critical command missing. run with --supass for bypassing root check. \"error code 2\"
+			error critical command missing. \"error code 2\"
 			exit 2
 		fi
 		if [[ "$use_urand" != 1 ]]; then

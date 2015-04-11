@@ -87,7 +87,7 @@ print_RANDOM_BYTE(){
 	else
 		bb_apg_2 -f od
 		if [[ "$?" == 1 ]]; then
-			error critical command missing. run with --supass for bypassing root check. \"error code 2\"
+			error critical command missing. \"error code 2\"
 			exit 2
 		fi
 		if [[ "$use_urand" != 1 ]]; then
@@ -565,32 +565,39 @@ if [[ ! -f /sys/kernel/debug/sched_features ]]; then
 	fi
 	mount -t debugfs none /sys/kernel/debug 2>/dev/null #some kernels have locked debugfs, so we reopen them.(NEED BUSYBOX FOR -t OPTION TO WORK!!!)
 	if [[ "$?" != 0 ]]||[[ ! -f /sys/kernel/debug/sched_features ]]||[[ ! -f /sys/power/wait_for_fb_wake ]]; then #wait_for_fb_wake added for mpengine
-		error your kernel is not supported. sorry:p
-		exit 1
+		notsupported=1 #reg
 	fi
 fi
 mount -o remount,rw rootfs 2>/dev/null #remount rootfs to rw
 mount -o remount,rw /system 2>/dev/null #remount system to rw
 
 detect_feature(){
-	n_cycle=0
-	for i in $@; do #needs special input
-		n_cycle=$((n_cycle+1))
-		export mslot$n_cycle=$i #export to mslot# since slot# is taken.
-	done
+	if [[ "$notsupported" == 1 ]]; then
+		echo -e "\e[1;31mnot supported.\e[0m"
+	else
+		n_cycle=0
+		for i in $@; do #needs special input
+			n_cycle=$((n_cycle+1))
+			export mslot$n_cycle=$i #export to mslot# since slot# is taken.
+		done
+	fi
 }
 detect_feature $(cat /sys/kernel/debug/sched_features) #init neccessary!
 list_feature(){
-	for j in $(seq -s ' $mslot' 0 $n_cycle | sed 's/^0 //'); do #retrieve mslot#
-		v=$(eval echo $j)
-		echo -n "$v " | sed 's/^NO_//'
-		if [[ ! "$(echo $v | grep '^NO_')" ]]; then
-			echo -e '\e[1;31mis ON.\e[0m'
-			notapplied=1 #for extra check
-		else
-			echo -e '\e[1;32mis OFF.\e[0m'
-		fi
-	done
+	if [[ "$notsupported" == 1 ]]; then
+		echo -e "\e[1;31mnot supported.\e[0m"
+	else
+		for j in $(seq -s ' $mslot' 0 $n_cycle | sed 's/^0 //'); do #retrieve mslot#
+			v=$(eval echo $j)
+			echo -n "$v " | sed 's/^NO_//'
+			if [[ ! "$(echo $v | grep '^NO_')" ]]; then
+				echo -e '\e[1;31mis ON.\e[0m'
+				notapplied=1 #for extra check
+			else
+				echo -e '\e[1;32mis OFF.\e[0m'
+			fi
+		done
+	fi
 }
 
 singlecorefix(){
@@ -632,10 +639,14 @@ mpengine(){
 	done & echo $! > $external/mpengine_pid
 }
 apply_SS(){
-	#WIP
-	for i in $(cat /sys/kernel/debug/sched_features | sed 's/\<NO_//g'); do
-		echo NO_$i > /sys/kernel/debug/sched_features
-	done
+	if [[ "$notsupported" == 1 ]]; then
+		error not supported.
+		return 2
+	else
+		for i in $(cat /sys/kernel/debug/sched_features | sed 's/\<NO_//g'); do
+			echo NO_$i > /sys/kernel/debug/sched_features
+		done
+	fi
 }
 backup_feature(){
 	if [[ "$EXTERNAL_STORAGE" ]]; then
@@ -666,7 +677,7 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help
 		;;
 		-a | --activate)
 			apply_SS
-			if [[ "$?" != 0 ]]; then
+			if [[ "$?" != 0 ]]||[[ "$?" != 2 ]]; then
 				error something went wrong.
 				exit 1
 			fi
@@ -940,7 +951,9 @@ q)exit'
 			1)
 				echo -n applying tweaks...
 				apply_SS
-				echo done!
+				if [[ "$?" != 2 ]]; then
+					echo done!
+				fi
 				sleep 5
 			;;
 			2)
