@@ -677,7 +677,8 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help
 		;;
 		-a | --activate)
 			apply_SS
-			if [[ "$?" != 0 ]]||[[ "$?" != 2 ]]; then
+			status=$?
+			if [[ "$status" != 0 ]]&&[[ "$status" != 2 ]]; then
 				error something went wrong.
 				exit 1
 			fi
