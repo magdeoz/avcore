@@ -118,7 +118,7 @@ debug_shell(){
 			;;
 			help)
 				echo -e "this debug shell is \e[1;31mONLY\e[0m used for testing conditions inside this program!
-it is not a complete shell as you CANNOT use any regex with it.
+you can now use '>' and '>>' for output redirection. use along with 'set -x' for debugging purposes.
 such includes:
 	-functions
 	-variables
@@ -143,7 +143,32 @@ Copyright (C) 2013-2015 hoholee12@naver.com"
 				exit
 			;;
 			*)
-				$i
+				if [[ "$(echo $i | grep '>')" ]]; then
+					if [[ "$(echo $i | grep '>>')" ]]; then
+						i=$(echo $i | sed 's/>>/>/')
+						if [[ "$(echo $i | cut -d'>' -f1)" ]]; then
+							first_comm=$(echo $i | cut -d'>' -f1)
+							second_comm=$(echo $i | sed 's/2>&1//' | cut -d'>' -f2)
+							if [[ "$(echo $i | grep '2>&1')" ]]; then
+								eval $first_comm >> $second_comm 2>&1
+							else
+								eval $first_comm >> $second_comm
+							fi
+						fi
+					else
+						if [[ "$(echo $i | cut -d'>' -f1)" ]]; then
+							first_comm=$(echo $i | cut -d'>' -f1)
+							second_comm=$(echo $i | sed 's/2>&1//' | cut -d'>' -f2)
+							if [[ "$(echo $i | grep '2>&1')" ]]; then
+								eval $first_comm > $second_comm 2>&1
+							else
+								eval $first_comm > $second_comm
+							fi
+						fi
+					fi
+				else
+					$i
+				fi
 			;;
 		esac
 		echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m"
