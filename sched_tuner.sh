@@ -1145,6 +1145,9 @@ q)exit'
 				fi
 				echo -n setting on boot...
 				initialize
+				unset install_mpengine
+				unset install_singlecorefix
+				unset install_time
 				echo done!
 				sleep 5
 			;;
