@@ -748,7 +748,12 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help
 		;;
 		-s | --singlecorefix)
 			backup_feature
-			singlecorefix
+			if [[ "$2" != -a ]]&&[[ "$2" != -m ]]&&[[ "$2" != -s ]]; then
+				singlecorefix $2
+				shift
+			else
+				singlecorefix
+			fi
 			if [[ "$?" != 0 ]]; then
 				error something went wrong.
 				exit 1
@@ -833,7 +838,7 @@ background_task(){
 	until [[ -f $FULL_NAME ]]; do
 		sleep 1
 	done
-	$FULL_NAME -a -m -s
+	$FULL_NAME -a $install_mpengine $install_singlecorefix $install_time
 }
 background_task & #in case the target was stored in external storage...
 
@@ -880,7 +885,7 @@ background_task(){
 	until [[ -f $FULL_NAME ]]; do
 		sleep 1
 	done
-	$FULL_NAME -a -m -s
+	$FULL_NAME -a $install_mpengine $install_singlecorefix $install_time
 }
 background_task & #in case the target was stored in external storage...
 
@@ -1053,6 +1058,87 @@ q)exit'
 					unset return
 					break
 				fi
+				echo -n 'install mpengine?'
+				while true; do
+					stty cbreak -echo
+					f=$(dd bs=1 count=1 2>/dev/null)
+					stty -cbreak echo
+					echo $f
+					case $f in
+						y* | Y*)
+							install_mpengine="-m"
+							break
+						;;
+						n* | N*)
+							break
+						;;
+						q* | Q*)
+							echo canceled.
+							return=1
+							break
+						;;
+						*)
+							random=$(print_RANDOM_BYTE)
+							random=$((random%4+1))
+							if [[ "$random" -eq 1 ]]; then
+								echo -n -e '\rwhat? '
+							elif [[ "$random" -eq 2 ]]; then
+								echo -n -e '\ri dont understand. '
+							elif [[ "$random" -eq 3 ]]; then
+								echo -n -e '\rcome on mate, you could do better than that! '
+							elif [[ "$random" -eq 4 ]]; then
+								echo -n -e '\rif i were you, i would choose the broccoli. '
+							fi
+						;;
+					esac
+					echo -n press \'q\' to quit.
+				done
+				if [[ "$return" ]]; then
+					unset return
+					break
+				fi
+				echo -n 'install scAudioFix?'
+				while true; do
+					stty cbreak -echo
+					f=$(dd bs=1 count=1 2>/dev/null)
+					stty -cbreak echo
+					echo $f
+					case $f in
+						y* | Y*)
+							install_singlecorefix="-s"
+							break
+						;;
+						n* | N*)
+							return=1
+							break
+						;;
+						q* | Q*)
+							echo canceled.
+							return=1
+							break
+						;;
+						*)
+							random=$(print_RANDOM_BYTE)
+							random=$((random%4+1))
+							if [[ "$random" -eq 1 ]]; then
+								echo -n -e '\rwhat? '
+							elif [[ "$random" -eq 2 ]]; then
+								echo -n -e '\ri dont understand. '
+							elif [[ "$random" -eq 3 ]]; then
+								echo -n -e '\rcome on mate, you could do better than that! '
+							elif [[ "$random" -eq 4 ]]; then
+								echo -n -e '\rif i were you, i would choose the broccoli. '
+							fi
+						;;
+					esac
+					echo -n press \'q\' to quit.
+				done
+				if [[ "$return" ]]; then
+					unset return
+					break
+				fi
+				echo scAudioFix: how many seconds interval?:
+				read install_time
 				echo -n setting on boot...
 				initialize
 				echo done!
@@ -1076,7 +1162,9 @@ q)exit'
 					kill -9 $(cat $external/singlecorefix_pid)
 					singlecorefix -f
 				else
-					singlecorefix 2>/dev/null
+					echo how many seconds interval?:
+					read time
+					singlecorefix $time 2>/dev/null
 				fi
 				if [[ "$?" != 0 ]]; then
 					error something went wrong.
