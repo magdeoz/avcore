@@ -1109,7 +1109,7 @@ q)exit'
 							break
 						;;
 						n* | N*)
-							return=1
+							dont=1
 							break
 						;;
 						q* | Q*)
@@ -1133,12 +1133,16 @@ q)exit'
 					esac
 					echo -n press \'q\' to quit.
 				done
+				if [[ ! "$dont" ]]; then
+					echo scAudioFix: how many seconds interval?:
+					read install_time
+				else
+					unset dont
+				fi
 				if [[ "$return" ]]; then
 					unset return
 					break
 				fi
-				echo scAudioFix: how many seconds interval?:
-				read install_time
 				echo -n setting on boot...
 				initialize
 				echo done!
