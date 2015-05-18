@@ -641,21 +641,47 @@ singlecorefix(){
 		echo $min_freq > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
 		return 0
 	fi
-	while true; do
-		scaling=$(dumpsys cpuinfo | grep mediaserver | awk '{print $1}' | sed 's/%$//' | cut -d'.' -f1)
-		if [[ "$scaling" ]]; then
-			applied=1
-			echo $(($(($((max_freq-min_freq))*scaling/100))+min_freq)) > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
-		else
-			echo $min_freq > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
-		fi
-		if [[ "$applied" ]]; then
-			unset applied
-		else
-			awake=$(cat /sys/power/wait_for_fb_wake)
-		fi
-		sleep $sleep
-	done & echo $! > $external/singlecorefix_pid
+	if [[ "$sleep" -lt 10 ]]; then
+		while true; do
+			scaling=$(top -n1 | grep mediaserver | awk '{print $(NF-1)}')
+			garbageprocess=$(top -n1 | grep 'android.process.media' | awk '{print $1}')
+			if [[ "$garbageprocess" ]]; then
+				kill -9 $garbageprocess
+			fi
+			if [[ "$scaling" ]]; then
+				applied=1
+				echo $(($(($((max_freq-min_freq))*scaling/100))+min_freq)) > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
+			else
+				echo $min_freq > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
+			fi
+			if [[ "$applied" ]]; then
+				unset applied
+			else
+				awake=$(cat /sys/power/wait_for_fb_wake)
+			fi
+			sleep $sleep
+		done & echo $! > $external/singlecorefix_pid
+	else
+		while true; do
+			scaling=$(dumpsys cpuinfo | grep mediaserver | awk '{print $1}' | sed 's/%$//' | cut -d'.' -f1)
+			garbageprocess=$(dumpsys cpuinfo | grep 'android.process.media' | awk '{print $2}' | cut -d'/' -f1)
+			if [[ "$garbageprocess" ]]; then
+				kill -9 $garbageprocess
+			fi
+			if [[ "$scaling" ]]; then
+				applied=1
+				echo $(($(($((max_freq-min_freq))*scaling/100))+min_freq)) > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
+			else
+				echo $min_freq > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
+			fi
+			if [[ "$applied" ]]; then
+				unset applied
+			else
+				awake=$(cat /sys/power/wait_for_fb_wake)
+			fi
+			sleep $sleep
+		done & echo $! > $external/singlecorefix_pid
+	fi
 }
 mpengine(){
 	while [[ "$(cat /sys/power/wait_for_fb_wake)" ]]; do
