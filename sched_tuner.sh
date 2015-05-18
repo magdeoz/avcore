@@ -643,7 +643,7 @@ singlecorefix(){
 	fi
 	if [[ "$sleep" -lt 10 ]]; then
 		while true; do
-			scaling=$(top -n1 | grep mediaserver | awk '{print $(NF-1)}')
+			scaling=$(top -n1 | grep mediaserver | awk '{print $(NF-1)}' | cut -d'.' -f1)
 			garbageprocess=$(top -n1 | grep 'android.process.media' | awk '{print $1}')
 			if [[ "$garbageprocess" ]]; then
 				kill -9 $garbageprocess
