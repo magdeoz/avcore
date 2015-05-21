@@ -643,12 +643,12 @@ singlecorefix(){
 	fi
 	if [[ "$sleep" -lt 10 ]]; then
 		while true; do
-			scaling=$(top -n1 | grep mediaserver | awk '{print $(NF-1)}' | cut -d'.' -f1)
-			garbageprocess=$(top -n1 | grep 'android.process.media' | awk '{print $1}')
-			if [[ "$garbageprocess" ]]; then
-				kill -9 $garbageprocess
+			scaling=$(top -n1 | grep mediaserver | grep -v grep | awk '{print $(NF-1)}' | cut -d'.' -f1)
+			garbageprocess=$(top -n1 | grep 'android.process.media' | grep -v grep | awk '{print $1, $(NF-1)}' | cut -d'.' -f1)
+			if [[ "$garbageprocess" ]]&&[[ "$(echo $garbageprocess | awk '{print $2}')" != 0 ]]; then
+				kill -9 $(echo $garbageprocess | awk '{print $1}')
 			fi
-			if [[ "$scaling" ]]; then
+			if [[ "$scaling" ]]&&[[ "$scaling" != 0 ]]; then
 				applied=1
 				echo $(($(($((max_freq-min_freq))*scaling/100))+min_freq)) > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
 			else
@@ -663,8 +663,8 @@ singlecorefix(){
 		done & echo $! > $external/singlecorefix_pid
 	else
 		while true; do
-			scaling=$(dumpsys cpuinfo | grep mediaserver | awk '{print $1}' | sed 's/%$//' | cut -d'.' -f1)
-			garbageprocess=$(dumpsys cpuinfo | grep 'android.process.media' | awk '{print $2}' | cut -d'/' -f1)
+			scaling=$(dumpsys cpuinfo | grep mediaserver | grep -v grep | awk '{print $1}' | sed 's/%$//' | cut -d'.' -f1)
+			garbageprocess=$(dumpsys cpuinfo | grep 'android.process.media' | grep -v grep | awk '{print $2}' | cut -d'/' -f1)
 			if [[ "$garbageprocess" ]]; then
 				kill -9 $garbageprocess
 			fi
@@ -820,103 +820,62 @@ apply_backup(){
 		return=1
 	fi
 }
+init_data(){
+	echo "#!$BASH
+
+background_task(){
+	until [[ -d $external ]]; do
+		sleep 1
+	done
+	for i in \$(grep noexec /proc/mounts | awk '{print \$2}'); do
+		mount -o remount exec \$i
+	done
+	#execute sched_tuner
+	until [[ -f $FULL_NAME ]]; do
+		sleep 1
+	done
+	$FULL_NAME -a $install_mpengine $install_singlecorefix $install_time
+}
+background_task & #in case the target was stored in external storage...
+
+renice_task(){
+	renice -20 \$(pgrep kswapd0) #renice kernel mm thread
+	#set system_server in lowest priority.
+	until [[ \"\$(pgrep zygote)\" ]]; do
+		sleep 0.1
+	done
+	renice 19 \$(pgrep zygote)
+	until [[ \"\$(pgrep system_server)\" ]]; do
+		sleep 0.1
+	done
+	renice 0 \$(pgrep zygote)
+
+	renice 19 \$\$ #run in lowest priority for multiple loops after boot completed.
+	#set android.process.media in lowest priority.
+	until [[ \"\$(pgrep android.process.media)\" ]]; do
+		sleep 0.1
+	done
+	renice 19 \$(pgrep android.process.media)
+}
+renice_task & renice_pid=\$! #possible bootloop fix
+
+taskdog(){
+	sleep 90 #to be adjusted for various devices.
+	kill -9 \$renice_pid
+}
+taskdog & #in case renice_task did not end properly
+
+exit 0 #EOF" > $1
+}
 initialize(){
 	if [[ "$type" ]]; then
 		unset type
 		mkdir -p /system/etc/init.d
 		chmod 755 /system/etc/init.d
-		echo "#!$BASH
-
-background_task(){
-	until [[ -d $external ]]; do
-		sleep 1
-	done
-	for i in \$(grep noexec /proc/mounts | awk '{print \$2}'); do
-		mount -o remount exec \$i
-	done
-	#execute sched_tuner
-	until [[ -f $FULL_NAME ]]; do
-		sleep 1
-	done
-	$FULL_NAME -a $install_mpengine $install_singlecorefix $install_time
-}
-background_task & #in case the target was stored in external storage...
-
-renice_task(){
-	renice -20 \$(pgrep kswapd0) #renice kernel mm thread
-	#set system_server in lowest priority.
-	until [[ \"\$(pgrep zygote)\" ]]; do
-		sleep 0.1
-	done
-	renice 19 \$(pgrep zygote)
-	until [[ \"\$(pgrep system_server)\" ]]; do
-		sleep 0.1
-	done
-	renice 0 \$(pgrep zygote)
-
-	renice 19 \$\$ #run in lowest priority for multiple loops after boot completed.
-	#set android.process.media in lowest priority.
-	until [[ \"\$(pgrep android.process.media)\" ]]; do
-		sleep 0.1
-	done
-	renice 19 \$(pgrep android.process.media)
-}
-renice_task & renice_pid=\$! #possible bootloop fix
-
-taskdog(){
-	sleep 90 #to be adjusted for various devices.
-	kill -9 \$renice_pid
-}
-taskdog & #in case renice_task did not end properly
-
-exit 0 #EOF" > /system/etc/init.d/sched_tuner_task
+		init_data /system/etc/init.d/sched_tuner_task
 		chmod 755 /system/etc/init.d/sched_tuner_task
 	else
-		echo "#!$BASH
-
-background_task(){
-	until [[ -d $external ]]; do
-		sleep 1
-	done
-	for i in \$(grep noexec /proc/mounts | awk '{print \$2}'); do
-		mount -o remount exec \$i
-	done
-	#execute sched_tuner
-	until [[ -f $FULL_NAME ]]; do
-		sleep 1
-	done
-	$FULL_NAME -a $install_mpengine $install_singlecorefix $install_time
-}
-background_task & #in case the target was stored in external storage...
-
-renice_task(){
-	renice -20 \$(pgrep kswapd0) #renice kernel mm thread
-	#set system_server in lowest priority.
-	until [[ \"\$(pgrep zygote)\" ]]; do
-		sleep 0.1
-	done
-	renice 19 \$(pgrep zygote)
-	until [[ \"\$(pgrep system_server)\" ]]; do
-		sleep 0.1
-	done
-	renice 0 \$(pgrep zygote)
-
-	renice 19 \$\$ #run in lowest priority for multiple loops after boot completed.
-	#set android.process.media in lowest priority.
-	until [[ \"\$(pgrep android.process.media)\" ]]; do
-		sleep 0.1
-	done
-	renice 19 \$(pgrep android.process.media)
-}
-renice_task & renice_pid=\$! #possible bootloop fix
-
-taskdog(){
-	sleep 90 #to be adjusted for various devices.
-	kill -9 \$renice_pid
-}
-taskdog & #in case renice_task did not end properly
-
-exit 0 #EOF" > /system/etc/sched_tuner_task
+		init_data /system/etc/sched_tuner_task
 		chmod 755 /system/etc/sched_tuner_task
 		chmod 755 /init.rc
 		if [[ ! -f $external/init.rc.bak ]]; then
