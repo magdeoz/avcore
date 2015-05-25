@@ -10,10 +10,24 @@ use_urand=1
 invert_rand=1
 # launch install() at start.(ONLY FOR REFERENCE, DON'T TOUCH!)
 install=0
-until [[ "$1" != --verbose ]] && [[ "$1" != --supass ]] && [[ "$1" != --bbpass ]] && [[ "$1" != --urand ]] && [[ "$1" != --invrand ]] && [[ "$1" != --renice ]] && [[ "$1" != --install ]]; do
-	if [[ "$1" == --verbose ]]; then
+# launch debug_shell() at start.
+debug=0
+# Bourne-again Shell only.
+bash_only=
+until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]] && [[ "$1" != --bbpass ]] && [[ "$1" != --urand ]] && [[ "$1" != --invrand ]] && [[ "$1" != --renice ]] && [[ "$1" != --install ]]; do
+	if [[ "$1" == --debug ]]; then
+		if [[ "$install" == 1 ]]; then
+			echo cannot launch two overlapping parameters at a time.
+			break
+		fi
+		readonly debug=1
+	elif [[ "$1" == --verbose ]]; then
 		set -x
 	elif [[ "$1" == --install ]]; then
+		if [[ "$debug" == 1 ]]; then
+			echo cannot launch two overlapping parameters at a time.
+			break
+		fi
 		readonly install=1
 	elif [[ "$1" == --supass ]] && [[ "$run_as_root" != 0 ]]; then
 		readonly run_as_root=0
@@ -24,7 +38,7 @@ until [[ "$1" != --verbose ]] && [[ "$1" != --supass ]] && [[ "$1" != --bbpass ]
 	elif [[ "$1" == --invrand ]] && [[ "$invert_rand" != 1 ]]; then
 		readonly invert_rand=1
 	elif [[ "$1" == --renice ]]; then
-		if [[ ! "$(echo $2 | tr [0-9] ' ' | sed 's/^-//' | sed 's/ //g')" ]]; then
+		if [[ ! "$(echo $2 | sed 's/[0-9]//g' | sed 's/^-//')" ]]; then
 			if [[ "$2" -le 19 ]] && [[ "$2" -ge -20 ]]; then
 				renice $2 $$ 1>/dev/null
 			else
@@ -39,14 +53,14 @@ until [[ "$1" != --verbose ]] && [[ "$1" != --supass ]] && [[ "$1" != --bbpass ]
 	fi
 	shift
 done
-readonly version="0.1"
+readonly version=skeleton-beta
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
 readonly set_PATH=$(dirname $0 | sed 's/^\.//')
 readonly set_PATH2=$(pwd)
 if [[ "$set_PATH" ]]; then
-	if [[ "$(ls / | grep $(echo $set_PATH | tr -s / \\n | head -n2	| tr -s \\n / | sed 's/\/$//' | sed 's/^\///'))" ]] ; then
+	if [[ "$(ls / | grep $(echo $set_PATH | sed 's/\//\n/g' | head -n2 | sed ':a;N;s/\n//g;ba'))" ]] ; then
 		export PATH=$set_PATH:$PATH
 	else
 		export PATH=$set_PATH2:$PATH
@@ -64,21 +78,30 @@ fi
 export PATH=$backup_PATH # revert back to default
 readonly FULL_NAME=$(echo $DIR_NAME/$BASE_NAME)
 print_PARTIAL_DIR_NAME(){
-	echo $(echo $DIR_NAME | tr -s / \\n | head -n$(($1+1))	| tr -s \\n / | sed 's/\/$//')
+	echo $(echo $DIR_NAME | sed 's/\//\n/g' | head -n$(($1+1)) | sed ':a;N;s/\n/\//g;ba')
 }
 readonly ROOT_DIR=$(print_PARTIAL_DIR_NAME 1)
 print_RANDOM_BYTE(){
-	if [[ "$use_urand" != 1 ]]; then
-		rand=$(($(od -An -N2 -i /dev/random)%32767))
+	if [[ "$BASH" ]]&&[[ "$RANDOM" ]]; then
+		echo $RANDOM
 	else
-		rand=$(($(od -An -N2 -i /dev/urandom)%32767))
-	fi
-	if [[ "$invert_rand" == 1 ]]; then
-		if [[ "$rand" -lt 0 ]]; then
-			rand=$(($((rand*-1))-1))
+		bb_apg_2 -f od
+		if [[ "$?" == 1 ]]; then
+			error critical command missing. \"error code 2\"
+			exit 2
 		fi
+		if [[ "$use_urand" != 1 ]]; then
+			rand=$(($(od -An -N2 -i /dev/random)%32767))
+		else
+			rand=$(($(od -An -N2 -i /dev/urandom)%32767))
+		fi
+		if [[ "$invert_rand" == 1 ]]; then
+			if [[ "$rand" -lt 0 ]]; then
+				rand=$(($((rand*-1))-1))
+			fi
+		fi
+		echo $rand #output
 	fi
-	echo $rand #output
 }
 debug_shell(){
 	echo "welcome to the debug_shell program! type in: 'help' for more information."
@@ -90,12 +113,21 @@ debug_shell(){
 	fi
 	while eval read i; do
 		case $i in
-			randtest)
-				while true; do echo -n $(print_RANDOM_BYTE); done
+			randtest | test9) #test9 version.
+				trap "echo -e \"\e[2JI LOVE YOU\"; exit" 2
+				while true; do
+					random=$(print_RANDOM_BYTE)
+					x_axis=$((random%$(($(stty size | awk '{print $2}' 2>/dev/null)-1))))
+					random=$(print_RANDOM_BYTE)
+					y_axis=$((random%$(stty size | awk '{print $1}' 2>/dev/null)))
+					random=$(print_RANDOM_BYTE)
+					color=$((random%7+31))
+					echo -e -n "\e[${y_axis};${x_axis}H\e[${color}m0\e[0m"
+				done
 			;;
 			help)
 				echo -e "this debug shell is \e[1;31mONLY\e[0m used for testing conditions inside this program!
-it is not a complete shell as you CANNOT use any regex with it.
+you can now use '>' and '>>' for output redirection. use along with 'set -x' for debugging purposes.
 such includes:
 	-functions
 	-variables
@@ -120,7 +152,32 @@ Copyright (C) 2013-2015 hoholee12@naver.com"
 				exit
 			;;
 			*)
-				$i
+				if [[ "$(echo $i | grep '>')" ]]; then
+					if [[ "$(echo $i | grep '>>')" ]]; then
+						i=$(echo $i | sed 's/>>/>/')
+						if [[ "$(echo $i | cut -d'>' -f1)" ]]; then
+							first_comm=$(echo $i | cut -d'>' -f1)
+							second_comm=$(echo $i | sed 's/2>&1//' | cut -d'>' -f2)
+							if [[ "$(echo $i | grep '2>&1')" ]]; then
+								eval $first_comm >> $second_comm 2>&1
+							else
+								eval $first_comm >> $second_comm
+							fi
+						fi
+					else
+						if [[ "$(echo $i | cut -d'>' -f1)" ]]; then
+							first_comm=$(echo $i | cut -d'>' -f1)
+							second_comm=$(echo $i | sed 's/2>&1//' | cut -d'>' -f2)
+							if [[ "$(echo $i | grep '2>&1')" ]]; then
+								eval $first_comm > $second_comm 2>&1
+							else
+								eval $first_comm > $second_comm
+							fi
+						fi
+					fi
+				else
+					$i
+				fi
 			;;
 		esac
 		echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m"
@@ -189,7 +246,7 @@ install(){
 			return 1
 		fi
 		echo -e '\rplease wait...'
-		loc_DIR_NAME=$(echo $loc | tr -s / \\n | head -n2 | tr -s \\n / | sed 's/\/$//')
+		loc_DIR_NAME=$(echo $loc | sed 's/\//\n/g' | head -n2 | sed ':a;N;s/\n/\//g;ba')
 		mountstat=$(mount | grep $loc_DIR_NAME | head -n1)
 		availperm=$(echo $mountstat | grep 'ro\|rw')
 		if [[ "$availperm" ]]; then #linux else unix
@@ -235,7 +292,7 @@ install(){
 		if [[ "$(echo $mountstat | grep rw)" ]]; then
 			echo -n -e '\rcopying files...'
 			cp $0 $loc/$NO_EXTENSION
-			if [[ "$?" == 1 ]]; then
+			if [[ "$?" != 0 ]]; then
 				return 1
 			fi
 			chmod 755 $loc/$NO_EXTENSION
@@ -246,7 +303,7 @@ install(){
 			if [[ ! "$availperm" ]]; then
 				echo -n -e '\rcopying files...'
 				cp $0 $loc/$NO_EXTENSION
-				if [[ "$?" == 1 ]]; then
+				if [[ "$?" != 0 ]]; then
 					return 1
 				fi
 				chmod 755 $loc/$NO_EXTENSION
@@ -266,7 +323,7 @@ install(){
 	fi
 }
 long_line(){
-	for i in $(seq 1 $(tput cols 2>/dev/null)); do
+	for i in $(seq 1 $(stty size | awk '{print $2}' 2>/dev/null)); do
 		if [[ "$1" -le 1 ]]; then
 			echo -n '-'
 		else
@@ -287,20 +344,40 @@ long_line(){
 }
 error(){
 	message=$@
-	echo $message
+	if [[ "$(echo $message | grep \")" ]]; then
+		echo -n $message | sed 's/".*//'
+		errmsg=$(echo $message | cut -d'"' -f2)
+		echo -e "\e[1;31m\"$errmsg\"\e[0m"
+	else
+		echo $message
+	fi
 	CUSTOM_DIR=$(echo $CUSTOM_DIR | sed 's/\/$//')
+	cd /
+	for i in $(echo $CUSTOM_DIR | sed 's/\//\n/g'); do
+		if [[ ! -d $i ]]; then
+			mkdir $i
+			chmod 755 $i
+		fi
+		cd $i
+	done
 	if [[ "$CUSTOM_DIR" ]]; then
 		date '+date: %m/%d/%y%ttime: %H:%M:%S ->'"$message"'' >> $CUSTOM_DIR/$NO_EXTENSION.log
 	else
 		date '+date: %m/%d/%y%ttime: %H:%M:%S ->'"$message"'' >> $DIR_NAME/$NO_EXTENSION.log
 	fi
 }
+if [[ "$bash_only" == 1 ]]; then
+	if [[ ! "$BASH" ]]; then
+		error Please re-run this program with BASH. \"error code 1\" #to pass the double-quote character to the error function, you must use the inverted-slash character.
+		exit 1
+	fi
+fi
 # skeleton.sh
 #
 # Copyright (C) 2013-2015  hoholee12@naver.com
 #
-# Everyone is permitted to copy and distribute verbatim copies
-# of this code, but changing it is not allowed.
+# May be freely distributed and modified as long as copyright
+# is retained.
 #
 # Changelogs:
 
@@ -318,8 +395,8 @@ cmd6=awk
 cmd7=cat
 cmd8=pgrep
 cmd9=ps
-cmd10=chrt
-cmd11=cp
+cmd10=cp
+cmd11=cut
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 
 silent_mode= # enabling this will hide errors.
@@ -327,6 +404,41 @@ silent_mode= # enabling this will hide errors.
 # if similar applets are found and Busybox do not have them, it will still continue but leave out some error messages regarding compatibility issues.
 bb_check= # BB availability.
 bb_apg_2(){
+	if [[ "$1" == -f ]]; then
+		shift
+		used_fopt=1
+	elif [[ "$1" == -g ]]; then
+		shift
+		used_gopt=1
+	fi
+	if [[ "$used_fopt" == 1 ]]||[[ "$used_gopt" == 1 ]]; then
+		silent_mode=1
+		if [[ "$cmd" ]]; then
+			if [[ "$cmd" -lt 0 ]]; then
+				cmd=0
+			fi
+		else
+			cmd=224
+		fi
+		for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
+			v=$(eval echo $i)
+			x=$(echo $i | sed 's/^\$//')
+			export $x=$v #export everything.
+			if [[ "$v" ]]; then
+				unset $x
+			else
+				break #reduce cycle
+			fi
+		done
+		for j in $(seq 1 $cmd); do
+			if [[ ! "$1" ]]; then
+				break
+			fi
+			export cmd$j=$1
+			shift
+		done
+		export cmd=$j #this will reduce more cycles.
+	fi
 	bb_check=0
 	local n i busyboxloc busyboxenv fail
 	if [[ ! "$(busybox)" ]]; then #allow non-Busybox users to continue.
@@ -343,6 +455,8 @@ bb_apg_2(){
 		fi
 		for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
 			v=$(eval echo $i)
+			x=$(echo $i | sed 's/^\$//')
+			export $x=$v #export everything.
 			if [[ "$v" ]]; then
 				if [[ ! "$(which $v)" ]]; then
 					if [[ "$silent_mode" != 1 ]]; then
@@ -382,6 +496,8 @@ bb_apg_2(){
 		fi
 		for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
 			v=$(eval echo $i)
+			x=$(echo $i | sed 's/^\$//')
+			export $x=$v #export everything.
 			if [[ "$v" ]]; then
 				if [[ ! "$(busybox | grep "\<$v\>")" ]]; then
 					if [[ "$silent_mode" != 1 ]]; then
@@ -406,7 +522,15 @@ bb_apg_2(){
 			fi
 		done
 	fi 2>/dev/null
+	if [[ "$used_gopt" == 1 ]]&&[[ "$bb_check" == 1 ]]; then
+		fail=1 #used_gopt is NOT recommended, unless needed for specific use.
+	fi
 	if [[ "$fail" == 1 ]]; then #the fail manager!
+		if [[ "$used_fopt" == 1 ]]||[[ "$used_gopt" == 1 ]]; then
+			unset used_fopt
+			unset used_gopt
+			return 1
+		fi
 		echo -e "process terminated. \e[1;31m\"error code 1\"\e[0m"
 		return 1
 	fi
@@ -415,8 +539,13 @@ bb_apg_2(){
 # Check Superuser.
 su_check= # root availability
 as_root(){
+	bb_apg_2 -f id grep sed
+	if [[ "$?" == 1 ]]; then
+		error critical command missing. run with --supass for bypassing root check. \"error code 2\"
+		exit 2
+	fi
 	su_check=0
-	if [[ "$(id | tr '(' ' ' | tr ' ' '\n' | grep uid | sed 's/uid=//g')" != 0 ]]; then
+	if [[ "$(id | sed 's/(/ /g' | sed 's/ /\n/g' | grep uid | sed 's/uid=//g')" != 0 ]]; then
 		su_check=1
 		echo "Permission denied, are you root?"
 		return 1
@@ -439,6 +568,11 @@ Roll_Down(){
 		if [[ "$return" -ne 0 ]]; then
 			exit $return
 		fi
+	fi
+	if [[ "$debug" == 1 ]]; then
+		debug_shell
+		return=$?
+		exit $return
 	fi
 	if [[ "$install" == 1 ]]; then
 		install
