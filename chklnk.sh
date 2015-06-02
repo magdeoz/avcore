@@ -626,8 +626,8 @@ if [[ "$return" != 0 ]]; then
 fi
 if [[ ! "$found" ]] || [[ "$file" == "/" ]]; then
 	prop=$(mount | grep $file | sed 's/on//')
-	if [[ "$(echo $prop | awk '{print $2}')" == "$file" ]]; then
-		echo "$file: is hard linked to $(echo $prop | awk '{print $1}')"
+	if [[ "$(echo $prop | awk '{print $2}' | grep $file)" ]]; then
+		echo "$file: is hard linked to $(mount | grep $(echo $prop | awk '{print $1}') | grep -v $(echo $prop | awk '{print $2}') | sed 's/on//' | awk '{print $2}')"
 		exit 0 #EOF
 	fi
 	echo "$file: is not a symlink"
