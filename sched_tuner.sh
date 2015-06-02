@@ -128,6 +128,7 @@ debug_shell(){
 			help)
 				echo -e "this debug shell is \e[1;31mONLY\e[0m used for testing conditions inside this program!
 you can now use '>' and '>>' for output redirection. use along with 'set -x' for debugging purposes.
+use 'export' if you want to declare a variable.
 such includes:
 	-functions
 	-variables
