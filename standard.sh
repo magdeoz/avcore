@@ -583,6 +583,27 @@ Roll_Down(){
 }
 Roll_Down
 
-#main script here.
+# Your main script here.
+
+
+#Demonstration!
+case $1 in
+	1337)
+		leetspeak=1;;
+	133+)
+		leetspeak=2
+;;
+esac
+random=$(print_RANDOM_BYTE)
+color=$((random%7+31))
+if [[ "$leetspeak" == 1 ]]; then
+	echo -e "\e[${color}mh3ll0, w0rld!\e[0m"
+elif [[ "$leetspeak" == 2 ]]; then
+	echo -e "\e[${color}m|-|3|_|_0, \\/\\/0|2|_|)!\e[0m"
+else
+	echo -e "\e[${color}mHello, World!\e[0m"
+fi
+
+
 
 exit 0 #EOF
