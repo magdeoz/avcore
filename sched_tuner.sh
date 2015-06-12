@@ -638,10 +638,10 @@ list_feature(){
 kill_garbage(){
 	#kill garbageprocess 'android.process.media' when the device is sleeping.
 	#do not attempt to do anything while user is interacting with the process.
-	#the most accurate way to do is to wait for sleep, and detect garbage process via top command.
+	#the most accurate way to do is to detect garbage process via top command.
 	
 	#while $(cat /sys/power/wait_for_fb_sleep); do
-		asleep=$(cat /sys/power/wait_for_fb_sleep)
+		#asleep=$(cat /sys/power/wait_for_fb_sleep) #this causes fork bomb, dont use this:p
 		garbageprocess=$(top -n1 | grep 'android.process.media' | grep -v grep | awk '{print $1, $(NF-1)}' | cut -d'.' -f1)
 		if [[ "$garbageprocess" ]]&&[[ "$(echo $garbageprocess | awk '{print $2}')" != 0 ]]; then
 			kill -9 $(echo $garbageprocess | awk '{print $1}')
