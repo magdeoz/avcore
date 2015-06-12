@@ -636,14 +636,15 @@ list_feature(){
 }
 
 kill_garbage(){
-	#garbageprocess=$(top -n1 | grep 'android.process.media' | grep -v grep | awk '{print $1, $(NF-1)}' | cut -d'.' -f1)
-	#if [[ "$garbageprocess" ]]&&[[ "$(echo $garbageprocess | awk '{print $2}')" != 0 ]]; then
-	#	kill -9 $(echo $garbageprocess | awk '{print $1}')
-	#fi
+	#kill garbageprocess 'android.process.media' when the device is sleeping.
+	#do not attempt to do anything while user is interacting with the process.
+	#the most accurate way to do is to wait for sleep, and detect garbage process via top command.
+	
 	#while $(cat /sys/power/wait_for_fb_sleep); do
-		garbageprocess=$(dumpsys cpuinfo | grep 'android.process.media' | grep -v grep | awk '{print $2}' | cut -d'/' -f1)
-		if [[ "$garbageprocess" ]]; then
-			kill -9 $garbageprocess
+		asleep=$(cat /sys/power/wait_for_fb_sleep)
+		garbageprocess=$(top -n1 | grep 'android.process.media' | grep -v grep | awk '{print $1, $(NF-1)}' | cut -d'.' -f1)
+		if [[ "$garbageprocess" ]]&&[[ "$(echo $garbageprocess | awk '{print $2}')" != 0 ]]; then
+			kill -9 $(echo $garbageprocess | awk '{print $1}')
 		fi
 	#	sleep 60
 	#done
