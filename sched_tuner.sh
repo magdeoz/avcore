@@ -635,6 +635,20 @@ list_feature(){
 	fi
 }
 
+kill_garbage(){
+	#garbageprocess=$(top -n1 | grep 'android.process.media' | grep -v grep | awk '{print $1, $(NF-1)}' | cut -d'.' -f1)
+	#if [[ "$garbageprocess" ]]&&[[ "$(echo $garbageprocess | awk '{print $2}')" != 0 ]]; then
+	#	kill -9 $(echo $garbageprocess | awk '{print $1}')
+	#fi
+	#while $(cat /sys/power/wait_for_fb_sleep); do
+		garbageprocess=$(dumpsys cpuinfo | grep 'android.process.media' | grep -v grep | awk '{print $2}' | cut -d'/' -f1)
+		if [[ "$garbageprocess" ]]; then
+			kill -9 $garbageprocess
+		fi
+	#	sleep 60
+	#done
+}
+
 singlecorefix(){
 	sleep=$1
 	if [[ ! "$sleep" ]]; then
@@ -654,10 +668,6 @@ singlecorefix(){
 	if [[ "$sleep" -lt 10 ]]; then
 		while true; do
 			scaling=$(top -n1 | grep mediaserver | grep -v grep | awk '{print $(NF-1)}' | cut -d'.' -f1)
-			garbageprocess=$(top -n1 | grep 'android.process.media' | grep -v grep | awk '{print $1, $(NF-1)}' | cut -d'.' -f1)
-			if [[ "$garbageprocess" ]]&&[[ "$(echo $garbageprocess | awk '{print $2}')" != 0 ]]; then
-				kill -9 $(echo $garbageprocess | awk '{print $1}')
-			fi
 			if [[ "$scaling" ]]&&[[ "$scaling" != 0 ]]; then
 				applied=1
 				echo $(($(($((max_freq-min_freq))*scaling/100))+min_freq)) > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
@@ -667,6 +677,7 @@ singlecorefix(){
 			if [[ "$applied" ]]; then
 				unset applied
 			else
+				kill_garbage &
 				awake=$(cat /sys/power/wait_for_fb_wake)
 			fi
 			sleep $sleep
@@ -674,10 +685,6 @@ singlecorefix(){
 	else
 		while true; do
 			scaling=$(dumpsys cpuinfo | grep mediaserver | grep -v grep | awk '{print $1}' | sed 's/%$//' | cut -d'.' -f1)
-			garbageprocess=$(dumpsys cpuinfo | grep 'android.process.media' | grep -v grep | awk '{print $2}' | cut -d'/' -f1)
-			if [[ "$garbageprocess" ]]; then
-				kill -9 $garbageprocess
-			fi
 			if [[ "$scaling" ]]; then
 				applied=1
 				echo $(($(($((max_freq-min_freq))*scaling/100))+min_freq)) > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
@@ -687,6 +694,7 @@ singlecorefix(){
 			if [[ "$applied" ]]; then
 				unset applied
 			else
+				kill_garbage &
 				awake=$(cat /sys/power/wait_for_fb_wake)
 			fi
 			sleep $sleep
