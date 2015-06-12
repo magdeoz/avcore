@@ -53,7 +53,7 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 	fi
 	shift
 done
-readonly version="0.0.7 update1"
+readonly version="0.0.7 update2"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -389,6 +389,8 @@ fi
 # 0.0.6 - mpengine added for performance
 # 0.0.7 - audiofix added for single core devices
 #       - changed license policy
+#       - tweaked scAudioFix(update1)
+#       - bugfixed scAudioFix(update2)
 
 set +e #error proof
 
