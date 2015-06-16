@@ -718,6 +718,8 @@ task_killer(){
 			else
 				debug_space
 			fi
+		else
+			debug_space
 		fi
 		sleep $sleep
 	done
