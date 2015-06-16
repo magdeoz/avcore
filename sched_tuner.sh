@@ -637,6 +637,22 @@ list_feature(){
 	fi
 }
 
+# Task Killer 1.0
+# this program includes:
+# target_killer - reads 'exclude_target' and kills the desired ones.
+# check_launcher - use this to exclude launcher pid
+# debug_space - use this to log details
+# task_killer - main program. launch this to start.
+
+exclude_target='^-16\|^-12\|^0\|^1' # exclude target adj
+target_killer(){
+	for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e ':remote' | awk '{print $1}' | grep -v -e $launcher_pid); do
+		if [[ $(grep -v -e $exclude_target /proc/$i/oom_adj) ]]; then
+			kill -9 $i
+		fi
+	done
+}
+
 check_launcher(){ # code snippets from boostdemo.sh
 	unset launcher_pid
 	while true; do
@@ -683,11 +699,7 @@ task_killer(){
 	check_launcher
 	while true; do
 		awake=$(cat /sys/power/wait_for_fb_wake)
-		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e ':remote' | awk '{print $1}' | grep -v -e $launcher_pid); do
-			if [[ $(grep -v -e '^-16\|^-12\|^0\|^1' /proc/$i/oom_adj) ]]; then
-				kill -9 $i
-			fi
-		done
+		target_killer
 		if [[ ! "$(pgrep '' | grep "\<$launcher_pid\>")" ]]; then
 			check_launcher
 		fi
@@ -729,41 +741,26 @@ singlecorefix(){
 		echo $min_freq > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
 		return 0
 	fi
-	if [[ "$sleep" -lt 10 ]]; then
-		while true; do
+	while true; do
+		if [[ "$sleep" -lt 10 ]]; then
 			scaling=$(top -n1 | grep mediaserver | grep -v grep | awk '{print $(NF-1)}' | cut -d'.' -f1)
-			if [[ "$scaling" ]]&&[[ "$scaling" != 0 ]]; then
-				applied=1
-				echo $(($(($((max_freq-min_freq))*scaling/100))+min_freq)) > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
-			else
-				echo $min_freq > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
-			fi
-			if [[ "$applied" ]]; then
-				unset applied
-			else
-				kill_garbage &
-				awake=$(cat /sys/power/wait_for_fb_wake)
-			fi
-			sleep $sleep
-		done & echo $! > $external/singlecorefix_pid
-	else
-		while true; do
+		else
 			scaling=$(dumpsys cpuinfo | grep mediaserver | grep -v grep | awk '{print $1}' | sed 's/%$//' | cut -d'.' -f1)
-			if [[ "$scaling" ]]; then
-				applied=1
-				echo $(($(($((max_freq-min_freq))*scaling/100))+min_freq)) > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
-			else
-				echo $min_freq > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
-			fi
-			if [[ "$applied" ]]; then
-				unset applied
-			else
-				kill_garbage &
-				awake=$(cat /sys/power/wait_for_fb_wake)
-			fi
-			sleep $sleep
-		done & echo $! > $external/singlecorefix_pid
-	fi
+		fi
+		if [[ "$scaling" ]]&&[[ "$scaling" != 0 ]]; then
+			applied=1
+			echo $(($(($((max_freq-min_freq))*scaling/100))+min_freq)) > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
+		else
+			echo $min_freq > /sys/devices/system/cpu/$cpuloc/cpufreq/scaling_min_freq
+		fi
+		if [[ "$applied" ]]; then
+			unset applied
+		else
+			kill_garbage &
+			awake=$(cat /sys/power/wait_for_fb_wake)
+		fi
+		sleep $sleep
+	done & echo $! > $external/singlecorefix_pid
 }
 mpengine(){
 	while [[ "$(cat /sys/power/wait_for_fb_wake)" ]]; do
