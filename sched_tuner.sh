@@ -658,7 +658,7 @@ task_killer(){ # code snippets from boostdemo.sh
 	done
 	while true; do
 		awake=$(cat /sys/power/wait_for_fb_wake)
-		for i in $(pgrep -l '' | grep '^org\.\|^app\.\|^com\.\|^android\.' | grep -v -e ':remote' | awk '{print $1}' | grep -v $launcher_pid); do
+		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e ':remote' | awk '{print $1}' | grep -v $launcher_pid); do
 			if [[ $(grep -v -e '^-16\|^-12\|^0\|^1' /proc/$i/oom_adj) ]]; then
 				kill -9 $i
 			fi
