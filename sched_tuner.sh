@@ -637,32 +637,39 @@ list_feature(){
 	fi
 }
 
-task_killer(){ # code snippets from boostdemo.sh
+check_launcher(){ # code snippets from boostdemo.sh
+	unset launcher_pid
+	while true; do
+		for launcher in $(grep "<h\>" /data/system/appwidgets.xml | sed 's/ /\n/g' | grep pkg | sed 's/^pkg="//; s/"$//'); do
+			launcher_pid=$(pgrep $launcher)
+			if [[ "$launcher_pid" ]]; then
+				break
+			fi
+		done
+		if [[ "$launcher_pid" ]]; then
+			break
+		fi
+		sleep 1
+	done
+}
+
+task_killer(){
 	sleep=$1
 	if [[ ! "$sleep" ]]; then
 		sleep=10 #dumpsys refresh time is 10 secs.
 	fi
 	renice 19 $$
-	unset launcher_pid
-	while true; do
-		for launcher in $(grep "<h\>" /data/system/appwidgets.xml | sed 's/ /\n/g' | grep pkg | sed 's/^pkg="//; s/"$//'); do
-			launcher_pid=$(pgrep $launcher)
-			if [ "$launcher_pid" ]; then
-				break
-			fi
-		done
-		if [ "$launcher_pid" ]; then
-			break
-		fi
-		sleep 1
-	done
+	check_launcher
 	while true; do
 		awake=$(cat /sys/power/wait_for_fb_wake)
-		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e ':remote' | awk '{print $1}' | grep -v $launcher_pid); do
+		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e ':remote' | awk '{print $1}' | grep -v -e $launcher_pid); do
 			if [[ $(grep -v -e '^-16\|^-12\|^0\|^1' /proc/$i/oom_adj) ]]; then
 				kill -9 $i
 			fi
 		done
+		if [[ ! "$(ps | grep \"\<$launcher_pid\>\")" ]]; then
+			check_launcher
+		fi
 		sleep $sleep
 	done
 }
