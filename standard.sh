@@ -103,6 +103,26 @@ print_RANDOM_BYTE(){
 		echo $rand #output
 	fi
 }
+
+# Checkers 1.0
+# You can type in any strings you would want it to print when called.
+# It will start by checking from chk1, and its limit is up to chk20.
+chk1=what?
+chk2="i dont understand!"
+chk3=pardon?
+chk4="are you retarded?"
+checkers(){
+	for i in $(seq 1 20); do
+		if [[ ! "$(eval echo \$chk$i)" ]]; then
+			i=$((i-1))
+			break
+		fi
+	done
+	random=$(print_RANDOM_BYTE)
+	random=$((random%i+1))
+	echo -n -e "\r$(eval echo \$chk$random) "
+}
+
 debug_shell(){
 	echo "welcome to the debug_shell program! type in: 'help' for more information."
 	echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m"
@@ -223,17 +243,7 @@ install(){
 						return 0
 					;;
 					*)
-						random=$(print_RANDOM_BYTE)
-						random=$((random%4+1))
-						if [[ "$random" -eq 1 ]]; then
-							echo -n -e '\rwhat? '
-						elif [[ "$random" -eq 2 ]]; then
-							echo -n -e '\ri dont understand. '
-						elif [[ "$random" -eq 3 ]]; then
-							echo -n -e '\rcome on mate, you could do better than that! '
-						elif [[ "$random" -eq 4 ]]; then
-							echo -n -e '\rif i were you, i would choose the broccoli. '
-						fi
+						checkers
 					;;
 				esac
 				echo -n press \'q\' to quit.
@@ -275,17 +285,7 @@ install(){
 						return 0
 					;;
 					*)
-						random=$(print_RANDOM_BYTE)
-						random=$((random%4+1))
-						if [[ "$random" -eq 1 ]]; then
-							echo -n -e '\rwhat? '
-						elif [[ "$random" -eq 2 ]]; then
-							echo -n -e '\ri really dont understand. '
-						elif [[ "$random" -eq 3 ]]; then
-							echo -n -e '\rtry again. '
-						elif [[ "$random" -eq 4 ]]; then
-							echo -n -e '\rnya~ '
-						fi
+						checkers
 					;;
 				esac
 			done
@@ -604,6 +604,27 @@ else
 	echo -e "\e[${color}mHello, World!\e[0m"
 fi
 
-
+clear
+OX=51
+OY=31
+R=20
+#for ((x=1; x<R+1; x++)); do
+#for ((x=1; x<R*2+1; x++)); do
+for ((x=1; x<R*3/2+1; x++)); do
+  #y=$(bc <<< "sqrt($R^2 - $x^2)")
+  y=$(bc <<< "sqrt($R^2 - ($x/2)^2)")
+  y=${y%.*}
+  echo -ne "\e[$((OY - y));$((OX - x))H1"
+  echo -ne "\e[$((OX - x / 2 - R));$((OY - y * 2 + R))Ha"
+ 
+  echo -ne "\e[$((OY - y));$((OX + x))H2"
+  echo -ne "\e[$((OX - x / 2 - R));$((OY + y * 2 + R))Hb"
+ 
+  echo -ne "\e[$((OY + y));$((OX - x))H3"
+  echo -ne "\e[$((OX + x / 2 - R));$((OY - y * 2 + R))Hc"
+ 
+  echo -ne "\e[$((OY + y));$((OX + x))H4"
+  echo -ne "\e[$((OX + x / 2 - R));$((OY + y * 2 + R))Hd"
+done
 
 exit 0 #EOF

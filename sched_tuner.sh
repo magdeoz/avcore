@@ -103,6 +103,26 @@ print_RANDOM_BYTE(){
 		echo $rand #output
 	fi
 }
+
+# Checkers 1.0
+# You can type in any strings you would want it to print when called.
+# It will start by checking from chk1, and its limit is up to chk20.
+chk1=what?
+chk2="i dont understand!"
+chk3=pardon?
+chk4="are you retarded?"
+checkers(){
+	for i in $(seq 1 20); do
+		if [[ ! "$(eval echo \$chk$i)" ]]; then
+			i=$((i-1))
+			break
+		fi
+	done
+	random=$(print_RANDOM_BYTE)
+	random=$((random%i+1))
+	echo -n -e "\r$(eval echo \$chk$random) "
+}
+
 debug_shell(){
 	echo "welcome to the debug_shell program! type in: 'help' for more information."
 	echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m"
@@ -223,17 +243,7 @@ install(){
 						return 0
 					;;
 					*)
-						random=$(print_RANDOM_BYTE)
-						random=$((random%4+1))
-						if [[ "$random" -eq 1 ]]; then
-							echo -n -e '\rwhat? '
-						elif [[ "$random" -eq 2 ]]; then
-							echo -n -e '\ri dont understand. '
-						elif [[ "$random" -eq 3 ]]; then
-							echo -n -e '\rcome on mate, you could do better than that! '
-						elif [[ "$random" -eq 4 ]]; then
-							echo -n -e '\rif i were you, i would choose the broccoli. '
-						fi
+						checkers
 					;;
 				esac
 				echo -n press \'q\' to quit.
@@ -275,17 +285,7 @@ install(){
 						return 0
 					;;
 					*)
-						random=$(print_RANDOM_BYTE)
-						random=$((random%4+1))
-						if [[ "$random" -eq 1 ]]; then
-							echo -n -e '\rwhat? '
-						elif [[ "$random" -eq 2 ]]; then
-							echo -n -e '\ri really dont understand. '
-						elif [[ "$random" -eq 3 ]]; then
-							echo -n -e '\rtry again. '
-						elif [[ "$random" -eq 4 ]]; then
-							echo -n -e '\rnya~ '
-						fi
+						checkers
 					;;
 				esac
 			done
@@ -653,7 +653,29 @@ check_launcher(){ # code snippets from boostdemo.sh
 	done
 }
 
+debug_space(){
+	space=0
+	for i in $(grep -i -e 'memfree\|buffers\|^cached' /proc/meminfo | awk '{print $2}'); do
+		space=$((space+i))
+	done
+	if [[ ! "$prev_space" ]]; then
+		prev_space=$space
+	else
+		freed=$((space-prev_space))
+		if [[ "$freed" -lt 0 ]]; then
+			freed=0
+		fi
+		error freed "$freed"KB of memory.
+	fi
+}
+
 task_killer(){
+	debug=$1
+	if [[ "$debug" == -i ]]; then
+		shift
+	else
+		unset debug
+	fi
 	sleep=$1
 	if [[ ! "$sleep" ]]; then
 		sleep=10 #dumpsys refresh time is 10 secs.
@@ -669,6 +691,9 @@ task_killer(){
 		done
 		if [[ ! "$(pgrep '' | grep "\<$launcher_pid\>")" ]]; then
 			check_launcher
+		fi
+		if [[ "$debug" ]]; then
+			debug_space
 		fi
 		sleep $sleep
 	done
@@ -1056,17 +1081,7 @@ q)exit'
 							break
 						;;
 						*)
-							random=$(print_RANDOM_BYTE)
-							random=$((random%4+1))
-							if [[ "$random" -eq 1 ]]; then
-								echo -n -e '\rwhat? '
-							elif [[ "$random" -eq 2 ]]; then
-								echo -n -e '\ri dont understand. '
-							elif [[ "$random" -eq 3 ]]; then
-								echo -n -e '\rcome on mate, you could do better than that! '
-							elif [[ "$random" -eq 4 ]]; then
-								echo -n -e '\rif i were you, i would choose the broccoli. '
-							fi
+							checkers
 						;;
 					esac
 					echo -n press \'q\' to quit.
@@ -1095,17 +1110,7 @@ q)exit'
 							break
 						;;
 						*)
-							random=$(print_RANDOM_BYTE)
-							random=$((random%4+1))
-							if [[ "$random" -eq 1 ]]; then
-								echo -n -e '\rwhat? '
-							elif [[ "$random" -eq 2 ]]; then
-								echo -n -e '\ri dont understand. '
-							elif [[ "$random" -eq 3 ]]; then
-								echo -n -e '\rcome on mate, you could do better than that! '
-							elif [[ "$random" -eq 4 ]]; then
-								echo -n -e '\rif i were you, i would choose the broccoli. '
-							fi
+							checkers
 						;;
 					esac
 					echo -n press \'q\' to quit.
@@ -1135,17 +1140,7 @@ q)exit'
 							break
 						;;
 						*)
-							random=$(print_RANDOM_BYTE)
-							random=$((random%4+1))
-							if [[ "$random" -eq 1 ]]; then
-								echo -n -e '\rwhat? '
-							elif [[ "$random" -eq 2 ]]; then
-								echo -n -e '\ri dont understand. '
-							elif [[ "$random" -eq 3 ]]; then
-								echo -n -e '\rcome on mate, you could do better than that! '
-							elif [[ "$random" -eq 4 ]]; then
-								echo -n -e '\rif i were you, i would choose the broccoli. '
-							fi
+							checkers
 						;;
 					esac
 					echo -n press \'q\' to quit.
