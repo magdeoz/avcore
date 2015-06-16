@@ -667,7 +667,7 @@ task_killer(){
 				kill -9 $i
 			fi
 		done
-		if [[ ! "$(ps | grep "\<$launcher_pid\>" | grep -v grep)" ]]; then
+		if [[ ! "$(pgrep '' | grep "\<$launcher_pid\>")" ]]; then
 			check_launcher
 		fi
 		sleep $sleep
