@@ -674,14 +674,16 @@ debug_space(){
 	for i in $(grep -i -e 'memfree\|buffers\|^cached' /proc/meminfo | awk '{print $2}'); do
 		space=$((space+i))
 	done
-	if [[ "$prev_space" ]]; then
-		freed=$((space-prev_space))
-		if [[ "$freed" -lt 0 ]]; then
-			freed=0
+	if [[ "$1" == -i ]]; then
+		if [[ "$prev_space" ]]; then
+			freed=$((space-prev_space))
+			if [[ "$freed" -lt 0 ]]; then
+				freed=0
+			fi
+			error freed "$freed"KB of memory.
 		fi
-		error freed "$freed"KB of memory.
+		prev_space=$space
 	fi
-	prev_space=$space
 }
 
 task_killer(){
@@ -695,16 +697,27 @@ task_killer(){
 	if [[ ! "$sleep" ]]; then
 		sleep=10 #dumpsys refresh time is 10 secs.
 	fi
+	memlimit=$2
+	if [[ ! "$memlimit" ]]; then
+		memlimit=$(($(grep -i -e memtotal /proc/meminfo | awk '{print $2}')*16/100))
+	else
+		memlimit=$((memlimit*1024))
+	fi
 	renice 19 $$
 	check_launcher
+	debug_space
 	while true; do
 		awake=$(cat /sys/power/wait_for_fb_wake)
-		target_killer
-		if [[ ! "$(pgrep '' | grep "\<$launcher_pid\>")" ]]; then
-			check_launcher
-		fi
-		if [[ "$debug" ]]; then
-			debug_space
+		if [[ "$space" -lt "$memlimit" ]]; then
+			target_killer
+			if [[ ! "$(pgrep '' | grep "\<$launcher_pid\>")" ]]; then
+				check_launcher
+			fi
+			if [[ "$debug" ]]; then
+				debug_space -i
+			else
+				debug_space
+			fi
 		fi
 		sleep $sleep
 	done
