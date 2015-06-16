@@ -658,15 +658,14 @@ debug_space(){
 	for i in $(grep -i -e 'memfree\|buffers\|^cached' /proc/meminfo | awk '{print $2}'); do
 		space=$((space+i))
 	done
-	if [[ ! "$prev_space" ]]; then
-		prev_space=$space
-	else
+	if [[ "$prev_space" ]]; then
 		freed=$((space-prev_space))
 		if [[ "$freed" -lt 0 ]]; then
 			freed=0
 		fi
 		error freed "$freed"KB of memory.
 	fi
+	prev_space=$space
 }
 
 task_killer(){
