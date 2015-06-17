@@ -5,15 +5,15 @@
 #include<sys/types.h>
 using namespace std;
 
-static const int usecs=1000;
+static const int msecs=1000;
 static int pid;
 static int limiter;
 
 void send_signal(){
         kill(::pid, SIGSTOP);
-        usleep(usecs*limiter);
+        usleep(msecs*limiter);
         kill(::pid, SIGCONT);
-        usleep(usecs*10);//10 microsecs == one jiffy
+        usleep(msecs*10);//10 millisecs == one jiffy
 }
 
 void handler(int){
@@ -24,7 +24,7 @@ void handler(int){
 int main(int argc, char **argv){
 	if(!argv[1]){
 cout<<"Copyright (C) 2013-2015  hoholee12@naver.com"<<endl;
-cout<<"Usage: "<<argv[0]<<" [μ seconds] [pid]"<<endl; return 0;}
+cout<<"Usage: "<<argv[0]<<" [milliseconds] [pid]"<<endl; return 0;}
         pid=atoi(argv[2]);
 	limiter=atoi(argv[1])-10;
         if(getuid()){
