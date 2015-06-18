@@ -51,14 +51,19 @@ cout<<"Usage: "<<argv[0]<<" [percentage] [pid]"<<endl; return 0;}
 		cout<<"Permission denied, are you root?"<<endl;
 		return 1;
 	}
-	if(kill(pid, 0)){
-		cout<<"process "<<pid<<" does not exist."<<endl;
+	if(kill(::pid, 0)){
+		cout<<"process "<<::pid<<" does not exist."<<endl;
 		return 1;
 	}
 	sigstopsleepr=jiffy*limiter/100;
 	sigcontsleepr=jiffy*(100-limiter)/100;
 	swap(sigstopsleepr, sigcontsleepr);
 	signal(SIGINT, handler);
-	for(;;) send_signal();
+	for(;;){ 
+		if(kill(::pid, 0)){
+			cout<<"process "<<::pid<<" ended."<<endl;
+			break;
+		}
+	send_signal();}
 	return 0;
 }
