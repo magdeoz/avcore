@@ -14,7 +14,7 @@
 #include<sys/types.h> //i dont know what this contains.
 using namespace std;
 
-static const int jiffy=10000;
+static int jiffy=10000;
 static int pid;
 static double limiter;
 static int sigstopsleepr;
@@ -55,6 +55,7 @@ cout<<"Usage: "<<argv[0]<<" [percentage] [pid]"<<endl; return 0;}
 		cout<<"process "<<::pid<<" does not exist."<<endl;
 		return 1;
 	}
+	if(argv[3]) jiffy=atoi(argv[3]); //debug
 	sigstopsleepr=jiffy*limiter/100;
 	sigcontsleepr=jiffy*(100-limiter)/100;
 	swap(sigstopsleepr, sigcontsleepr);
