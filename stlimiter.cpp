@@ -7,10 +7,10 @@
 # is retained.
 */
 
-#include<iostream> //kill
+#include<iostream>
 #include<unistd.h> //usleep, getuid
 #include<stdlib.h> //atoi
-#include<signal.h> //SIGCONT, SIGSTOP
+#include<signal.h> //SIGCONT, SIGSTOP, kill
 #include<sys/types.h> //i dont know what this contains.
 using namespace std;
 
