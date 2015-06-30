@@ -591,7 +591,7 @@ Roll_Down(){
 		fi
 	fi
 	if [[ "$bash_only" == 1 ]]; then
-		bash_only
+		bash_only $@
 		return=$?
 		if [[ "$return" -ne 0 ]]; then
 			exit $return
