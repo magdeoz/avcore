@@ -367,12 +367,7 @@ error(){
 		date '+date: %m/%d/%y%ttime: %H:%M:%S ->'"$message"'' >> $DIR_NAME/$NO_EXTENSION.log
 	fi
 }
-if [[ "$bash_only" == 1 ]]; then
-	if [[ ! "$BASH" ]]; then
-		error Please re-run this program with BASH. \"error code 1\" #to pass the double-quote character to the error function, you must use the inverted-slash character.
-		exit 1
-	fi
-fi
+
 # sched_tuner.sh
 #
 # Copyright (C) 2013-2015  hoholee12@naver.com
@@ -563,6 +558,21 @@ as_root(){
 	fi
 }
 
+bash_check=
+bash_only(){
+	bash_check=0
+	if [[ ! "$BASH" ]]; then
+		bashloc=$(which bash)
+		if [[ "$bashloc" ]]; then
+			$bashloc $FULL_NAME
+			exit 0
+		fi
+		bash_check=1
+		error Please re-run this program with BASH. \"error code 1\" #to pass the double-quote character to the error function, you must use the inverted-slash character.
+		exit 1
+	fi
+}
+
 # Session behaviour
 Roll_Down(){
 	local return
@@ -575,6 +585,13 @@ Roll_Down(){
 	fi
 	if [[ "$run_as_root" == 1 ]]; then
 		as_root
+		return=$?
+		if [[ "$return" -ne 0 ]]; then
+			exit $return
+		fi
+	fi
+	if [[ "$bash_only" == 1 ]]; then
+		bash_only
 		return=$?
 		if [[ "$return" -ne 0 ]]; then
 			exit $return
