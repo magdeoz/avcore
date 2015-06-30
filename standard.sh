@@ -564,7 +564,7 @@ bash_only(){
 	if [[ ! "$BASH" ]]; then
 		bashloc=$(which bash)
 		if [[ "$bashloc" ]]; then
-			$bashloc $FULL_NAME
+			$bashloc $FULL_NAME $@
 			exit 0
 		fi
 		bash_check=1
