@@ -576,6 +576,20 @@ bash_only(){
 # Session behaviour
 Roll_Down(){
 	local return
+	
+	#first run
+	if [[ "$debug" == 1 ]]; then
+		debug_shell
+		return=$?
+		exit $return
+	fi
+	if [[ "$install" == 1 ]]; then
+		install
+		return=$?
+		exit $return
+	fi
+	
+	#second run
 	if [[ "$run_bb_apg_2" == 1 ]]; then
 		bb_apg_2
 		return=$?
@@ -597,18 +611,8 @@ Roll_Down(){
 			exit $return
 		fi
 	fi
-	if [[ "$debug" == 1 ]]; then
-		debug_shell
-		return=$?
-		exit $return
-	fi
-	if [[ "$install" == 1 ]]; then
-		install
-		return=$?
-		exit $return
-	fi
 }
-Roll_Down
+Roll_Down $@
 
 CUSTOM_DIR=/data/log #log location
 if [[ ! -f /sys/kernel/debug/sched_features ]]; then
