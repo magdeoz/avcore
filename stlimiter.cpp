@@ -7,11 +7,12 @@
 # is retained.
 */
 
-#include<iostream>
+#include<iostream> //kill
 #include<unistd.h> //usleep, getuid
 #include<stdlib.h> //atoi
-#include<signal.h> //SIGCONT, SIGSTOP, kill
+#include<signal.h> //SIGCONT, SIGSTOP
 #include<sys/types.h> //i dont know what this contains.
+#include"tools.h"
 using namespace std;
 
 static int jiffy=10000;
@@ -19,7 +20,7 @@ static int pid;
 static double limiter;
 static int sigstopsleepr;
 static int sigcontsleepr;
-static const int enable_swap=1;
+static const bool enable_swap=1;
 
 inline void send_signal(){
 	kill(::pid, SIGSTOP);
@@ -33,11 +34,6 @@ void handler(int){
 	exit(0);
 }
 
-void swap(int &a, int &b){
-	if(::enable_swap==1){
-		int tmp=a; a=b; b=tmp;
-	}
-}
 
 int main(int argc, char **argv){
 	if(!argv[1]){
@@ -58,7 +54,7 @@ cout<<"Usage: "<<argv[0]<<" [percentage] [pid]"<<endl; return 0;}
 	if(argv[3]) jiffy=atoi(argv[3]); //debug
 	sigstopsleepr=jiffy*limiter/100;
 	sigcontsleepr=jiffy*(100-limiter)/100;
-	swap(sigstopsleepr, sigcontsleepr);
+	swap(sigstopsleepr, sigcontsleepr, enable_swap);
 	signal(SIGINT, handler);
 	for(;;){ 
 		if(kill(::pid, 0)){
