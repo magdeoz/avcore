@@ -68,3 +68,29 @@ void append(char *&a, char *b, int x=0){
 	//asdf.string_delete();
 	//delete [] c;
 }
+
+//fibonacci - a simple fibonacci.
+/*int fibonacci(int &n){
+	int i=1;
+	int a=1, b=1, tmp;
+	for(;i<n;i++){
+		tmp=a;
+		a+=b;
+		b=tmp;
+	}
+	return b;
+}*/
+int *fibonacci(int &n){
+	int i=1;
+	int a=1, b=1, tmp; //we'll need to make this global if we want to pass the addr as a stack. otherwise, heap is necessary.
+	int *addr=new int[n];
+	addr[0]=b;
+	for(;i<n;i++){
+		tmp=a;
+		a+=b;
+		b=tmp;
+		addr[i]=b;
+	}
+	return addr;
+}
+
