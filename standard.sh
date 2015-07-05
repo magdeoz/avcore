@@ -220,6 +220,16 @@ install(){
 		for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
 			eval echo $i
 		done
+		return 0
+	elif [[ "$1" == -s ]]; then
+		shift
+		for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
+			if [[ "$(eval echo $i)" == "$1" ]]; then
+				echo found it!
+				loc=$1
+				break
+			fi
+		done
 	else
 		echo $n hits.
 		for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
@@ -252,75 +262,76 @@ install(){
 				break
 			fi
 		done
-		if [[ ! "$loc" ]]; then
-			echo couldnt install, sorry. :p
+	fi
+	if [[ ! "$loc" ]]; then
+		echo couldnt install, sorry. :p
+		return 1
+	fi
+	echo -e '\rplease wait...'
+	loc_DIR_NAME=$(echo $loc | sed 's/\//\n/g' | head -n2 | sed ':a;N;s/\n/\//g;ba')
+	mountstat=$(mount | grep $loc_DIR_NAME | head -n1)
+	availperm=$(echo $mountstat | grep 'ro\|rw')
+	if [[ "$availperm" ]]; then #linux else unix
+		if [[ "$(echo $mountstat | grep ro)" ]]; then
+			ro=1
+			echo -n -e '\rmounting...'
+			mount -o remount,rw $loc_DIR_NAME
+		fi
+	else
+		ro=0
+	fi
+	if [[ -f "$loc/$NO_EXTENSION" ]]; then
+		echo -n 'program file already exists. overwrite? (y/n) '
+		while true; do
+			stty cbreak -echo
+			f=$(dd bs=1 count=1 2>/dev/null)
+			stty -cbreak echo
+			echo $f
+			case $f in
+				y* | Y*)
+					break
+				;;
+				n* | N* | q* | Q*)
+					echo canceled.
+					return 0
+				;;
+				*)
+					checkers
+				;;
+			esac
+		done
+	fi
+	if [[ "$(echo $mountstat | grep rw)" ]]; then
+		echo -n -e '\rcopying files...'
+		cp $0 $loc/$NO_EXTENSION
+		if [[ "$?" != 0 ]]; then
 			return 1
 		fi
-		echo -e '\rplease wait...'
-		loc_DIR_NAME=$(echo $loc | sed 's/\//\n/g' | head -n2 | sed ':a;N;s/\n/\//g;ba')
-		mountstat=$(mount | grep $loc_DIR_NAME | head -n1)
-		availperm=$(echo $mountstat | grep 'ro\|rw')
-		if [[ "$availperm" ]]; then #linux else unix
-			if [[ "$(echo $mountstat | grep ro)" ]]; then
-				ro=1
-				echo -n -e '\rmounting...'
-				mount -o remount,rw $loc_DIR_NAME
-			fi
-		else
-			ro=0
+		chmod 755 $loc/$NO_EXTENSION
+		if [[ "$ro" == 1 ]]; then
+			mount -o remount,ro $loc_DIR_NAME
 		fi
-		if [[ -f "$loc/$NO_EXTENSION" ]]; then
-			echo -n 'program file already exists. overwrite? (y/n) '
-			while true; do
-				stty cbreak -echo
-				f=$(dd bs=1 count=1 2>/dev/null)
-				stty -cbreak echo
-				echo $f
-				case $f in
-					y* | Y*)
-						break
-					;;
-					n* | N* | q* | Q*)
-						echo canceled.
-						return 0
-					;;
-					*)
-						checkers
-					;;
-				esac
-			done
-		fi
-		if [[ "$(echo $mountstat | grep rw)" ]]; then
+	else
+		if [[ ! "$availperm" ]]; then
 			echo -n -e '\rcopying files...'
 			cp $0 $loc/$NO_EXTENSION
 			if [[ "$?" != 0 ]]; then
 				return 1
 			fi
 			chmod 755 $loc/$NO_EXTENSION
-			if [[ "$ro" == 1 ]]; then
-				mount -o remount,ro $loc_DIR_NAME
-			fi
 		else
-			if [[ ! "$availperm" ]]; then
-				echo -n -e '\rcopying files...'
-				cp $0 $loc/$NO_EXTENSION
-				if [[ "$?" != 0 ]]; then
-					return 1
-				fi
-				chmod 755 $loc/$NO_EXTENSION
-			else
-				error=1
-			fi
+			error=1
 		fi
-		if [[ "$error" == 1 ]]; then
-			echo -e "internal error! please use '--verbose' and try again. \e[1;31m\"error code 1\"\e[0m"
-			return 1
-		else
-			echo
-			long_line 2
-			echo install complete!
-			echo type \'$NO_EXTENSION\' to run the program!
-		fi
+	fi
+	unset loc
+	if [[ "$error" == 1 ]]; then
+		echo -e "internal error! please use '--verbose' and try again. \e[1;31m\"error code 1\"\e[0m"
+		return 1
+	else
+		echo
+		long_line 2
+		echo install complete!
+		echo type \'$NO_EXTENSION\' to run the program!
 	fi
 }
 long_line(){
