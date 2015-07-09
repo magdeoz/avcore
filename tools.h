@@ -18,10 +18,11 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wparentheses"
 #pragma GCC diagnostic ignored "-Wformat="
+
 //common ascii stuff
-//0~9 => 48~57
-//a~z => 97~122
-//A~Z => 65~90
+//	0~9 => 48~57
+//	a~z => 97~122
+//	A~Z => 65~90
 
 //misc stuff - unsigned
 typedef unsigned char u8;
@@ -81,12 +82,19 @@ public:
 		return EXIT_SUCCESS;
 	}
 	void string_delete(){delete [] c;}
-	//friend void appendtest(char *, char *, int); WTH?! TODO: figure out why the hell this doesnt let me access private members
+	//friend void appendtest(char *, char *, int); //WTH?! TODO: figure out why the hell this doesnt let me access private members
 	//~string_tools(){delete [] c;}
 };
+
+//still trying to figure out, this is not really a run on exit termination.
+string_tools asdf; //just declare it globally right here,
+void string_delete(int){asdf.string_delete();} // so that we can provoke this.
 void append(char *&a, char *b, int x=0){
-	string_tools asdf;
 	asdf.append(a, b, x);
+	signal(SIGINT, string_delete); //^C politely ask
+	signal(SIGTSTP, string_delete); //^Z pause a process
+	signal(SIGQUIT, string_delete); //^\ mercilessly kill
+	signal(SIGTERM, string_delete); // terminate
 	//asdf.string_delete();
 	//delete [] c;
 }
