@@ -29,6 +29,9 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 			break
 		fi
 		readonly install=1
+		shift
+		save_args=$@
+		break
 	elif [[ "$1" == --supass ]] && [[ "$run_as_root" != 0 ]]; then
 		readonly run_as_root=0
 	elif [[ "$1" == --bbpass ]] && [[ "$run_bb_apg_2" != 0 ]]; then
@@ -595,7 +598,7 @@ Roll_Down(){
 		exit $return
 	fi
 	if [[ "$install" == 1 ]]; then
-		install
+		install $save_args
 		return=$?
 		exit $return
 	fi
