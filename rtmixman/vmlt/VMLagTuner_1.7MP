@@ -1,0 +1,90 @@
+ echo '<<<<<<<<<<<VMLagTuner 1.7MP by LENAROX>>>>>>>>>>'
+#this script works on all linux devices with init.d support.
+#your device must have the latest busybox installed to work properly.
+#run this with script manager with root for testing, and put it in the init.d folder for daily use.
+ echo 'Pro-Tuned 2.0 & TurboCache MP & StoneCold-Stablizer 2.0 all rights reserved.'
+ echo '________________________________________________'
+ sleep 1
+#1 Pro-Tuned 2.0 tweaks.
+ echo '#1 applying Pro-Tuned 2.0 tweaks...'
+ sleep 1
+ echo 'phase 1/4'
+#enables kill allocating task to avoid long hangings.
+ echo 1 > /proc/sys/vm/oom_kill_allocating_task
+ echo 'phase 2/4' 
+#makes dirty data stable while sacrificing I/O speed.
+ echo 1 > /proc/sys/vm/dirty_ratio
+ echo 'phase 3/4' 
+ echo 100 > /proc/sys/vm/dirty_background_ratio
+ echo 'phase 4/4' 
+#unlocks process limits for each "process", leading into a UI boost.
+ setprop ENFORCE_PROCESS_LIMIT false
+ echo 'done!'
+#2 StoneCold-Stablizer 2.0 tweaks.
+ echo '#2 applying StoneCold-Stablizer 2.0 tweaks...'
+ sleep 1
+ echo 'phase 1/5'
+#avoids crash by giving a value 0 on crash timer.
+ echo 0 > /proc/sys/vm/panic_on_oom
+ echo 'phase 2/5'
+ echo 0 > /proc/sys/kernel/panic
+ echo 'phase 3/5'
+ echo 0 > /proc/sys/kernel/panic_on_oops
+ echo 'phase 4/5'
+ echo 0 > /proc/sys/kernel/hung_task_timeout_secs
+ echo 'phase 5/5'
+ echo 0 > /proc/sys/kernel/softlockup_panic
+ echo 'done!'
+#3 TurboCache MP tweaks.
+ echo '#3 applying TurboCache MP tweaks...'
+ sleep 1
+ echo 'phase 1/2' 
+#drops temporary page caches to gain more memory.
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+ echo 'phase 2/2'
+#increases cache pressure for faster memory gaining.
+ echo 500 > /proc/sys/vm/vfs_cache_pressure
+ echo 'done!'
+#4 battery life saver tweaks.
+ echo '#4 applying battery life saver tweaks...'
+ sleep 1
+ echo 'phase 1/2'
+ echo 2000 > /proc/sys/vm/dirty_writeback_centisecs
+ echo 'phase 2/2'
+ echo 1000 > /proc/sys/vm/dirty_expire_centisecs
+ echo 'done!'
+#5 flash memory reading speed tweaks.
+ echo '#5 applying flash memory reading speed tweaks...'
+ sleep 1
+ echo 'phase 1/2'
+#increases read ahead cache size.
+ echo 512 > /sys/devices/virtual/bdi/179:0/read_ahead_kb
+ echo 'phase 2/2'
+#shortens up reading time.
+ echo 10 > /proc/sys/fs/lease-break-time
+ echo 'done!'
+#6 graphics enhancer tweaks.
+ echo '#6 applying graphics enhancer tweaks...'
+ sleep 1
+ echo 'phase 1/4'
+ setprop debug.sf.showupdates 0
+ echo 'phase 2/4'
+ setprop debug.sf.showcpu 0
+ echo 'phase 3/4'
+ setprop debug.sf.showbackground 0
+ echo 'phase 4/4'
+ setprop debug.sf.showfps 0
+ echo 'done!'
+#7 smoothness scrolling tweaks.
+ echo '#7 applying smoothness scrolling tweaks...'
+ sleep 1
+ echo 'phase 1/1'
+#Android maximum 60*1.5 equals 90.
+ setprop windowsmgr.max_events_per_sec 90
+ echo 'done!'
+ echo '...'
+ sleep 1
+ echo 'complete!'
+ echo '________________________________________________'
+ echo 'go to http://forum.xda-developers.com/showthread.php?p=33795869#post33795869 for more info.'
+ exit 0

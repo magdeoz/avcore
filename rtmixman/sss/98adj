@@ -1,0 +1,154 @@
+#!/system/bin/sh
+
+
+echo "-17,-17,-17,-17,-17,-17" > /sys/module/lowmemorykiller/parameters/adj ;
+echo 0 > /proc/sys/vm/vfs_cache_pressure
+# echo 2147483647 > /proc/sys/vm/dirty_writeback_centisecs
+# echo 0 > /proc/sys/vm/dirty_expire_centisecs 
+
+#disable..
+for i in $(find /proc/sys/net/ipv4/conf/*/accept_source_route) $(find /proc/sys/net/ipv4/conf/*/accept_redirects) $(find /proc/sys/net/ipv4/conf/*/send_redirects) $(find /proc/sys/net/ipv4/tcp_*sack) /proc/sys/net/ipv4/tcp_timestamps /proc/sys/net/ipv4/tcp_window_scailing; do
+echo 0 > $i
+done
+#enable..
+for i in $(find /proc/sys/net/ipv4/conf/*/secure_redirects) $(find /proc/sys/net/ipv4/*ignore*) $(find /proc/sys/net/ipv4/tcp_tw*); do
+echo 1 > $i
+done
+
+#set disk priority to read first.
+for i in $(cat /proc/mounts | cut -d' ' -f2); do
+busybox mount -o remount,data=writeback $i
+done
+
+#drop caches repeatedly.
+dropCache(){
+ while true; do
+interval=2
+level=0 #default. zero skips the flush.
+memfree=$(free | grep 'buffers:' | awk '{print $4}')
+if [ $memfree -le $(($(cat /sys/module/lowmemorykiller/parameters/minfree | awk -F, '{print $(NF-5)}')*4)) ]; then
+level=6
+elif [ $memfree -le $(($(cat /sys/module/lowmemorykiller/parameters/minfree | awk -F, '{print $(NF-4)}')*4)) ]; then
+level=5
+elif [ $memfree -le $(($(cat /sys/module/lowmemorykiller/parameters/minfree | awk -F, '{print $(NF-3)}')*4)) ]; then
+level=4
+elif [ $memfree -le $(($(cat /sys/module/lowmemorykiller/parameters/minfree | awk -F, '{print $(NF-2)}')*4)) ]; then
+level=3
+elif [ $memfree -le $(($(cat /sys/module/lowmemorykiller/parameters/minfree | awk -F, '{print $(NF-1)}')*4)) ]; then
+level=2
+elif [ $memfree -le $(($(cat /sys/module/lowmemorykiller/parameters/minfree | awk -F, '{print $NF}')*4)) ]; then
+level=1
+fi
+if [ $level -eq 0 ]; then
+sleep $interval
+continue
+fi
+timer=$(awk 'BEGIN{printf("%.2f\n",'"$interval"'/'"$level"')}')
+for i in $(seq 1 $level); do
+echo 1 > /proc/sys/vm/drop_caches
+busybox sleep $timer
+done
+done 
+}
+
+#renice anr applications for speed.
+anrHack(){
+#for i in $(find /sys/module/ | grep parameters | grep debug); do
+#echo 0 > $i
+#done
+renice 19 $$
+break=0
+while true; do
+if [ $break == 0 ]; then
+if [ $(pgrep zygote) ]; then
+renice 19 $(pgrep zygote)
+while true; do
+if [ $(pgrep system_server) ]; then
+renice 0 $(pgrep zygote)
+break
+fi
+sleep 1
+done
+break=1
+fi
+else
+ for i in $(cat /data/anr/traces.txt | grep -i "cmd line" | cut -d' ' -f3 | grep -v system_server); do
+renice 19 $(pgrep $i)
+#for j in $(ls /proc/$(pgrep $i)/task | grep -v $(pgrep $i)); do
+#renice 19 $j
+#done
+done 2>/dev/null 
+#for j in $(ls /proc/$(pgrep system_server)/task | grep -v system_server); do
+#renice 19 $j
+#done 2>/dev/null
+sleep 59
+fi
+sleep 1
+done
+}
+
+anrHack &
+dropCache &
+
+exit
+
+#wip test
+
+
+
+for i in $(find /proc/*/task -maxdepth 1 | grep [0-9] | grep "task/" | grep -v $$ | grep $(pgrep system_server)); do
+echo -n "$i "
+echo -n "$(cat $i/comm) "
+ stat=$(cat $i/stat)
+				rm=${stat#*)}
+echo -n $rm | cut -d' ' -f17
+#if [ "$(echo $rm | cut -d' ' -f17)" != 10 ]; then
+#renice 10 $(echo $i | cut -d/ -f5)
+#echo '!'
+#fi
+done
+
+renice 19 $$
+#while true; do
+for i in $(find /proc/*/task -maxdepth 1 | grep [0-9] | grep "task/" | grep -v $$); do
+echo -n "$i "
+echo -n "$(cat $i/comm) "
+ stat=$(cat $i/stat)
+				rm=${stat#*)}
+echo -n $rm | cut -d' ' -f17
+#if [ "$(echo $rm | cut -d' ' -f17)" != 10 ]; then
+#renice 10 $(echo $i | cut -d/ -f5)
+#echo '!'
+#fi
+done
+#done
+
+renice 19 $$
+while true; do
+for i in $(pgrep ''); do
+ for j in $(ls /proc/$i/task); do
+if [ $(grep -i async /proc/$i/task/$j/comm) ]; then
+cat /proc/$i/task/$j/comm
+renice 0 $j
+fi
+done 
+done
+sleep 5
+done
+
+ renice -20 2
+for i in $(pgrep ""); do
+if [ $(grep -i ppid: /proc/$i/status | awk '{print $2}') == 2 ]; then
+renice -20 $i
+fi
+done 
+
+while true; do
+ for j in $(pgrep ''); do
+if [ $(grep "\<bdi_writeback_task\>" /proc/$j/wchan) ]; then
+renice 0 $j
+fi
+done
+sleep 5
+done
+

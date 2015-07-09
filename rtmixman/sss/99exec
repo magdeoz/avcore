@@ -1,0 +1,25 @@
+echo 256960 > /proc/sys/net/core/rmem_default
+echo 256960 > /proc/sys/net/core/rmem_max
+echo 256960 > /proc/sys/net/core/wmem_default
+echo 256960 > /proc/sys/net/core/wmem_max
+echo 0 > /proc/sys/net/ipv4/tcp_timestamps
+echo 1 > /proc/sys/net/ipv4/tcp_sack echo 1 > /proc/sys/net/ipv4/tcp_window_scaling
+echo 30 > /proc/sys/net/ipv4/tcp_fin_timeout
+echo 30 > /proc/sys/net/ipv4/tcp_keepalive_intvl
+echo 5 > /proc/sys/net/ipv4/tcp_keepalive_probes
+echo 1 > /proc/sys/net/ipv4/tcp_tw_recycle
+echo 1 > /proc/sys/net/ipv4/tcp_tw_reuse
+echo 30 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_time_wait
+
+i=$(cat /proc/mounts | awk '{print $2}' | grep sdcard | head -n1)
+j=$(cat /proc/mounts | awk '{print $2}' | grep external_sd | head -n1)
+until [[ $i ]]&&[[ $j ]]; do
+i=$(cat /proc/mounts | awk '{print $2}' | grep sdcard | head -n1)
+j=$(cat /proc/mounts | awk '{print $2}' | grep external_sd | head -n1)
+sleep 1
+done
+for dir in $i $j; do
+busybox mount -o remount,exec $dir
+done
+
+mount -o bind /mnt/sdcard /mnt/sdcard/sl4a/scripts/etc

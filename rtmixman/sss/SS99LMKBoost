@@ -1,0 +1,49 @@
+#!/system/bin/sh
+#LMK Boost
+#Copyright(c) 2013 LENAROX@xda
+exec > /data/log/SS99LMKBoost.log 2>&1
+loc=/system/etc/init.d/SS99LMKBoost
+if [ ! -e "$loc" ]; then
+mv $0 $loc
+fi
+Trolling()
+{
+while true; do
+limit=6 #do-list
+if [ ! "$(getprop LMKBoost.Trolling_blacklist0)" ] && [ ! "$(getprop LMKBoost.Trolling_blacklist1)" ] && [ ! "$(getprop LMKBoost.Trolling_blacklist2)" ]; then
+setprop LMKBoost.Trolling_blacklist0 launcher
+setprop LMKBoost.Trolling_blacklist1 ""
+setprop LMKBoost.Trolling_blacklist2 ""
+fi
+blacklist0=$(getprop LMKBoost.Trolling_blacklist0)
+blacklist1=$(getprop LMKBoost.Trolling_blacklist1)
+blacklist2=$(getprop LMKBoost.Trolling_blacklist2)
+if [ ! "$blacklist0" ]; then blacklist0=0; fi
+if [ ! "$blacklist1" ]; then blacklist1=0; fi
+if [ ! "$blacklist2" ]; then blacklist2=0; fi
+blacklist0=$(pgrep -n $(blacklist0))
+blacklist1=$(pgrep -n $(blacklist1))
+blacklist2=$(pgrep -n $(blacklist2))
+target=$(($(($(cat /proc/meminfo | grep MemTotal | head -n1 | awk '{print $2}')-$(cat /proc/sys/vm/min_free_kbytes)))/$limit))
+current=$(($(cat /proc/meminfo | grep MemFree | head -n1 | awk '{print $2}')+$(cat /proc/meminfo | grep Cached | head -n1 | awk '{print $2}')))
+if [ "$current" -lt "$target" ]; then
+for i in $(find /proc -maxdepth 1 -type d | sed 's/\/proc\///g'); do
+if [ -e "/proc/$i/oom_adj" ]; then
+if [ "$(cat /proc/$i/oom_adj)" -gt 2 ]; then
+if [ "$i" != "$blacklist0" ] && [ "$i" != "$blacklist1" ] && [ "$i" != "$blacklist2" ]; then
+busybox kill -SIGKILL $i
+fi
+fi
+fi
+done
+fi
+time=5
+sleep $time
+done
+}
+Trolling &
+if [ "$(cat /data/log/SS99LMKBoost.log | grep -i "cannot")" ]; then
+setprop LMKBoost.Stat Error!
+else
+setprop LMKBoost.Stat running
+fi 

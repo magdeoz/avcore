@@ -1,0 +1,77 @@
+exec > /data/log/99test.log 2>&1
+i=$(cat /proc/mounts | awk '{print $2}' | grep sdcard | head -n1)
+j=$(cat /proc/mounts | awk '{print $2}' | grep external_sd | head -n1)
+until [[ $i ]]&&[[ $j ]]; do
+i=$(cat /proc/mounts | awk '{print $2}' | grep sdcard | head -n1)
+j=$(cat /proc/mounts | awk '{print $2}' | grep external_sd | head -n1)
+sleep 1
+done
+for dir in $i $j; do
+busybox mount -o remount,exec $dir
+done
+
+echo 256960 > /proc/sys/net/core/rmem_default
+echo 256960 > /proc/sys/net/core/rmem_max
+echo 256960 > /proc/sys/net/core/wmem_default
+echo 256960 > /proc/sys/net/core/wmem_max
+
+echo 0 > /proc/sys/net/ipv4/tcp_timestamps 
+echo 1 > /proc/sys/net/ipv4/tcp_sack 
+echo 1 > /proc/sys/net/ipv4/tcp_window_scaling
+
+echo 30 > /proc/sys/net/ipv4/tcp_fin_timeout
+
+echo 30 > /proc/sys/net/ipv4/tcp_keepalive_intvl
+
+echo 5 > /proc/sys/net/ipv4/tcp_keepalive_probes
+
+echo 1 > /proc/sys/net/ipv4/tcp_tw_recycle
+
+echo 1 > /proc/sys/net/ipv4/tcp_tw_reuse
+
+echo 30 > /proc/sys/net/netfilter/nf_conntrack_tcp_timeout_time_wait
+
+#can also be solved with sed command.
+
+exit
+
+renice 19 $$
+while true; do
+awake=$(cat /sys/power/wait_for_fb_wake)
+ memfree=$(cat /proc/meminfo | grep -i memfree | awk '{print $2}')
+		cached=$(cat /proc/meminfo | grep -i cached | awk '{print $2}')
+		if [[ ! "$cached" ]]; then #cygwin compatibility
+			cached=0
+		fi
+		memtotal=$(cat /proc/meminfo | grep -i memtotal | awk '{print $2}')
+		memused=$(awk 'BEGIN{printf "%d", '"$memtotal"'-'"$cached"'-'"$memfree"'}')
+		if [[ "$((memused*100/memtotal))" -gt 0 ]]; then 
+for i in $(pgrep -l "" | grep '\.' | grep 'com\|org\|app\|android' | awk '{print $1}' | grep -v "$(pgrep voodoo)" | grep -v "$(pgrep launcher)" | grep -v "$(pgrep android)" | grep -v "$(pgrep su)"); do
+if [[ $(cat /proc/$i/oom_adj) -ge 2 ]]; then
+kill -9 $i
+fi
+done
+fi
+sleep 1
+done
+
+#grep dont want to be empty.
+
+exit
+
+ renice 19 $$
+while true; do
+sleep=$(cat /sys/power/wait_for_fb_sleep)
+for i in $(pgrep -l "" | grep '\.' | grep 'com\|org\|app\|android' | awk '{print $1}'); do
+if [[ $(cat /proc/$i/oom_adj) -ge 1 ]]; then
+busybox kill -SIGSTOP $i
+fi
+done
+awake=$(cat /sys/power/wait_for_fb_wake)
+for i in $(pgrep -l "" | grep '\.' | grep 'com\|org\|app\|android' | awk '{print $1}'); do
+if [[ $(cat /proc/$i/oom_adj) -ge 1 ]]; then
+busybox kill -SIGCONT $i
+fi
+done 
+done
+ 

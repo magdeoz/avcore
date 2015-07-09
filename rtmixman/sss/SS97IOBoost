@@ -1,0 +1,200 @@
+#!/system/bin/sh
+#IO Boost
+#
+#Copyright (C) 2013 LENAROX@xda
+#
+set +e #ignore all arith errors
+
+#initial settings
+version=v1.0.0 #for status check service
+propname=IOBoost
+filename=SS97IOBoost
+fileloc=/system/etc/init.d/$filename
+logloc=/data/log/$filename.log
+cmd1=which #for busybox applet generator
+cmd2=sleep
+cmd3=seq
+cmd4=grep
+cmd5=pgrep
+cmd6=awk
+cmd7=sed
+cmd8=echo
+cmd11=renice
+cmd12=ionice
+cmd13=kill #only write busybox applets here.
+
+exec > $logloc 2>&1 #respawn and start logging
+
+#start busybox applet generator
+if [ ! "$(busybox --list)" ]; then
+setprop "$propname".stat "busybox: not found, damnit."
+return 1
+fi 2>/dev/null
+nsed=0
+neko=0
+nseq=0
+ngrp=0
+for i in $(busybox --list); do
+if [ "$i" == sed ]; then
+nsed=$(($nsed+1))
+fi
+if [ "$i" == echo ]; then
+neko=$(($neko+1))
+fi
+if [ "$i" == seq ]; then
+nseq=$(($nseq+1))
+fi
+if [ "$i" == grep ]; then
+ngrp=$(($ngrp+1))
+fi
+done
+if [ "$nsed" -ne 1 ] || [ "$neko" -ne 1 ] || [ "$nseq" -ne 1 ] || [ "$ngrp" -ne 1 ]; then
+setprop "$propname".stat "your busybox does not even hold any basic applets to perform a damn simple operation."
+return 1
+fi
+for i in $(busybox --list); do
+n=0
+for j in $(busybox echo $PATH | busybox sed 's/:/ /g'); do
+if [ -e "$j"/"$i" ]; then
+n=$(($n+1))
+fi
+done
+if [ "$n" -eq 0 ]; then
+alias $i="busybox $i"
+fi
+done 2>/dev/null
+for i in $(seq -s ' $cmd' 0 199); do
+v=$(eval echo $i)
+if [ "$v" != 0 ] && [ "$v" ]; then
+if [ ! "$(busybox --list | grep $v)" ]; then
+setprop "$propname".stat "user selected applet not found, or missing!"
+return 1
+fi
+fi
+done
+busyboxloc=$(which busybox | sed 's/\/busybox//g')
+n=0
+for i in $(echo $PATH | sed 's/:/ /g'); do
+n=$(($n+1))
+export slot$n=$i
+if [ "$i" == "$busyboxloc" ]; then
+busyboxenv=slot$n
+fi
+done
+if [ "$busyboxenv" != slot1 ]; then
+export PATH=$(echo -n $busyboxloc
+for i in $(seq -s ' $slot' 0 $n); do
+v=$(eval echo $i)
+if [ "$v" != 0 ] && [ "$v" != "$busyboxloc" ]; then
+echo -n ":$v"
+fi
+done)
+fi
+
+#rename itself back if edited or does not exist in that directory
+#credits to zeppelinrox@xda
+if [ ! -e "$fileloc" ]; then
+if [ "$(cat /proc/mounts | awk '$2=="/system"{print $4}' | cut -d "," -f1)" != rw ]; then
+ro=1
+mount -o remount,rw /system
+if [ "$(cat /proc/mounts | awk '$2=="/system"{print $4}' | cut -d "," -f1)" != rw ]; then
+setprop "$propname".stat "mount unsuccessful."
+return 1
+fi
+else
+ro=0
+fi
+mv $0 $fileloc
+if [ ! -e "$fileloc" ]; then
+setprop "$propname".stat "rename unsuccessful."
+return 1
+fi
+if [ "$ro" -eq 1 ]; then
+mount -o remount,ro /system
+fi
+$fileloc & return 0
+fi
+
+#basic tunable settings for all
+n=1024 #mentioned in kbytes
+
+#a=$(cat /proc/diskstats | awk '{print $3,$4}')
+#n=1
+#while true; do
+#if [ ! "$(echo $a | awk '{print $n}')" ]; then
+#break
+#fi
+#b=$(($n+1))
+#if [ "$(echo $a | awk '{print $b}')" != 0 ]; then
+#export a$n=$(echo $a | awk '{print $n}')
+#fi
+#n=$(($n+2))
+#done
+
+#for i in $(cat /proc/mounts | awk '{print $1}'); do
+#if [ "$(echo $i | grep /dev/block)" ]; then
+#if [ "$(echo $i | grep /dev/block/vold)" ]; then
+#target=$(echo $i | sed 's/\/dev\/block\/vold/\/sys\/devices\/virtual\/bdi/g')
+#echo $i
+#else
+#target=$(echo $i | sed 's/dev/sys/g')
+#if [ "$(echo $target | grep bml)" ]; then
+#for i in $(find /sys/block | grep bml); do
+#echo "$n" > $i/queue/read_ahead_kb
+#echo "$n" > $i/queue/nr_requests
+#done
+#fi
+#fi
+#fi
+#done
+
+#tweak I/O for selected drives
+#credits to zacharias.maladroit
+stl=$(find /sys/block | grep stl)
+bml=$(find /sys/block | grep bml)
+mmc=$(find /sys/block | grep mmc)
+zram=$(find /sys/block | grep zram)
+mtd=$(find /sys/block | grep mtd)
+for i in $stl $bml $mmc $zram $mtd; do
+echo "$n" > $i/queue/read_ahead_kb
+echo "$n" > $i/queue/nr_requests
+done
+
+#increase all max_user_watches options to a reasonable value
+for i in epoll inotify; do
+if [ -e "/proc/sys/fs/$i/max_user_watches" ]; then
+if [ "$(cat /proc/sys/fs/nr_open)" == "$((1024*$n))" ] || [ "$(cat /proc/sys/fs/pipe-max-size)" == "$((1024*$n))" ]; then
+if [ "$(cat /proc/sys/fs/nr_open)" -gt "$(cat /proc/sys/fs/pipe-max-size)" ]; then
+echo "$(cat /proc/sys/fs/nr_open)" > /proc/sys/fs/pipe-max-size
+echo "$(cat /proc/sys/fs/nr_open)" > /proc/sys/fs/$i/max_user_watches
+elif [ "$(cat /proc/sys/fs/nr_open)" -lt "$(cat /proc/sys/fs/pipe-max-size)" ]; then
+echo "$(cat /proc/sys/fs/pipe-max-size)" > /proc/sys/fs/nr_open
+echo "$(cat /proc/sys/fs/pipe-max-size)" > /proc/sys/fs/$i/max_user_watches
+else
+echo "$(cat /proc/sys/fs/nr_open)" > /proc/sys/fs/$i/max_user_watches
+fi
+else
+echo "$((1024*$n))" > /proc/sys/fs/nr_open
+echo "$((1024*$n))" > /proc/sys/fs/pipe-max-size
+echo "$((1024*$n))" > /proc/sys/fs/$i/max_user_watches
+fi
+fi
+done
+
+echo "$(($(cat /proc/meminfo | grep "MemTotal:" | awk '{print $2}')-$(cat /proc/sys/vm/min_free_kbytes)))" > /proc/sys/fs/file-max #bytesized version of max_map_count
+
+#start status check service
+n=0
+for i in cannot not no error bad permission; do
+if [ "$(cat $logloc | grep -i "$i")" ]; then
+n=$(($n+1))
+fi
+done
+if [ "$n" -ge 5 ]; then
+setprop "$propname".stat jammed
+elif [ "$n" -lt 5 ] && [ "$n" -ge 1 ]; then
+setprop "$propname".stat "$n"errors
+else
+setprop "$propname".stat running
+setprop "$propname".version $version
+fi

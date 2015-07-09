@@ -1,0 +1,313 @@
+#!/system/bin/sh
+#RTMixManager™ version 20130324
+#developed by LENAROX
+#version check.
+setprop rtmixman_checkver 20130324
+#this engine will solve any lags and crashes on games, heavy apps and so on.
+#which most of the mid-range android gamers have always wanted;)
+#rock your RAM Manager like a Windows NT!!!(da well known BOSS of RAM Management), you know what i mean.:p
+#ATTENTION!!! this engine requires the latest busybox version FROM stericson, installed to run properly.
+#reminder: this engine is designed to run in the background with the android ram management,
+#therefore it should NOT be used with other script applications.
+#
+#thanks to many xda devs who have helped me to develop better codes!
+#thanks to chainfire for touchscreen responsiveness tweak.
+#thanks to shantam for Netweaks.
+#thanks to professionals from stackoverflow.com who gave me some good advices!
+#thanks to mv style for lupus kernel script.
+#thanks to zeppelinrox for the script design, and the bugfix!
+#thanks to gu5t3r for the bugfix:)
+#
+##dirty hack
+#http://www.gentoo-wiki.info/Gigabyte_GA-G33M-S2H
+#http://www.sysxperts.com/home/announce/vmdirtyratioandvmdirtybackgroundratio
+#
+##android lmk
+#http://dalinaum-kr.tumblr.com/post/4528344482/android-low-memory-killer
+#
+#you can modify values with usrsettings to tune your device for your own needs.
+#you can always check which games are now playable through readme.txt!
+
+#re-run the script in the background, in 90 seconds.
+exec > /dev/null 2>&1
+if [ "$1" != "BG" ]; then $0 BG & exit 0; fi
+sleep 90;
+#start logging.
+(
+echo "logging started at `date`";
+echo "if you see nothing below, it means the script is working fine:)";
+
+#Dalvik Booster v9
+#dalvikvmheapsize/2=dalvikvmheapgrowthlimit=somuchawesomeness:D
+dalvikvmheapsize=`getprop dalvik.vm.heapsize | sed 's/m//'`;
+multi2=$(($dalvikvmheapsize*2));
+if getprop | grep -q dalvik.vm.heapgrowthlimit;
+	then
+		dalvikvmheapgrowthlimit=$(($dalvikvmheapsize/2));
+		setprop dalvik.vm.heapgrowthlimit "$dalvikvmheapgrowthlimit"m;
+else
+	setprop dalvik.vm.heapsize "$multi2"m;
+	setprop dalvik.vm.heapgrowthlimit "$dalvikvmheapsize"m;
+	setprop dalvik.vm.heapstartsize 5m;
+fi;
+
+#Rapid Storage Boost™ Technology 2.0
+#i came across with this code by this awk ward imagination in my mind lol:
+#dalvik compiler starts to collect garbages when amount of growing size have reached the limit.(the limit is called heapsize.)
+#dirty data also gets written out to disk when its growing size reached the limit,
+#either by dirty_ratio or dirty_writeback_centisecs.(i'll go with dirty_ratio this time:))
+#these two works as very similar, so i just linked them with my new code. such an interesting thing, isn't it?
+dalvikvmheapsize=`getprop dalvik.vm.heapsize | sed 's/m//'`;
+dalvikvmheapgrowthlimit=`getprop dalvik.vm.heapgrowthlimit | sed 's/m//'`;
+MFK=`cat /proc/sys/vm/min_free_kbytes`;
+TOTALMEM=`free | awk '{ print $2 }' | sed -n 2p`;
+REALTOTALMEM=$(($TOTALMEM-$MFK));
+#dirty_ratio/2=dirty_background_ratio=so_much_performance:D
+if getprop | grep -q dalvik.vm.heapgrowthlimit;
+	then
+		lmao=$(($dalvikvmheapsize+$dalvikvmheapgrowthlimit));
+		asdf=$(($lmao/3));
+		dalvik_ratio=$(($REALTOTALMEM/$asdf));
+		result=$((102400/$dalvik_ratio));
+		if [ -e /proc/sys/vm/dirty_ratio ];
+			then
+				echo $result > /proc/sys/vm/dirty_ratio;
+		fi;
+		if [ -e /proc/sys/vm/dirty_background_ratio ];
+			then
+				echo $result > /proc/sys/vm/dirty_background_ratio;
+		fi;
+else
+	dalvik_ratio=$(($REALTOTALMEM/$dalvikvmheapsize));
+	result=$((102400/$dalvik_ratio));
+	if [ -e /proc/sys/vm/dirty_ratio ];
+		then
+			echo $result > /proc/sys/vm/dirty_ratio;
+	fi;
+	if [ -e /proc/sys/vm/dirty_background_ratio ];
+		then
+			echo $result > /proc/sys/vm/dirty_background_ratio;
+	fi;
+fi;
+#disable leases to gain faster access to the filesystem.
+if [ -e /proc/sys/fs/leases-enable ];
+	then
+		echo 0 > /proc/sys/fs/leases-enable;
+fi;
+#we're also gonna push lease-break-time into writeback parameters.
+LEASES=`cat /proc/sys/fs/lease-break-time`;
+L2W=$(($LEASES*100));
+if [ -e /proc/sys/vm/dirty_writeback_centisecs ];
+	then
+		echo $L2W > /proc/sys/vm/dirty_writeback_centisecs;
+fi;
+if [ -e /proc/sys/vm/dirty_expire_centisecs ];
+	then
+		echo $L2W > /proc/sys/vm/dirty_expire_centisecs;
+fi;
+
+#RTMixManager™ Engine 2.1
+#replaced with renice command which is very complex as hell.
+setprop ENFORCE_PROCESS_LIMIT false
+#major adj parameter groups: -16, -12, 0, 1, 2, 4, 6, 7, 8, 9, 10, 11, and 14.
+#background app adj parameter changes to 7 or 8 by default.
+VALUE6=`cat /system/etc/usrsettings | grep VALUE6 | sed 's/VALUE6=//'`;
+if [ $VALUE6 == 1 ];
+	then
+		if [ -s /sys/module/lowmemorykiller/parameters/adj ];
+			then
+				echo 1,2,4,6,7,8 > /sys/module/lowmemorykiller/parameters/adj;
+		fi;
+elif [ $VALUE6 == 2 ];
+	then
+		if [ -s /sys/module/lowmemorykiller/parameters/adj ];
+			then
+				echo 0,1,2,4,6,7 > /sys/module/lowmemorykiller/parameters/adj;
+		fi;
+elif [ $VALUE6 == 3 ];
+	then
+		if [ -s /sys/module/lowmemorykiller/parameters/adj ];
+			then
+				echo 2,4,6,7,8,9 > /sys/module/lowmemorykiller/parameters/adj;
+		fi;
+else
+	echo "an invalid value has been encountered in usrsettings.";
+fi;
+#retrieve current adj parameter settings.
+adj1=`awk -F , '{print $1}' /sys/module/lowmemorykiller/parameters/adj`;
+adj2=`awk -F , '{print $2}' /sys/module/lowmemorykiller/parameters/adj`;
+adj3=`awk -F , '{print $3}' /sys/module/lowmemorykiller/parameters/adj`;
+adj4=`awk -F , '{print $4}' /sys/module/lowmemorykiller/parameters/adj`;
+adj5=`awk -F , '{print $5}' /sys/module/lowmemorykiller/parameters/adj`;
+adj6=`awk -F , '{print $6}' /sys/module/lowmemorykiller/parameters/adj`;
+#calculation based on optimal cachesize.
+TOTALMEM=`free | awk '{ print $2 }' | sed -n 2p`;
+totalpage=$(($TOTALMEM/4));
+adp=$(($totalpage/6));
+#try to block service apps from being terminated, combined with the Straight Flush Technology!
+if [ $adj1 == 1 ];
+	then
+		if [ -e /sys/module/lowmemorykiller/parameters/minfree ];
+			then
+				echo 0,$adp,$adp,$adp,$adp,$adp > /sys/module/lowmemorykiller/parameters/minfree;
+		fi;
+elif [ $adj2 == 1 ];
+	then
+		if [ -e /sys/module/lowmemorykiller/parameters/minfree ];
+			then
+				echo 0,0,$adp,$adp,$adp,$adp > /sys/module/lowmemorykiller/parameters/minfree;
+		fi;
+elif [ $adj3 == 1 ];
+	then
+		if [ -e /sys/module/lowmemorykiller/parameters/minfree ];
+			then
+				echo 0,0,0,$adp,$adp,$adp > /sys/module/lowmemorykiller/parameters/minfree;
+		fi;
+elif [ $adj4 == 1 ];
+	then
+		if [ -e /sys/module/lowmemorykiller/parameters/minfree ];
+			then
+				echo 0,0,0,0,$adp,$adp > /sys/module/lowmemorykiller/parameters/minfree;
+		fi;
+elif [ $adj5 == 1 ];
+	then
+		if [ -e /sys/module/lowmemorykiller/parameters/minfree ];
+			then
+				echo 0,0,0,0,0,$adp > /sys/module/lowmemorykiller/parameters/minfree;
+		fi;
+elif [ $adj6 == 1 ];
+	then
+		if [ -e /sys/module/lowmemorykiller/parameters/minfree ];
+			then
+				echo 0,0,0,0,0,0 > /sys/module/lowmemorykiller/parameters/minfree;
+		fi;
+else
+	if [ -e /sys/module/lowmemorykiller/parameters/minfree ];
+		then
+			echo $adp,$adp,$adp,$adp,$adp,$adp > /sys/module/lowmemorykiller/parameters/minfree;
+	fi;
+fi;
+#android.process.acore that shares the same mother process with android.process.media should also be locked in memory.
+
+(while true;
+	do
+		sleep 30;
+		echo -12 > /proc/`pidof android.process.acore`/oom_adj 2>/dev/null;
+	done &);
+
+#MPEngine™ integrated
+#if you're running this engine on a terminal emulator, keep that terminal running in the background.
+#MPEngine™9X
+
+(while true;
+	do
+		 VALUE7=`cat /system/etc/usrsettings | grep VALUE7 | sed 's/VALUE7=//'`; 
+		SKIP=$(($VALUE7/2));
+		MFK=`cat /proc/sys/vm/min_free_kbytes`;
+		FREEMEM=`free | awk '{ print $4 }' | sed -n 2p`;
+		CACHESIZE=`cat /proc/meminfo | grep Cached | awk '{print $2}' | sed -n 1p`;
+		TOTALMEM=`free | awk '{ print $2 }' | sed -n 2p`;
+		REALTOTALMEM=$(($TOTALMEM-$MFK));
+		MEMINUSE=$(($CACHESIZE+$FREEMEM));
+		 VALUE8=`cat /system/etc/usrsettings | grep VALUE8 | sed 's/VALUE8=//'`; 
+		 VALUE9=`cat /system/etc/usrsettings | grep VALUE9 | sed 's/VALUE9=//'`; 
+		 VALUE10=`cat /system/etc/usrsettings | grep VALUE10 | sed 's/VALUE10=//'`; 
+		DEADLINE=$(($REALTOTALMEM-$MEMINUSE));
+		DEADEND=$(($DEADLINE/$VALUE8));
+		DEADEND2=$(($DEADEND/$VALUE9));
+		if [ $FREEMEM -le $MFK ];
+			then
+				if [ $VALUE10 == 0 ];
+					then
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+				elif [ $VALUE10 == 1 ];
+					then
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+				else
+					busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+					sleep $SKIP;
+					busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+					sleep $SKIP;
+					busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+					sleep $SKIP;
+					busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+					sleep $SKIP;
+				fi;
+		elif [ $FREEMEM -gt $MFK -a $FREEMEM -le $DEADEND2 ];
+			then
+				if [ $VALUE10 == 0 ];
+					then
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+				elif [ $VALUE10 == 1 ];
+					then
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $SKIP;
+				else
+					busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+					sleep $SKIP;
+					busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+					sleep $SKIP;
+				fi;
+		elif [ $FREEMEM -gt $DEADEND2 -a $FREEMEM -le $DEADEND ];
+			then
+				if [ $VALUE10 == 0 ];
+					then
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $VALUE7;
+				elif [ $VALUE10 == 1 ];
+					then
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $VALUE7;
+						busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+						sleep $VALUE7;
+				else
+					busybox sync; echo 1 > /proc/sys/vm/drop_caches;
+					sleep $VALUE7;
+				fi;
+		elif [ $FREEMEM -gt $DEADEND -a $FREEMEM -le $MEMINUSE ];
+			then
+				sleep $VALUE7;
+		else
+			sleep $VALUE7;
+		fi;
+	done &);
+
+#finish logging.
+) 2>&1 | tee /data/rtmixmanager.log
+
+#xda: http://forum.xda-developers.com/showthread.php?t=2076101
+#matcl: http://matcl.com/?m=bbs&bid=imbeded&uid=130014
+#blog: http://blog.naver.com/hoholee12
+#sourcecode: https://github.com/lenarox/rtmixproject
+#email: hoholee12@naver.com

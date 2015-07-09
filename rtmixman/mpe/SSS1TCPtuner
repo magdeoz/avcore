@@ -1,0 +1,57 @@
+#!/system/bin/sh
+#TCPtuner by LENAROX
+#optimized for lossless signal.
+if [ -e /proc/sys/net/ipv4/tcp_rfc1337 ]
+then
+ echo 1 > /proc/sys/net/ipv4/tcp_rfc1337
+fi
+if [ -e /proc/sys/net/ipv4/tcp_window_scaling ]
+then 
+ echo 1 > /proc/sys/net/ipv4/tcp_window_scaling
+fi
+if [ -e /proc/sys/net/ipv4/tcp_workaround_signed_windows ]
+then 
+ echo 1 > /proc/sys/net/ipv4/tcp_workaround_signed_windows
+fi
+if [ -e /proc/sys/net/ipv4/tcp_sack ]
+then 
+ echo 1 > /proc/sys/net/ipv4/tcp_sack
+fi
+if [ -e /proc/sys/net/ipv4/tcp_fack ]
+then 
+ echo 1 > /proc/sys/net/ipv4/tcp_fack
+fi
+if [ -e /proc/sys/net/ipv4/tcp_low_latency ]
+then 
+ echo 1 > /proc/sys/net/ipv4/tcp_low_latency
+fi
+if [ -e /proc/sys/net/ipv4/ip_no_pmtu_disc ]
+then 
+ echo 0 > /proc/sys/net/ipv4/ip_no_pmtu_disc
+fi
+if [ -e /proc/sys/net/ipv4/tcp_mtu_probing ]
+then 
+ echo 1 > /proc/sys/net/ipv4/tcp_mtu_probing
+fi
+if [ -e /proc/sys/net/ipv4/tcp_frto ]
+then 
+ echo 2 > /proc/sys/net/ipv4/tcp_frto
+fi
+if [ -e /proc/sys/net/ipv4/tcp_frto_response ]
+then 
+ echo 2 > /proc/sys/net/ipv4/tcp_frto_response
+fi
+#http://www.expertslogin.com/general/how-to-ddos-in-linux/
+# Enable IP spoofing protection, turn on Source Address Verification
+if [ -e /proc/sys/net/ipv4/conf/all/rp_filter ]
+then
+ echo 1 > /proc/sys/net/ipv4/conf/all/rp_filter
+fi
+# Enable TCP SYN Cookie Protection
+if [ -e /proc/sys/net/ipv4/tcp_syncookies ]
+then
+ echo 1 > /proc/sys/net/ipv4/tcp_syncookies
+fi
+#go to http://forum.xda-developers.com/showthread.php?t=1978061 for more info.
+#my e-mail: hoholee12@naver.com
+ exit 0

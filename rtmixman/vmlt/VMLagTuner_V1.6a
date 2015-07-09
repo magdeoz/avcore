@@ -1,0 +1,75 @@
+ echo '_________<<VMLagTuner V1.6a by LENAROX>>________'
+ echo 'it works great on RAM heavy games without breaking others.'
+ echo 'your kernel must support init.d & have latest busybox installed.'
+ echo 'run this with script manager with su for testing, and put it in the init.d folder for everyday usage.'
+ echo ' <Zero Lagginess> & <Cache Slayer> & <StoneCold Stablizer> are my original tweaks named it TO ENSURE IT IS MADE BY ME!!!'
+ echo '________________________________________________'
+ sleep 2
+#1 <Zero Lagginess> tweaks.
+ echo '#1 applying <Zero Lagginess> tweaks...'
+ sleep 1
+#enables kill allocating task to avoid long hangings.
+ echo 1 > /proc/sys/vm/oom_kill_allocating_task
+#makes dirty cache stable while sacrificing I/O speed.
+ echo 1 > /proc/sys/vm/dirty_ratio
+#unlocks process limits for each "process", leading into a UI boost.
+ setprop ENFORCE_PROCESS_LIMIT false
+ echo 'done!'
+#2 <StoneCold Stablizer> tweaks.
+ echo '#2 applying <StoneCold Stablizer> tweaks...'
+ sleep 1
+#avoids crash by giving a value 0 on crash timer.
+ echo 0 > /proc/sys/vm/panic_on_oom
+ echo 0 > /proc/sys/kernel/panic
+ echo 0 > /proc/sys/kernel/panic_on_oops
+ echo 0 > /proc/sys/kernel/hung_task_timeout_secs
+ echo 0 > /proc/sys/kernel/softlockup_panic
+#disables checkjni to speed things up a bit, but may give more errors and result in a frozen state.
+#setprop dalvik.vm.checkjni false
+ echo 'done!'
+#3 <Cache Slayer> tweaks.
+ echo '#3 applying <Cache Slayer> tweaks...'
+ sleep 1
+#drops temporary page caches to gain more memory.
+#busybox sync; echo 1 > /proc/sys/vm/drop_caches
+#increases cache pressure for faster memory gaining.
+ echo 200 > /proc/sys/vm/vfs_cache_pressure
+ echo 'done!'
+#4 battery saver tweaks.
+ echo '#4 applying battery saver tweaks...'
+ sleep 1
+ echo 2000 > /proc/sys/vm/dirty_writeback_centisecs
+ echo 1000 > /proc/sys/vm/dirty_expire_centisecs
+ echo 'done!'
+#5 disk reading speed tweaks.
+ echo '#5 applying disk reading speed tweaks...'
+ sleep 1
+#increases read ahead cache size.
+ echo 512 > /sys/devices/virtual/bdi/179:0/read_ahead_kb
+#boosts up reading speed. idk how, but it runs great.
+ echo 10 > /proc/sys/fs/lease-break-time
+ echo 'done!'
+#6 fps unlocker tweaks.
+ echo '#6 applying fps unlocker tweaks...'
+ sleep 1
+ setprop debug.sf.showupdates 0
+ setprop debug.sf.showcpu 0
+ setprop debug.sf.showbackground 0
+ setprop debug.sf.showfps 0
+ echo 'done!'
+#7 smoothness scrolling tweaks.
+ echo '#7 applying smoothness scrolling tweaks...'
+ sleep 1
+#Android maximum 60*1.5 equals 90.
+ setprop windowsmgr.max_events_per_sec 90
+ setprop ro.max.fling_velocity 12000
+ setprop ro.min.fling_velocity 8000
+ echo 'done!'
+ echo '...'
+ echo 'complete!' 
+ echo '________________________________________________'
+ echo 'if this script has helped you, please click the thanks button and leave me a reply!'
+ echo 'go to http://forum.xda-developers.com/showthread.php?p=33795869#post33795869 for more info.'
+ echo 'HUGE Thanks to everyone who supported my work by clicking thanks button or leaving me a complimentary reply! Enjoy;)'
+ sleep 1
+ exit 0

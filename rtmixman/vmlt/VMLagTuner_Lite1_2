@@ -1,0 +1,105 @@
+ echo '<<<<<<<<<<VMLagTuner Lite1.2 by LENAROX>>>>>>>>>'
+#this script works on all linux devices with init.d support.
+#run this with script manager with root for testing, and put it in the init.d folder for daily use.
+ echo 'VMLT Lite1.1 & TurboCache Lite & StoneCold-Stablizer 2.0 all rights reserved.'
+ echo '________________________________________________'
+#9 tweaks for UI boost.
+ setprop ENFORCE_PROCESS_LIMIT false
+ setprop MAX_SERVICE_INACTIVITY false
+ setprop MIN_HIDDEN_APPS false
+ setprop MAX_HIDDEN_APPS false
+ setprop CONTENT_APP_IDLE_OFFSET false
+ setprop EMPTY_APP_IDLE_OFFSET false
+ setprop MAX_ACTIVITIES false
+ setprop ACTIVITY_INACTIVE_RESET_TIME false
+ setprop MAX_RECENT_TASKS false
+ setprop MIN_RECENT_TASKS false
+ setprop APP_SWITCH_DELAY_TIME false
+ setprop MAX_PROCESSES false
+ setprop PROC_START_TIMEOUT false
+ setprop CPU_MIN_CHECK_DURATION false
+ setprop GC_TIMEOUT false
+ setprop SERVICE_TIMEOUT false
+ setprop MIN_CRASH_INTERVAL false
+#disables checkjni to speed up a bit.
+ setprop ro.kernel.android.checkjni 0
+#misc tweaks for task killer.
+ setprop debug.kill_allocating_task 0
+ sleep 1
+#1 VMLT Lite1.1 tweaks.
+ echo '#1 applying VMLT Lite1.1 tweaks...'
+ sleep 1
+ echo 'phase 1/3'
+#misc tweaks for task killer.
+ echo 0 > /proc/sys/vm/oom_kill_allocating_task
+ echo 'phase 2/3' 
+#a sweet spot for dirty ratios.
+ echo 15 > /proc/sys/vm/dirty_ratio
+ echo 'phase 3/3' 
+ echo 10 > /proc/sys/vm/dirty_background_ratio
+ echo 'done!'
+#2 StoneCold-Stablizer 2.0 tweaks.
+ echo '#2 applying StoneCold-Stablizer 2.0 tweaks...'
+ sleep 1
+ echo 'phase 1/5'
+#avoids crash by giving a value 0 on crash timer.
+ echo 0 > /proc/sys/vm/panic_on_oom
+ echo 'phase 2/5'
+ echo 0 > /proc/sys/kernel/panic
+ echo 'phase 3/5'
+ echo 0 > /proc/sys/kernel/panic_on_oops
+ echo 'phase 4/5'
+ echo 0 > /proc/sys/kernel/hung_task_timeout_secs
+ echo 'phase 5/5'
+ echo 0 > /proc/sys/kernel/softlockup_panic
+ echo 'done!'
+#3 TurboCache Lite tweaks.
+ echo '#3 applying TurboCache Lite tweaks...'
+ sleep 1
+ echo 'phase 1/1'
+#increases cache pressure for faster memory gaining.
+ echo 200 > /proc/sys/vm/vfs_cache_pressure
+ echo 'done!'
+#4 battery life saver tweaks.
+ echo '#4 applying battery life saver tweaks...'
+ sleep 1
+ echo 'phase 1/2'
+ echo 2000 > /proc/sys/vm/dirty_writeback_centisecs
+ echo 'phase 2/2'
+ echo 1000 > /proc/sys/vm/dirty_expire_centisecs
+ echo 'done!'
+#5 flash memory reading speed tweaks.
+ echo '#5 applying flash memory reading speed tweaks...'
+ sleep 1
+ echo 'phase 1/2'
+#increases read ahead cache size.
+ echo 512 > /sys/devices/virtual/bdi/179:0/read_ahead_kb
+ echo 'phase 2/2'
+#shortens up reading time.
+ echo 10 > /proc/sys/fs/lease-break-time
+ echo 'done!'
+#6 graphics enhancer tweaks.
+ echo '#6 applying graphics enhancer tweaks...'
+ sleep 1
+ echo 'phase 1/4'
+ setprop debug.sf.showupdates 0
+ echo 'phase 2/4'
+ setprop debug.sf.showcpu 0
+ echo 'phase 3/4'
+ setprop debug.sf.showbackground 0
+ echo 'phase 4/4'
+ setprop debug.sf.showfps 0
+ echo 'done!'
+#7 smoothness scrolling tweaks.
+ echo '#7 applying smoothness scrolling tweaks...'
+ sleep 1
+ echo 'phase 1/1'
+#Android maximum touch detection.
+ setprop windowsmgr.max_events_per_sec 90
+ echo 'done!'
+ echo '...'
+ sleep 1
+ echo 'complete!'
+ echo '________________________________________________'
+ echo 'go to http://forum.xda-developers.com/showthread.php?t=1978061 for more info. '
+ exit 0

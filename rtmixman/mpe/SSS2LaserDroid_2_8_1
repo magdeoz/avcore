@@ -1,0 +1,178 @@
+#!/system/bin/sh
+echo 'LaserDroid™ 2.8 by LENAROX.'
+echo 'combine this script with MPEngine™ for almightiest ram management performance.'
+echo 'this script works on all linux devices with init.d support.'
+echo 'run this with script manager with root for testing, and put it in the init.d folder for daily use.'
+for k in $(busybox mount | grep relatime | cut -d " " -f3)
+do
+ sync; busybox mount -o remount,noatime,nodiratime $k
+done
+for k in $(busybox mount | grep barrier | cut -d " " -f3)
+do
+ sync; busybox mount -o remount,barrier=0 $k
+done 
+ setprop ENFORCE_PROCESS_LIMIT false
+ setprop ro.kernel.android.checkjni 0
+ setprop windowsmgr.max_events_per_sec 90
+QUEUE=noop
+READ_AHEAD_KB=1024
+READ_AHEAD_SEC=1024
+if [ -e /sys/block/mmcblk0/queue/scheduler ]
+then 
+ echo $QUEUE > /sys/block/mmcblk0/queue/scheduler
+fi
+if [ -e /sys/block/mmcblk0/bdi/read_ahead_kb ]
+then
+ echo $READ_AHEAD_KB > /sys/block/mmcblk0/bdi/read_ahead_kb 
+fi
+if [ -e /sys/block/mmcblk1/queue/scheduler ]
+then 
+ echo $QUEUE > /sys/block/mmcblk1/queue/scheduler
+fi
+if [ -e /sys/block/mmcblk1/bdi/read_ahead_kb ]
+then
+ echo $READ_AHEAD_KB > /sys/block/mmcblk1/bdi/read_ahead_kb
+fi
+if [ -e /sys/block/stl10/queue/scheduler ]
+then 
+ echo $QUEUE > /sys/block/stl10/queue/scheduler
+fi
+if [ -e /sys/block/stl10/bdi/read_ahead_kb ]
+then
+ echo $READ_AHEAD_KB > /sys/block/stl10/bdi/read_ahead_kb
+fi
+if [ -e /sys/block/stl11/queue/scheduler ]
+then 
+ echo $QUEUE > /sys/block/stl11/queue/scheduler
+fi
+if [ -e /sys/block/stl11/bdi/read_ahead_kb ]
+then
+ echo $READ_AHEAD_KB > /sys/block/stl11/bdi/read_ahead_kb
+fi
+if [ -e /sys/block/stl9/queue/scheduler ]
+then
+ echo $QUEUE > /sys/block/stl9/queue/scheduler
+fi
+if [ -e /sys/block/stl9/bdi/read_ahead_kb ]
+then
+ echo $READ_AHEAD_KB > /sys/block/stl9/bdi/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:0/read_ahead_kb ]
+then
+ echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/7:0/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:1/read_ahead_kb ]
+then
+ echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/7:1/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:2/read_ahead_kb ]
+then
+ echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/7:2/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:3/read_ahead_kb ]
+then
+ echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/7:3/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:4/read_ahead_kb ]
+then
+ echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/7:4/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:5/read_ahead_kb ]
+then
+ echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/7:5/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:6/read_ahead_kb ]
+then
+ echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/7:6/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:7/read_ahead_kb ]
+then
+ echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/7:7/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/default/read_ahead_kb ]
+then
+ echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/default/read_ahead_kb
+fi
+if [ -e /proc/sys/vm/oom_kill_allocating_task ]
+then
+ echo 1 > /proc/sys/vm/oom_kill_allocating_task
+fi
+if [ -e /proc/sys/vm/dirty_ratio ]
+then
+ echo 100 > /proc/sys/vm/dirty_ratio
+fi
+if [ -e /proc/sys/vm/dirty_background_ratio ]
+then
+ echo 1 > /proc/sys/vm/dirty_background_ratio
+fi
+if [ -e /proc/sys/vm/panic_on_oom ]
+then
+ echo 0 > /proc/sys/vm/panic_on_oom
+fi
+if [ -e /proc/sys/kernel/panic ]
+then 
+ echo 0 > /proc/sys/kernel/panic
+fi
+if [ -e /proc/sys/kernel/panic_on_oops ]
+then 
+ echo 0 > /proc/sys/kernel/panic_on_oops
+fi
+if [ -e /proc/sys/kernel/hung_task_timeout_secs ]
+then 
+ echo 0 > /proc/sys/kernel/hung_task_timeout_secs
+fi
+if [ -e /proc/sys/kernel/softlockup_panic ]
+then 
+ echo 0 > /proc/sys/kernel/softlockup_panic
+fi
+MFK=`cat /proc/sys/vm/min_free_kbytes`
+FREEMEM=`free | awk '{ print $4 }' | sed -n 2p`
+REALFREEMEM=$(($FREEMEM-$MFK))
+CACHESIZE=`cat /proc/meminfo | grep Cached | awk '{print $2}' | sed -n 1p`
+TOTALMEM=`free | awk '{ print $2 }' | sed -n 2p`
+REALTOTALMEM=$(($TOTALMEM-$MFK))
+minfree1=`awk -F , '{print $1}' /sys/module/lowmemorykiller/parameters/minfree`
+minfree2=`awk -F , '{print $2}' /sys/module/lowmemorykiller/parameters/minfree`
+minfree3=`awk -F , '{print $3}' /sys/module/lowmemorykiller/parameters/minfree`
+minfree4=`awk -F , '{print $4}' /sys/module/lowmemorykiller/parameters/minfree`
+minfree5=`awk -F , '{print $5}' /sys/module/lowmemorykiller/parameters/minfree`
+minfree6=`awk -F , '{print $6}' /sys/module/lowmemorykiller/parameters/minfree`
+a=$(($minfree1/256))
+b=$(($minfree2/256))
+c=$(($minfree3/256))
+d=$(($minfree4/256))
+e=$(($minfree5/256))
+f=$(($REALTOTALMEM/1024))
+f1=$(($f*256))
+e1=$(($e*256))
+d1=$(($d*256))
+c1=$(($c*256))
+b1=$(($b*256))
+a1=$(($a*256))
+if [ $MINFREE != $a1,$b1,$c1,$d1,$e1,$f1 ]
+then
+ echo $a1,$b1,$c1,$d1,$e1,$f1 > /sys/module/lowmemorykiller/parameters/minfree
+else
+fi
+if [ -e /proc/sys/vm/dirty_writeback_centisecs ]
+then
+ echo 27640520 > /proc/sys/vm/dirty_writeback_centisecs
+fi
+if [ -e /proc/sys/vm/dirty_expire_centisecs ]
+then
+ echo 0 > /proc/sys/vm/dirty_expire_centisecs
+fi
+if [ -e /proc/sys/fs/lease-break-time ]
+then 
+ echo 10 > /proc/sys/fs/lease-break-time
+fi
+#disables normalized sleeper.
+if [ -e /sys/kernel/debug/sched_features ]
+then
+ echo NO_NORMALIZED_SLEEPER > /sys/kernel/debug/sched_features
+fi
+ echo 'RESULTs>>'
+ sysctl -a | /system/xbin/grep vm
+ sysctl -a | /system/xbin/grep kernel
+#go to http://forum.xda-developers.com/showthread.php?t=1978061 for more info.
+#my e-mail: hoholee12@naver.com

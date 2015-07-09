@@ -1,0 +1,23 @@
+#this version is made for those of u who have already applied nitro lag nullifier on ur build properties.
+ echo 'Lazernoid X1.0 no nln version by LENAROX'
+# echo 'nitro lag nullifier tweak by zeppelinrox'
+#HUGE Thanks to zeppelinrox for nitro lag nullifier tweaks.
+#get ur phone out of lag with these very simple tweaks I have researched.
+#tested with gta3 and max payne.
+#ur phone must support init.d script & have busybox installed.
+ sleep 1
+#1 allows ur kernel to kill allocating tasks before oom processing(less hanging). best for RAM heavy games. The main tweak of this script.
+ busybox sync; echo 1 > /proc/sys/vm/oom_kill_allocating_task
+ echo '#1...done!'
+ sleep 1
+#2 makes ur kernel stable.
+ echo 0 >/proc/sys/kernel/panic
+ echo 0 >/proc/sys/kernel/panic_on_oops
+ echo '#2...done!'
+ sleep 1
+#4 drops page caches and frees more ram.(experimental)
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+ echo '#4...done!'
+ echo 'complete!'
+ echo 'if u like my work, please click thanks button for me and leave a reply!'
+ exit 0

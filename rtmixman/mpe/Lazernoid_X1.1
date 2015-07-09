@@ -1,0 +1,20 @@
+#this version is made for those of u who have already applied nln on ur build.prop.
+ echo 'Lazernoid X1.1 by LENAROX'
+#get ur phone out of lag with these very simple tweaks I have researched.
+#tested with gta3 and max payne.
+#ur phone must support init.d script & have busybox installed.
+ sleep 1
+#primary tweaks that gives u the best performance.
+ echo 1 > /proc/sys/vm/oom_kill_allocating_task
+ echo 2 > /proc/sys/vm/dirty_background_ratio
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+ echo '#Main tweaks...done!'
+ sleep 1
+#custom vm tweaks to make ur vm somewhat stable.
+ echo 0 > /proc/sys/vm/swappiness
+ echo 800 > /proc/sys/vm/dirty_writeback_centisecs
+ echo 800 > /proc/sys/vm/dirty_expire_centisecs
+ echo 'custom vm tweaks...done!'
+ echo 'complete!'
+ echo 'if u like my work, please click thanks button for me and leave a reply!'
+ exit 0

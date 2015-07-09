@@ -1,0 +1,27 @@
+ echo 'VmLagTuner V1.3a by LENAROX'
+#it will work great on gta3 without breaking other apps.
+#your kernel must support init.d & have the latest busybox installed.
+ sleep 1
+#1 main vm tweaks for this script.
+ echo 1 > /proc/sys/vm/oom_kill_allocating_task
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+ echo 0 > /proc/sys/vm/dirty_ratio
+ echo 0 > /proc/sys/vm/dirty_background_ratio
+ echo '#1 applying main vm tweaks...done!'
+ sleep 1
+#2 other vm tweaks for better performance(customized for 512mb).
+ echo 4096 > /proc/sys/vm/min_free_kbytes
+ echo 2000 > /proc/sys/vm/dirty_writeback_centisecs
+ echo 1000 > /proc/sys/vm/dirty_expire_centisecs
+ echo 20 > /proc/sys/vm/vfs_cache_pressure
+ setprop ENFORCE_PROCESS_LIMIT false
+ echo '#2 applying other vm tweaks...done!'
+ sleep 1
+#3 kernel tweaks to prevent crash.
+ echo 0 >/proc/sys/kernel/panic
+ echo 0 >/proc/sys/kernel/panic_on_oops
+ setprop dalvik.vm.checkjni false
+ echo '#3 applying kernel tweaks...done!'
+ echo 'complete!'
+ echo 'if u like my work, please click thanks button for me and leave a reply!'
+ exit 0

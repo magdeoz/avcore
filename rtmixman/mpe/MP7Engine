@@ -1,0 +1,111 @@
+#!/system/bin/sh
+#system binary edition.
+echo 'MP7Engine™ copyright by LENAROX.'
+echo 'help of minfree calculator thanks to zeppelinrox!'
+echo 'combine with LazerDroid script for better I/O speed.'
+echo 'ATTENTION!!! this engine was only confirmed working on linux kernel 2.6.x, therefore it may give bootloops on other unsupported versions.'
+echo 'you must have the latest busybox version installed on /system/xbin/ directory to run this engine.'
+echo 'reminder: this engine is NOT designed to run with script applications.'
+#for faster cache flushing.
+if [ -e /proc/sys/vm/vfs_cache_pressure ]
+then
+ /system/xbin/echo 500 > /proc/sys/vm/vfs_cache_pressure
+fi
+#MP7Engine™ copyright by LENAROX.
+#help of minfree calculator thanks to zeppelinrox!
+#these default settings below are actually based on my crappy device, so i suggest you to tweak'em for your own desire.
+##########tune your settings here##########
+#MFKCUSTOM calculated multiplier.
+#for performance, increase the value.
+#for battery life, decrease the value.
+#decreasing the value is limited to 1.
+#tips: if you set this less than 1, this part of engine will be disabled.
+VALUE0=8
+#ENDOFTHEWORLD calculated multiplier.
+#for performance, decrease the value.
+#for battery life, increase the value.
+#decreasing the value is limited to 2.
+#tips: well if you want to screw up your own battery, you can set it to 1.
+VALUE1=2
+#sleep timer(sec).
+#for performance, decrease the value.
+#for battery life, increase the value.
+#tips: this command may eat your battery if it repeats less than a second.
+VALUE2=10
+###########################################
+SSADJ=`getprop ro.SECONDARY_SERVER_ADJ`
+if [ ! "$SSADJ" ]; then SSADJ=5; fi
+minfree1=`awk -F , '{print $1}' /sys/module/lowmemorykiller/parameters/minfree`;minfree2=`awk -F , '{print $2}' /sys/module/lowmemorykiller/parameters/minfree`;minfree3=`awk -F , '{print $3}' /sys/module/lowmemorykiller/parameters/minfree`;minfree4=`awk -F , '{print $4}' /sys/module/lowmemorykiller/parameters/minfree`;minfree5=`awk -F , '{print $5}' /sys/module/lowmemorykiller/parameters/minfree`;minfree6=`awk -F , '{print $6}' /sys/module/lowmemorykiller/parameters/minfree`
+oomadj1=`awk -F , '{print $1}' /sys/module/lowmemorykiller/parameters/adj`;oomadj2=`awk -F , '{print $2}' /sys/module/lowmemorykiller/parameters/adj`;oomadj3=`awk -F , '{print $3}' /sys/module/lowmemorykiller/parameters/adj`;oomadj4=`awk -F , '{print $4}' /sys/module/lowmemorykiller/parameters/adj`;oomadj5=`awk -F , '{print $5}' /sys/module/lowmemorykiller/parameters/adj`;oomadj6=`awk -F , '{print $6}' /sys/module/lowmemorykiller/parameters/adj`
+if [ "$SSADJ" -le "$oomadj1" ]; then SSMF=$minfree1;slot=1;
+elif [ "$SSADJ" -le "$oomadj2" ]; then SSMF=$minfree2;slot=2;
+elif [ "$SSADJ" -le "$oomadj3" ]; then SSMF=$minfree3;slot=3;
+elif [ "$SSADJ" -le "$oomadj4" ]; then SSMF=$minfree4;slot=4;
+elif [ "$SSADJ" -le "$oomadj5" ]; then SSMF=$minfree5;slot=5;
+elif [ "$SSADJ" -le "$oomadj6" ]; then SSMF=$minfree6;slot=6;
+fi
+MFKCUSTOM=$(($SSMF*4/5*$VALUE0))
+MFK=`cat /proc/sys/vm/min_free_kbytes`
+while true
+do
+FREEMEM=`free | awk '{ print $4 }' | sed -n 2p`
+REALFREEMEM=$(($FREEMEM-$MFK))
+CACHESIZE=`cat /proc/meminfo | grep Cached | awk '{print $2}' | sed -n 1p`
+TOTALMEM=`free | awk '{ print $2 }' | sed -n 2p`
+REALTOTALMEM=$(($TOTALMEM-$MFK))
+COKE=$(($TOTALMEM-$FREEMEM))
+CUSTOMTOTAL=$(($TOTALMEM-$MFKCUSTOM))
+MEMINUSE=$(($TOTALMEM-$CACHESIZE-$FREEMEM))
+DEATHLINE=$(($CUSTOMTOTAL-$MEMINUSE))
+DEADEND=$(($DEATHLINE/$VALUE1))
+ENDOFTHEWORLD=$(($CUSTOMTOTAL-$DEADEND))
+SKIP=$(($VALUE2/2))
+#exception.
+if [ $COKE -le $TOTALMEM -a $COKE -gt $REALTOTALMEM ]
+then
+echo 'running MP7Engine™: Exception(Err code 0)'
+ /system/xbin/echo 1 > /proc/sys/vm/dirty_ratio
+ /system/xbin/echo 100 > /proc/sys/vm/dirty_background_ratio
+ /system/xbin/sync; /system/xbin/echo 1 > /proc/sys/vm/drop_caches
+ /system/xbin/echo 3 > /proc/sys/vm/drop_caches
+sleep $SKIP
+ /system/xbin/sync; /system/xbin/echo 1 > /proc/sys/vm/drop_caches
+ /system/xbin/echo 3 > /proc/sys/vm/drop_caches
+sleep $SKIP
+elif [ $COKE -le $REALTOTALMEM -a $COKE -gt $CUSTOMTOTAL ]
+then
+echo 'running MP7Engine™: Aggressive Mode'
+ /system/xbin/echo 1 > /proc/sys/vm/dirty_ratio
+ /system/xbin/echo 100 > /proc/sys/vm/dirty_background_ratio
+ /system/xbin/sync; /system/xbin/echo 1 > /proc/sys/vm/drop_caches
+ /system/xbin/echo 3 > /proc/sys/vm/drop_caches
+sleep $SKIP
+ /system/xbin/sync; /system/xbin/echo 1 > /proc/sys/vm/drop_caches
+ /system/xbin/echo 3 > /proc/sys/vm/drop_caches
+sleep $SKIP
+elif [ $COKE -le $CUSTOMTOTAL -a $COKE -gt $ENDOFTHEWORLD ]
+then
+echo 'running MP7Engine™: Pre-Aggressive Mode'
+#THE main special mode for this engine.
+ /system/xbin/sync; /system/xbin/echo 1 > /proc/sys/vm/drop_caches
+ /system/xbin/echo 3 > /proc/sys/vm/drop_caches
+sleep $SKIP
+ /system/xbin/sync; /system/xbin/echo 1 > /proc/sys/vm/drop_caches
+ /system/xbin/echo 3 > /proc/sys/vm/drop_caches
+sleep $SKIP
+elif [ $COKE -le $ENDOFTHEWORLD -a $COKE -ge $MEMINUSE ]
+then
+echo 'running MP7Engine™: Powersaver Mode'
+ /system/xbin/echo 100 > /proc/sys/vm/dirty_ratio
+ /system/xbin/echo 1 > /proc/sys/vm/dirty_background_ratio
+sleep $VALUE2
+#exception.
+else
+echo 'running MP7Engine™: Exception(Err code 1)'
+ /system/xbin/echo 100 > /proc/sys/vm/dirty_ratio
+ /system/xbin/echo 1 > /proc/sys/vm/dirty_background_ratio
+sleep $VALUE2
+fi
+done
+#go to http://forum.xda-developers.com/showthread.php?t=1978061 for more info.
+#my e-mail: hoholee12@naver.com

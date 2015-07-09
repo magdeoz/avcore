@@ -1,0 +1,151 @@
+Busybox_Applet_Generator(){
+	if [ ! "$(busybox)" ]; then
+		echo "Failed to locate busybox!"
+		return 127
+	else
+		busyboxloc=$(dirname $(which busybox))
+		n=0
+		for i in $(echo $PATH | sed 's/:/ /g'); do
+			n=$(($n+1))
+			export slot$n=$i
+			if [ "$i" == "$busyboxloc" ]; then
+				busyboxenv=slot$n
+			fi
+		done
+		if [ "$busyboxenv" != slot1 ]; then
+			export PATH=$(echo -n $busyboxloc
+			for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
+				v=$(eval echo $i)
+				if [ "$v" != "$busyboxloc" ]; then
+					echo -n ":$v"
+				fi
+			done)
+		fi
+		if [ "$cmd" ]; then
+			if [ "$cmd" -lt 0 ]; then
+				cmd=0
+			fi
+		else
+			cmd=224
+		fi
+		for i in $(seq -s ' $cmd' 0 $cmd | sed 's/^0//'); do
+			v=$(eval echo $i)
+			if [ "$v" ]; then
+				if [ ! "$(busybox | grep "\<$v\>")" ]; then
+					echo "This program needs the following applet to be able to run: $v"
+					return 127
+				fi
+				if [ ! -e "$busyboxloc"/"$v" ]; then
+					alias $i="busybox $i"
+				fi
+			else
+				break
+			fi
+		done
+	fi 2>/dev/null
+}
+Busybox_Applet_Generator
+exit
+
+for i in $(pgrep ""); do
+		if [ -f /proc/$i/status ] && [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "\<2\>")" ]; then
+			if [ "$(grep "^worker_thread$" /proc/$i/wchan)" ]; then
+				renice 0 $i
+			fi
+		elif [ -f /proc/$i/status ] && [ "$(grep -i "^PPid:" /proc/$i/status | grep -o [0-9]* | grep "\<1\>")" ]; then
+			if [ ! "$(grep "^binder_thread_read$" /proc/$i/wchan)" ]; then
+if [ ! $(busybox ps -o pid,ppid | grep "\<$i\>" | awk '{print $1}' | grep -v "\<$i\>") ]; then
+for j in $(ls /proc/$i/task/); do
+renice 19 $j
+done
+fi
+			fi
+		fi
+	done
+
+renice 19 $$
+count=0
+heapalloc=$(($(getprop | grep dalvik.vm.heapsize | sed 's/\[dalvik.vm.heapsize]: \[//; s/m]//')*1024))
+while true; do
+if [ $(($(grep -i "^Cached:" /proc/meminfo | awk '{print $2}')+$(grep -i "^MemFree:" /proc/meminfo | awk '{print $2}'))) -lt $heapalloc ]; then
+for pid in $(pgrep ""); do
+if [ $(cat /proc/$pid/oom_adj) == 2 ]; then
+score=$(cat /proc/$pid/oom_score)
+prev_pid=$pid
+prev_score=$score
+break
+fi
+done
+if [ $prev_pid ]; then
+while true; do
+for pid in $(pgrep ""); do
+if [ $(cat /proc/$pid/oom_adj) == 2 ]; then
+score=$(cat /proc/$pid/oom_score)
+if [ $score -gt $prev_score ]; then
+prev_pid=$pid
+prev_score=$score
+fi
+fi
+done
+kill $prev_pid
+if [ $(($(grep -i "^Cached:" /proc/meminfo | awk '{print $2}')+$(grep -i "^MemFree:" /proc/meminfo | awk '{print $2}'))) -ge $heapalloc ]; then
+break
+fi
+done
+fi
+sleep 1
+else
+sleep 1
+fi
+count=$((count+1))
+echo $count
+done 2>/dev/null
+
+renice 19 $$
+while true; do
+if [ $(($(grep -i "^Cached" /proc/meminfo | awk '{print $2}')-$(grep -i "^MemFree:" /proc/meminfo | awk '{print $2}'))) -gt $(($(grep -i "^MemFree:" /proc/meminfo | awk '{print $2}')+$(grep -i "^Cached:" /proc/meminfo | awk '{print $2}')-$(grep -i "^Mapped:" /proc/meminfo | awk '{print $2}'))) ]; then
+echo run
+echo 1 > /proc/sys/vm/drop_caches
+fi
+sleep 1
+done
+
+renice 19 $$
+while true; do
+for i in $(pgrep ""); do
+for j in $(ls /proc/$i/task); do
+if [ $(grep "^HeapWorker$" /proc/$i/task/$j/comm) ]; then
+renice -20 $j
+elif [ $(grep "^GC$" /proc/$i/task/$j/comm) ]; then
+renice 19 $j
+elif [ $(grep "^Compiler$" /proc/$i/task/$j/comm) ]; then
+renice 0 $j
+fi
+done
+done & sleep 5
+done
+
+while true; do
+if [ $(pgrep zygote) ]; then
+for i in $(pgrep ""); do
+if [ $(cat /proc/$i/wchan) != binder_thread_read ]; then
+for j in $(ls /proc/$i/task); do
+renice 0 $j
+done
+fi
+done
+break
+fi
+sleep 1
+done
+
+n=0
+for i in $(ls -l /proc/200/fd | tail -1); do
+n=$((n+1))
+if [ $i == "->" ]; then
+break
+fi
+done
+linked=$((n-1))
+original=$((n+1))
+ls -l /proc/200/fd | awk '{print $'"$linked"',$'"$original"'}'

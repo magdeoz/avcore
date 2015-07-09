@@ -1,0 +1,24 @@
+ echo 'VmLagTuner V1.1 by LENAROX'
+#tested gta3 and max payne with 512mb RAM.
+#your kernel must support init.d & have latest busybox installed.
+ sleep 1
+#1 main tweaks of this script.
+ echo 1 > /proc/sys/vm/oom_kill_allocating_task
+#lowering dirty background ratio will give more boost to the performance.
+ echo 2 > /proc/sys/vm/dirty_background_ratio
+#drop page caches to make more available memory.
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+ echo 20 > /proc/sys/vm/vfs_cache_pressure
+ echo '#1 applying main tweaks...done!'
+ sleep 1
+#2 other misc vm tweaks to make better performance.
+ echo 20 > /proc/sys/vm/dirty_ratio
+ echo 0 > /proc/sys/vm/swappiness
+#writeback & expire should have the same value for performance.
+ echo 800 > /proc/sys/vm/dirty_writeback_centisecs
+ echo 800 > /proc/sys/vm/dirty_expire_centisecs
+ echo '#2 applying other misc vm tweaks...done!'
+ echo 'complete!'
+ echo 'if u like my work, please click thanks button for me and leave a reply!'
+ echo 'help me to become a senior member:)'
+ exit 0

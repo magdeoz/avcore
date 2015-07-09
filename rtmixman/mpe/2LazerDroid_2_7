@@ -1,0 +1,176 @@
+#!/system/bin/sh
+echo 'LazerDroid™ 2.7 by LENAROX.'
+echo 'combine this script with MPEngine™ for almightiest ram management performance.'
+echo 'this script works on all linux devices with init.d support.'
+echo 'you must have the latest busybox version installed on /system/xbin/ directory to run the script.'
+echo 'run this with script manager with root for testing, and put it in the init.d folder for daily use.'
+echo 'BatteryDroid 1.3 & StoneCold-Stablizer 2.0 & Turbo I/O Booster 1.3 & misc tweaks for pr0tuned 3.2 copyright by LENAROX.'
+#scheduler properties tweaks goes first to be applied on boot.
+#remounts with noatime and nodiratime.
+for k in $(/system/xbin/mount | /system/xbin/grep relatime | /system/xbin/cut -d " " -f3)
+do
+ /system/xbin/sync; /system/xbin/mount -o remount,noatime,nodiratime $k
+done
+#disables barrier.
+for k in $(/system/xbin/mount | /system/xbin/grep barrier | /system/xbin/cut -d " " -f3)
+do
+/system/xbin/sync; /system/xbin/mount -o remount,barrier=0 $k
+done 
+#9 misc tweaks for UI boost.
+ setprop ENFORCE_PROCESS_LIMIT false
+#disables checkjni to speed up a bit.
+ setprop ro.kernel.android.checkjni 0
+#smoothness scrolling.
+#Android maximum touch detection.
+ setprop windowsmgr.max_events_per_sec 90
+#misc tweaks for task killer.
+ setprop debug.kill_allocating_task 0
+#7 Turbo I/O Booster 1.3 tweaks.
+#these default settings below are actually based on my crappy device, so i suggest you to tweak'em for your own desire. 
+##########tune your settings here##########
+#scheduler type.
+QUEUE=noop
+#read ahead cache size.
+READ_AHEAD_KB=1024
+#secondary read ahead.
+READ_AHEAD_SEC=1024
+###########################################
+if [ -e /sys/block/mmcblk0/queue/scheduler ]
+then 
+ /system/xbin/echo $QUEUE > /sys/block/mmcblk0/queue/scheduler
+fi
+if [ -e /sys/block/mmcblk0/bdi/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/block/mmcblk0/bdi/read_ahead_kb 
+fi
+if [ -e /sys/block/mmcblk1/queue/scheduler ]
+then 
+ /system/xbin/echo $QUEUE > /sys/block/mmcblk1/queue/scheduler
+fi
+if [ -e /sys/block/mmcblk1/bdi/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/block/mmcblk1/bdi/read_ahead_kb
+fi
+if [ -e /sys/block/stl10/queue/scheduler ]
+then 
+ /system/xbin/echo $QUEUE > /sys/block/stl10/queue/scheduler
+fi
+if [ -e /sys/block/stl10/bdi/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/block/stl10/bdi/read_ahead_kb
+fi
+if [ -e /sys/block/stl11/queue/scheduler ]
+then 
+ /system/xbin/echo $QUEUE > /sys/block/stl11/queue/scheduler
+fi
+if [ -e /sys/block/stl11/bdi/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/block/stl11/bdi/read_ahead_kb
+fi
+if [ -e /sys/block/stl9/queue/scheduler ]
+then 
+ /system/xbin/echo $QUEUE > /sys/block/stl9/queue/scheduler
+fi
+if [ -e /sys/block/stl9/bdi/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/block/stl9/bdi/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:0/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/7:0/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:1/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/7:1/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:2/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/7:2/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:3/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/7:3/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:4/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/7:4/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:5/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/7:5/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:6/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/7:6/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:7/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/7:7/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/default/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_SEC > /sys/devices/virtual/bdi/default/read_ahead_kb
+fi
+#kernel vm tweaks goes next to be applied after boot.
+#1 BatteryDroid 1.3 tweaks.
+#misc tweaks for task killer.
+if [ -e /proc/sys/vm/oom_kill_allocating_task ]
+then
+ /system/xbin/echo 0 > /proc/sys/vm/oom_kill_allocating_task
+fi
+#for battery.
+if [ -e /proc/sys/vm/dirty_ratio ]
+then
+ /system/xbin/echo 100 > /proc/sys/vm/dirty_ratio
+fi
+if [ -e /proc/sys/vm/dirty_background_ratio ]
+then
+ /system/xbin/echo 1 > /proc/sys/vm/dirty_background_ratio
+fi
+#2 StoneCold-Stablizer 2.0 tweaks.
+#avoids crash by giving a value 0 on crash timer.
+if [ -e /proc/sys/vm/panic_on_oom ]
+then
+ /system/xbin/echo 0 > /proc/sys/vm/panic_on_oom
+fi
+if [ -e /proc/sys/kernel/panic ]
+then 
+ /system/xbin/echo 0 > /proc/sys/kernel/panic
+fi
+if [ -e /proc/sys/kernel/panic_on_oops ]
+then 
+ /system/xbin/echo 0 > /proc/sys/kernel/panic_on_oops
+fi
+if [ -e /proc/sys/kernel/hung_task_timeout_secs ]
+then 
+ /system/xbin/echo 0 > /proc/sys/kernel/hung_task_timeout_secs
+fi
+if [ -e /proc/sys/kernel/softlockup_panic ]
+then 
+ /system/xbin/echo 0 > /proc/sys/kernel/softlockup_panic
+fi
+#8 misc tweaks for pr0tuned 3.2.
+#disables periodic writing.
+if [ -e /proc/sys/vm/dirty_writeback_centisecs ]
+then
+ /system/xbin/echo 27640520 > /proc/sys/vm/dirty_writeback_centisecs
+fi
+if [ -e /proc/sys/vm/dirty_expire_centisecs ]
+then
+ /system/xbin/echo 0 > /proc/sys/vm/dirty_expire_centisecs
+fi
+#shortens up reading time.
+if [ -e /proc/sys/fs/lease-break-time ]
+then 
+ /system/xbin/echo 10 > /proc/sys/fs/lease-break-time
+fi
+ echo 'RESULTs>>'
+ /system/xbin/sysctl -a | /system/xbin/grep vm
+ /system/xbin/sysctl -a | /system/xbin/grep kernel
+echo 'starting MPEngine™...'
+echo '________________________________________________'
+#run MPEngine™.
+ MPEngine8
+echo 'unable to run engine due to the file itself doesnt exist. or this script might be outdated:p'
+#go to http://forum.xda-developers.com/showthread.php?t=1978061 for more info.
+#my e-mail: hoholee12@naver.com

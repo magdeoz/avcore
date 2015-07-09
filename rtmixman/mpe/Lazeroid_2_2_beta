@@ -1,0 +1,198 @@
+#Lazeroid 2.2 by LENAROX
+#this is a test version, give it a go and report feedback please, your participation will help me alot on developing a much better script:).
+#this script works on all linux devices with init.d support.
+#you must have the latest busybox version installed on /system/xbin/ directory to run the script.
+#run this with script manager with root for testing, and put it in the init.d folder for daily use.
+#Pro-Tuned 3.2 & TurboCache 1.4 & StoneCold-Stablizer 2.0 & Turbo I/O Booster 1.0 & Pro-Tuned ADJ 1.0 copyright by LENAROX.
+#scheduler properties tweaks goes first to be applied on boot.
+#remounts with noatime and nodiratime.
+for k in $(busybox mount | grep relatime | cut -d " " -f3)
+do
+ /system/xbin/sync; busybox mount -o remount,noatime,nodiratime $k
+done
+#disables barrier.
+for k in $(busybox mount | grep barrier | cut -d " " -f3)
+do
+ /system/xbin/sync; busybox mount -o remount,barrier=0 $k
+done
+#10 Pro-Tuned ADJ 1.0 by LENAROX.
+#setprop ro.FOREGROUND_APP_ADJ 0
+#setprop ro.VISIBLE_APP_ADJ 1
+#setprop ro.PERCEPTIBLE_APP_ADJ 2
+#setprop ro.HEAVY_WEIGHT_APP_ADJ 3
+#setprop ro.SECONDARY_SERVER_ADJ 4
+#setprop ro.BACKUP_APP_ADJ 5
+#setprop ro.HOME_APP_ADJ 6
+#setprop ro.HIDDEN_APP_MIN_ADJ 7
+#setprop ro.EMPTY_APP_ADJ 15
+#ultimate assassin mode.
+#setprop ro.SECONDARY_SERVER_ADJ 15
+#experimental tweaks for no visible FCs.
+ setprop debug.kill_allocating_task 0
+#9 tweaks for UI boost.
+ setprop ENFORCE_PROCESS_LIMIT false
+ setprop MAX_SERVICE_INACTIVITY false
+ setprop MIN_HIDDEN_APPS false
+ setprop MAX_HIDDEN_APPS false
+ setprop CONTENT_APP_IDLE_OFFSET false
+ setprop EMPTY_APP_IDLE_OFFSET false
+ setprop MAX_ACTIVITIES false
+ setprop ACTIVITY_INACTIVE_RESET_TIME false
+ setprop MAX_RECENT_TASKS false
+ setprop MIN_RECENT_TASKS false
+ setprop APP_SWITCH_DELAY_TIME false
+ setprop MAX_PROCESSES false
+ setprop PROC_START_TIMEOUT false
+ setprop CPU_MIN_CHECK_DURATION false
+ setprop GC_TIMEOUT false
+ setprop SERVICE_TIMEOUT false
+ setprop MIN_CRASH_INTERVAL false
+#disables checkjni.
+ setprop ro.kernel.android.checkjni 0
+#smoothness scrolling.
+#Android maximum touch detection.
+ setprop windowsmgr.max_events_per_sec 90
+#7 Turbo I/O Booster 1.0 tweaks.
+#scheduler type.
+QUEUE=noop
+if [ -e /sys/block/mmcblk0/queue/scheduler ]
+then 
+ /system/xbin/echo $QUEUE > /sys/block/mmcblk0/queue/scheduler
+fi
+if [ -e /sys/block/mmcblk1/queue/scheduler ]
+then 
+ /system/xbin/echo $QUEUE > /sys/block/mmcblk1/queue/scheduler
+fi
+if [ -e /sys/block/stl10/queue/scheduler ]
+then 
+ /system/xbin/echo $QUEUE > /sys/block/stl10/queue/scheduler
+fi
+if [ -e /sys/block/stl11/queue/scheduler ]
+then 
+ /system/xbin/echo $QUEUE > /sys/block/stl11/queue/scheduler
+fi
+if [ -e /sys/block/stl9/queue/scheduler ]
+then 
+ /system/xbin/echo $QUEUE > /sys/block/stl9/queue/scheduler
+fi
+#read ahead cache size.
+READ_AHEAD_KB=128
+if [ -e /sys/devices/virtual/bdi/0:18/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/devices/virtual/bdi/0:18/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/179:0/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/devices/virtual/bdi/179:0/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/179:28/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/devices/virtual/bdi/179:28/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/179:33/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/devices/virtual/bdi/179:33/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:0/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/devices/virtual/bdi/7:0/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:1/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/devices/virtual/bdi/7:1/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:2/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/devices/virtual/bdi/7:2/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:3/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/devices/virtual/bdi/7:3/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:4/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/devices/virtual/bdi/7:4/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:5/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/devices/virtual/bdi/7:5/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:6/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/devices/virtual/bdi/7:6/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/7:7/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/devices/virtual/bdi/7:7/read_ahead_kb
+fi
+if [ -e /sys/devices/virtual/bdi/default/read_ahead_kb ]
+then
+ /system/xbin/echo $READ_AHEAD_KB > /sys/devices/virtual/bdi/default/read_ahead_kb
+fi
+#kernel vm tweaks goes next to be applied after boot.
+#sleeps 5 secs to allow other kernel vm tweaks to pass.
+ echo 'sleeping a bit(5s)...'
+ sleep 5
+ echo 'waking up!'
+#1 Pro-Tuned 3.2 tweaks.
+#makes dirty data stable while sacrificing I/O speed.
+if [ -e /proc/sys/vm/dirty_ratio ]
+then
+ /system/xbin/echo 1 > /proc/sys/vm/dirty_ratio
+fi
+if [ -e /proc/sys/vm/dirty_background_ratio ]
+then
+ /system/xbin/echo 2 > /proc/sys/vm/dirty_background_ratio
+fi
+#2 StoneCold-Stablizer 2.0 tweaks.
+#avoids crash by giving a value 0 on crash timer.
+if [ -e /proc/sys/vm/panic_on_oom ]
+then
+ /system/xbin/echo 0 > /proc/sys/vm/panic_on_oom
+fi
+if [ -e /proc/sys/kernel/panic ]
+then 
+ /system/xbin/echo 0 > /proc/sys/kernel/panic
+fi
+if [ -e /proc/sys/kernel/panic_on_oops ]
+then 
+ /system/xbin/echo 0 > /proc/sys/kernel/panic_on_oops
+fi
+if [ -e /proc/sys/kernel/hung_task_timeout_secs ]
+then 
+ /system/xbin/echo 0 > /proc/sys/kernel/hung_task_timeout_secs
+fi
+if [ -e /proc/sys/kernel/softlockup_panic ]
+then 
+ /system/xbin/echo 0 > /proc/sys/kernel/softlockup_panic
+fi
+#4 fs file reading related tweaks.
+#shortens up reading time.
+if [ -e /proc/sys/fs/lease-break-time ]
+then 
+ /system/xbin/echo 10 > /proc/sys/fs/lease-break-time
+fi
+#8 misc tweaks for battery life.
+if [ -e /proc/sys/vm/dirty_writeback_centisecs ]
+then
+ /system/xbin/echo 2000 > /proc/sys/vm/dirty_writeback_centisecs
+fi
+if [ -e /proc/sys/vm/dirty_expire_centisecs ]
+then
+ /system/xbin/echo 1000 > /proc/sys/vm/dirty_expire_centisecs
+fi
+#3 TurboCache 1.4 tweaks.
+#increases cache pressure for faster memory gaining.
+if [ -e /proc/sys/vm/vfs_cache_pressure ]
+then
+ /system/xbin/echo 500 > /proc/sys/vm/vfs_cache_pressure
+fi
+#drops page caches continuously to gain more memory.
+while true; do
+if [ -e /proc/sys/vm/drop_caches ]
+then
+ /system/xbin/sync; /system/xbin/echo 1 > /proc/sys/vm/drop_caches
+fi
+echo 'running TurboCache 1.4: the page cache is dropped.'
+done 
+#go to http://forum.xda-developers.com/showthread.php?t=1978061 for more info.

@@ -1,0 +1,63 @@
+#!/system/bin/sh
+#/system/xbin/ applet edition.
+echo 'TurboCache™ MP6Engine® copyright by LENAROX.'
+echo 'minfree calculator thanks to zeppelinrox!'
+echo 'combine with LazerDroid script for better I/O speed.'
+echo 'ATTENTION!!! this engine was only confirmed working on linux kernel 2.6.x, therefore it may give bootloops on other unsupported versions.'
+echo 'reminder: this engine is not designed to run with script applications.'
+#faster vfs tweak.
+if [ -e /proc/sys/vm/vfs_cache_pressure ]
+then
+ /system/xbin/echo 500 > /proc/sys/vm/vfs_cache_pressure
+fi
+#MP6Engine® copyright by LENAROX.
+#minfree calculator thanks to zeppelinrox!
+##########tune your settings here##########
+#MFK custom calculated multiplier.
+#for performance, increase the value.
+#for battery life, decrease the value.
+#decreasing the value is limited to 1.
+VALUE0=4
+#skip sleep seconds timer.
+#for performance, decrease the value.
+#for battery life, increase the value.
+VALUE1=10
+###########################################
+SSADJ=`getprop ro.SECONDARY_SERVER_ADJ`
+if [ ! "$SSADJ" ]; then SSADJ=5; fi
+minfree1=`awk -F , '{print $1}' /sys/module/lowmemorykiller/parameters/minfree`;minfree2=`awk -F , '{print $2}' /sys/module/lowmemorykiller/parameters/minfree`;minfree3=`awk -F , '{print $3}' /sys/module/lowmemorykiller/parameters/minfree`;minfree4=`awk -F , '{print $4}' /sys/module/lowmemorykiller/parameters/minfree`;minfree5=`awk -F , '{print $5}' /sys/module/lowmemorykiller/parameters/minfree`;minfree6=`awk -F , '{print $6}' /sys/module/lowmemorykiller/parameters/minfree`
+oomadj1=`awk -F , '{print $1}' /sys/module/lowmemorykiller/parameters/adj`;oomadj2=`awk -F , '{print $2}' /sys/module/lowmemorykiller/parameters/adj`;oomadj3=`awk -F , '{print $3}' /sys/module/lowmemorykiller/parameters/adj`;oomadj4=`awk -F , '{print $4}' /sys/module/lowmemorykiller/parameters/adj`;oomadj5=`awk -F , '{print $5}' /sys/module/lowmemorykiller/parameters/adj`;oomadj6=`awk -F , '{print $6}' /sys/module/lowmemorykiller/parameters/adj`
+if [ "$SSADJ" -le "$oomadj1" ]; then SSMF=$minfree1;slot=1;
+elif [ "$SSADJ" -le "$oomadj2" ]; then SSMF=$minfree2;slot=2;
+elif [ "$SSADJ" -le "$oomadj3" ]; then SSMF=$minfree3;slot=3;
+elif [ "$SSADJ" -le "$oomadj4" ]; then SSMF=$minfree4;slot=4;
+elif [ "$SSADJ" -le "$oomadj5" ]; then SSMF=$minfree5;slot=5;
+elif [ "$SSADJ" -le "$oomadj6" ]; then SSMF=$minfree6;slot=6;
+fi
+MFKCUSTOM=$(($SSMF*4/5*$VALUE0))
+MFK=`cat /proc/sys/vm/min_free_kbytes`
+while true; do
+FREEMEM=`free | awk '{ print $4 }' | sed -n 2p`
+REALFREEMEM=$(($FREEMEM-$MFK))
+MFKLIMIT=$(($MFKCUSTOM-$MFK))
+#CACHESIZE=`cat /proc/meminfo | grep Cached | awk '{print $2}' | sed -n 1p`
+#TOTALMEM=`free | awk '{ print $2 }' | sed -n 2p`
+#COKE=$(($TOTALMEM-$FREEMEM))
+#MEMINUSE=$(($TOTALMEM-$FREEMEM-$CACHESIZE))
+#REALTOTALMEM=$(($TOTALMEM-$MFK))
+#CUSTOMTOTAL=$(($TOTALMEM-$MFKCUSTOM))
+if [ $REALFREEMEM -le $MFKLIMIT ]
+then
+ /system/xbin/sync; /system/xbin/echo 1 > /proc/sys/vm/drop_caches
+ /system/xbin/echo 3 > /proc/sys/vm/drop_caches
+sleep 10
+ /system/xbin/sync; /system/xbin/echo 2 > /proc/sys/vm/drop_caches
+ /system/xbin/echo 3 > /proc/sys/vm/drop_caches
+ echo 'running MP6Engine®: cache is dropped.'
+sleep 20
+else
+ echo 'running MP6Engine®: skipped.'
+sleep $VALUE1 
+fi
+done
+#go to http://forum.xda-developers.com/showthread.php?t=1978061 for more info.

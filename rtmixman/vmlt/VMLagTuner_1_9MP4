@@ -1,0 +1,97 @@
+#VMLagTuner 1.9MP4 by LENAROX
+#this script works on all linux devices with init.d support.
+#you must have the latest busybox version installed on your device to run the script.
+#run this with script manager with root for testing, and put it in the init.d folder for daily use.
+#Pro-Tuned 3.1 & TurboCache MP2 & StoneCold-Stablizer 2.0 all rights reserved.
+#1 Pro-Tuned 3.1 tweaks.
+#enables kill allocating task to avoid long hangings.
+if [ -e /proc/sys/vm/oom_kill_allocating_task ]
+then
+ /system/xbin/echo 1 > /proc/sys/vm/oom_kill_allocating_task
+fi
+#makes dirty data stable while sacrificing I/O speed.
+if [ -e /proc/sys/vm/dirty_ratio ]
+then
+ /system/xbin/echo 1 > /proc/sys/vm/dirty_ratio
+fi
+if [ -e /proc/sys/vm/dirty_background_ratio ]
+then
+ /system/xbin/echo 2 > /proc/sys/vm/dirty_background_ratio
+fi
+#unlocks process limits for each "process", leading into a UI boost.
+ setprop ENFORCE_PROCESS_LIMIT false
+#2 StoneCold-Stablizer 2.0 tweaks.
+#avoids crash by giving a value 0 on crash timer.
+if [ -e /proc/sys/vm/panic_on_oom ]
+then
+ /system/xbin/echo 0 > /proc/sys/vm/panic_on_oom
+fi
+if [ -e /proc/sys/kernel/panic ]
+then 
+ /system/xbin/echo 0 > /proc/sys/kernel/panic
+fi
+if [ -e /proc/sys/kernel/panic_on_oops ]
+then 
+ /system/xbin/echo 0 > /proc/sys/kernel/panic_on_oops
+fi
+if [ -e /proc/sys/kernel/hung_task_timeout_secs ]
+then 
+ /system/xbin/echo 0 > /proc/sys/kernel/hung_task_timeout_secs
+fi
+if [ -e /proc/sys/kernel/softlockup_panic ]
+then 
+ /system/xbin/echo 0 > /proc/sys/kernel/softlockup_panic
+fi
+#3 TurboCache MP2 tweaks.
+#drops temporary page caches to gain more memory.
+if [ -e /proc/sys/vm/drop_caches ]
+then
+ /system/xbin/sync; /system/xbin/echo 1 > /proc/sys/vm/drop_caches
+fi
+#increases cache pressure for faster memory gaining.
+if [ -e /proc/sys/vm/vfs_cache_pressure ]
+then
+ /system/xbin/echo 300 > /proc/sys/vm/vfs_cache_pressure
+fi
+#4 flash memory reading speed tweaks.
+#shortens up reading time.
+if [ -e /proc/sys/fs/lease-break-time ]
+then 
+ /system/xbin/echo 10 > /proc/sys/fs/lease-break-time
+fi
+#6 smoothness scrolling tweaks.
+#Android maximum 60*1.5 equals 90.
+ setprop windowsmgr.max_events_per_sec 90
+#7 I/O scheduler tweaks.
+#noop scheduling.
+if [ -e /sys/block/mmcblk0/queue/scheduler ]
+then 
+ /system/xbin/echo noop > /sys/block/mmcblk0/queue/scheduler
+fi
+if [ -e /sys/block/mmcblk1/queue/scheduler ]
+then 
+ /system/xbin/echo noop > /sys/block/mmcblk1/queue/scheduler
+fi
+if [ -e /sys/block/stl10/queue/scheduler ]
+then 
+ /system/xbin/echo noop > /sys/block/stl10/queue/scheduler
+fi
+if [ -e /sys/block/stl11/queue/scheduler ]
+then 
+ /system/xbin/echo noop > /sys/block/stl11/queue/scheduler
+fi
+if [ -e /sys/block/stl9/queue/scheduler ]
+then 
+ /system/xbin/echo noop > /sys/block/stl9/queue/scheduler
+fi
+#8 battery life saver tweaks.
+if [ -e /proc/sys/vm/dirty_writeback_centisecs ]
+then
+/system/xbin/echo 2000 > /proc/sys/vm/dirty_writeback_centisecs
+fi
+if [ -e /proc/sys/vm/dirty_expire_centisecs ]
+then
+/system/xbin/echo 1000 > /proc/sys/vm/dirty_expire_centisecs
+fi
+#go to http://forum.xda-developers.com/showthread.php?p=33795869#post33795869 for more info.
+ exit 0

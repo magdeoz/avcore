@@ -1,0 +1,248 @@
+#!/system/bin/sh
+#system binary edition.
+echo '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>MPEngine™9'
+echo 'copyright by LENAROX.<<<<<<<<<<<<<<<<<<<<<<<<<<<'
+echo 'Xtended Edition.'
+echo ''
+echo 'this engine manually cleans up caches'
+echo 'that never gets fully cleaned while'
+echo 'process memory is craving for more resources.'
+echo 'this engine will solve any lags'
+echo 'and crashes on games, heavy apps and so on.'
+echo 'which most of the mid-range android gamers'
+echo 'have always wanted;)'
+echo 'ATTENTION!!! this engine was only confirmed'
+echo 'working on linux kernel 2.6.x, therefore'
+echo 'it may give bootloops on other unsupported versions.'
+echo 'you must have the latest busybox version,'
+echo 'installed to run this engine.'
+echo 'reminder: this engine is designed to run'
+echo 'in the background with the android ram management,'
+echo 'therefore it should NOT be used with'
+echo 'other script applications.'
+echo ''
+echo 'results page instructions>>'
+echo 'running MPEngine™9: instructions method'
+echo 'entropy_avail'
+echo 'write_wakeup_threshold'
+echo 'read_wakeup_threshold'
+echo 'CACHESIZE'
+echo 'REALFREEMEM'
+echo ".";
+echo "applying extra LaserDroid tweaks...";
+echo ".";
+echo "you can just ignore these mount errors below, its nothing serious:p";
+for k in $(busybox mount | grep relatime | cut -d " " -f3);
+do
+ sync; busybox mount -o remount,noatime,nodiratime $k;
+done
+for k in $(busybox mount | grep barrier | cut -d " " -f3);
+do
+ sync; busybox mount -o remount,barrier=0 $k;
+done
+ setprop ENFORCE_PROCESS_LIMIT false
+ setprop ro.kernel.android.checkjni 0
+ setprop windowsmgr.max_events_per_sec 90
+#DA BEST!!!
+ setprop dalvik.vm.heapsize 48m
+if [ -e /proc/sys/vm/panic_on_oom ];
+then
+ echo 0 > /proc/sys/vm/panic_on_oom;
+fi;
+if [ -e /proc/sys/kernel/panic ];
+then
+ echo 0 > /proc/sys/kernel/panic;
+fi;
+if [ -e /proc/sys/kernel/panic_on_oops ];
+then
+ echo 0 > /proc/sys/kernel/panic_on_oops;
+fi;
+if [ -e /proc/sys/kernel/hung_task_timeout_secs ];
+then
+ echo 0 > /proc/sys/kernel/hung_task_timeout_secs;
+fi;
+if [ -e /proc/sys/kernel/softlockup_panic ];
+then
+ echo 0 > /proc/sys/kernel/softlockup_panic;
+fi;
+if [ -e /proc/sys/fs/lease-break-time ];
+then
+ echo 10 > /proc/sys/fs/lease-break-time;
+fi;
+#gets rid of all kinds of dumbass resource fillers waaay faster.
+#useful for this engine, since it only cleans page caches.
+ echo 100000 > /proc/sys/vm/vfs_cache_pressure
+#disables periodic writing.
+ echo 27640520 > /proc/sys/vm/dirty_writeback_centisecs
+ echo 0 > /proc/sys/vm/dirty_expire_centisecs
+#designed for the best performance.
+ echo 100 > /proc/sys/vm/dirty_ratio
+ echo 1 > /proc/sys/vm/dirty_background_ratio
+#MPEngine™9 copyright by LENAROX.
+#these default settings below are actually based on my device,
+#so i suggest you to tweak'em for your own needs.
+##########tune your settings here##########
+#MFKCUSTOM calculated multiplier.
+#this is a top layer calculated cache limit.
+#for performance, increase the value.
+#for battery life, decrease the value.
+#decreasing the value to 0 gives pre-multiplied default value.
+VALUE0=0
+#ENDOFTHEWORLD3 calculated multiplier.
+#this is a dynamically-calculated medium layer cache limit.
+#it sits in between REALTOTALMEM and MEMINUSE.
+#for performance, decrease the value.
+#for battery life, increase the value.
+VALUE1=4
+#ENDOFTHEWORLD32 calculated multiplier.
+#add-on feature for ENDOFTHEWORLD3. 
+#tips: decreasing the gap between VALUE1 and VALUE4 may double the performance & stability.
+VALUE4=3
+#sleep timer(sec).
+#this lets you configure the amount of time for the engine to repeat.
+#for performance, decrease the value.
+#for battery life, increase the value.
+#decreasing this value may be very unstable for the battery.
+VALUE2=16
+#live entropy Enhancer(experimental)
+#thanks for the idea, jader13254;)
+#this kills minor lags effectively.
+#to decrease the overall value of entropy_avail,
+#increase the value.
+#increasing the value too much may break the calculations.
+#decrease this value for snappier UI performance.
+VALUE3=2
+#this sets up ratios between write_wakeup_threshold,
+#and read_wakeup_threshold.
+#increase this value for even snappier UI performance.
+VALUE5=2
+#battery mode.
+#increase this value to save more battery.
+VALUE6=8
+###########################################
+echo "this engine runs every $VALUE2 seconds.(may vary between layers)"
+echo 'engine started.'
+MFK=`cat /proc/sys/vm/min_free_kbytes`
+#MFK 2x multiplier.
+MFKCUSTOM=$(($MFK*2+$MFK*$VALUE0))
+MFKLIMIT=$(($MFKCUSTOM-$MFK))
+while true
+do
+FREEMEM=`free | awk '{ print $4 }' | sed -n 2p`
+REALFREEMEM=$(($FREEMEM-$MFK))
+CACHESIZE=`cat /proc/meminfo | grep Cached | awk '{print $2}' | sed -n 1p`
+TOTALMEM=`free | awk '{ print $2 }' | sed -n 2p`
+REALTOTALMEM=$(($TOTALMEM-$MFK))
+COKE=$(($TOTALMEM-$FREEMEM))
+CUSTOMTOTAL=$(($TOTALMEM-$MFKCUSTOM))
+MEMINUSE=$(($TOTALMEM-$CACHESIZE-$FREEMEM))
+DEATHLINE=$(($REALTOTALMEM-$MEMINUSE))
+DEADEND=$(($DEATHLINE/$VALUE1))
+ENDOFTHEWORLD3=$(($REALTOTALMEM-$DEADEND))
+DEATHLINE2=$(($ENDOFTHEWORLD3-$MEMINUSE))
+DEADEND2=$(($DEATHLINE2/$VALUE4))
+ENDOFTHEWORLD32=$(($ENDOFTHEWORLD3-$DEADEND)) 
+SKIP=$(($VALUE2/2))
+SKIP2=$(($SKIP/2))
+SKIP3=$(($SKIP2/2))
+SKIPPER=$(($VALUE3*$VALUE6))
+ENTROPY=`cat /proc/sys/kernel/random/entropy_avail`
+ENTOTAL=`cat /proc/sys/kernel/random/poolsize`
+ENMINUS=$(($ENTOTAL-$ENTROPY))
+ENCALC=$(($VALUE3*$VALUE5))
+HALF=$(($ENMINUS/$SKIPPER))
+HALF2=$(($HALF/$ENCALC))
+ echo $HALF > /proc/sys/kernel/random/write_wakeup_threshold
+ echo $HALF2 > /proc/sys/kernel/random/read_wakeup_threshold
+#exception.
+if [ $COKE -le $TOTALMEM -a $COKE -gt $REALTOTALMEM -a $REALFREEMEM -le $MFK ]
+then
+ echo 0 > /proc/sys/vm/laptop_mode
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP3
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP3
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP3
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP3
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP3
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP3
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP3
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP3
+echo 'running MPEngine™9: Exception(Err code 0)'
+#flusher.
+elif [ $COKE -le $REALTOTALMEM -a $COKE -gt $CUSTOMTOTAL -o $REALFREEMEM -lt $MFKLIMIT ]
+then
+ echo 0 > /proc/sys/vm/laptop_mode
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP3
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP3
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP3
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP3
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP3
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP3
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP3
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP3
+echo 'running MPEngine™9: Aggressive Mode'
+#mix-up.
+elif [ $COKE -le $CUSTOMTOTAL -a $COKE -gt $ENDOFTHEWORLD3 -a $REALFREEMEM -ge $MFKLIMIT ]
+then
+ echo 0 > /proc/sys/vm/laptop_mode
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP2
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP2
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP2
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP2
+echo 'running MPEngine™9: Pre-Aggressive Mode'
+#mix-up2.
+elif [ $COKE -le $ENDOFTHEWORLD3 -a $COKE -gt $ENDOFTHEWORLD32 -a $REALFREEMEM -ge $MFKLIMIT ]
+then
+ echo 0 > /proc/sys/vm/laptop_mode
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP2
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP2
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP2
+ busybox sync; echo 1 > /proc/sys/vm/drop_caches
+sleep $SKIP2
+echo 'running MPEngine™9: Standard Mode'
+#powersaver.
+elif [ $COKE -le $ENDOFTHEWORLD32 -a $COKE -ge $MEMINUSE -o $REALFREEMEM -ge $MFKLIMIT ]
+then
+ echo 5 > /proc/sys/vm/laptop_mode
+sleep $SKIP
+echo 'running MPEngine™9: Powersaver Mode'
+#exception2.
+else
+ echo 5 > /proc/sys/vm/laptop_mode
+sleep $SKIP
+echo 'running MPEngine™9: Exception(Err code 1)'
+fi
+#results page.
+ENTROPY=`cat /proc/sys/kernel/random/entropy_avail`
+WRITE=`cat /proc/sys/kernel/random/write_wakeup_threshold`
+READ=`cat /proc/sys/kernel/random/read_wakeup_threshold`
+echo $ENTROPY
+echo $WRITE
+echo $READ
+echo $CACHESIZE
+echo $REALFREEMEM
+done
+#go to http://forum.xda-developers.com/showthread.php?t=1978061 for more info.
+#my e-mail: hoholee12@naver.com

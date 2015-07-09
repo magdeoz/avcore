@@ -1,0 +1,8 @@
+#MPEngine™ launcher copyright by LENAROX.
+echo 'starting MPEngine™...'
+echo '________________________________________________'
+#run MPEngine™.
+ sh /system/xbin/MPEngine9
+echo 'unable to run engine due to the file itself doesnt exist. or this script might be outdated:p'
+#go to http://forum.xda-developers.com/showthread.php?t=1978061 for more info.
+#my e-mail: hoholee12@naver.com

@@ -1,0 +1,312 @@
+#!/system/bin/sh
+#VM Boost
+#
+#Copyright (C) 2013 LENAROX@xda
+#
+set +e #ignore all arith errors
+
+#initial settings
+version=v1.0.0 #for status check service
+propname=VMBoost
+filename=SS98VMBoost
+fileloc=/system/etc/init.d/$filename
+logloc=/data/log/$filename.log
+cmd1=which #for busybox applet generator
+cmd2=sleep
+cmd3=seq
+cmd4=grep
+cmd5=pgrep
+cmd6=awk
+cmd7=sed
+cmd8=echo
+cmd11=renice
+cmd12=ionice
+cmd13=kill #only write busybox applets here.
+
+exec > $logloc 2>&1 #respawn and start logging
+
+#start busybox applet generator
+if [ ! "$(busybox --list)" ]; then
+setprop "$propname".stat "busybox: not found, damnit."
+return 1
+fi 2>/dev/null
+nsed=0
+neko=0
+nseq=0
+ngrp=0
+for i in $(busybox --list); do
+if [ "$i" == sed ]; then
+nsed=$(($nsed+1))
+fi
+if [ "$i" == echo ]; then
+neko=$(($neko+1))
+fi
+if [ "$i" == seq ]; then
+nseq=$(($nseq+1))
+fi
+if [ "$i" == grep ]; then
+ngrp=$(($ngrp+1))
+fi
+done
+if [ "$nsed" -ne 1 ] || [ "$neko" -ne 1 ] || [ "$nseq" -ne 1 ] || [ "$ngrp" -ne 1 ]; then
+setprop "$propname".stat "your busybox does not even hold any basic applets to perform a damn simple operation."
+return 1
+fi
+for i in $(busybox --list); do
+n=0
+for j in $(busybox echo $PATH | busybox sed 's/:/ /g'); do
+if [ -e "$j"/"$i" ]; then
+n=$(($n+1))
+fi
+done
+if [ "$n" -eq 0 ]; then
+alias $i="busybox $i"
+fi
+done 2>/dev/null
+for i in $(seq -s ' $cmd' 0 199); do
+v=$(eval echo $i)
+if [ "$v" != 0 ] && [ "$v" ]; then
+if [ ! "$(busybox --list | grep $v)" ]; then
+setprop "$propname".stat "user selected applet not found, or missing!"
+return 1
+fi
+fi
+done
+busyboxloc=$(which busybox | sed 's/\/busybox//g')
+n=0
+for i in $(echo $PATH | sed 's/:/ /g'); do
+n=$(($n+1))
+export slot$n=$i
+if [ "$i" == "$busyboxloc" ]; then
+busyboxenv=slot$n
+fi
+done
+if [ "$busyboxenv" != slot1 ]; then
+export PATH=$(echo -n $busyboxloc
+for i in $(seq -s ' $slot' 0 $n); do
+v=$(eval echo $i)
+if [ "$v" != 0 ] && [ "$v" != "$busyboxloc" ]; then
+echo -n ":$v"
+fi
+done)
+fi
+
+#rename itself back if edited or does not exist in that directory
+#credits to zeppelinrox@xda
+if [ ! -e "$fileloc" ]; then
+if [ "$(cat /proc/mounts | awk '$2=="/system"{print $4}' | cut -d "," -f1)" != rw ]; then
+ro=1
+mount -o remount,rw /system
+if [ "$(cat /proc/mounts | awk '$2=="/system"{print $4}' | cut -d "," -f1)" != rw ]; then
+setprop "$propname".stat "mount unsuccessful."
+return 1
+fi
+else
+ro=0
+fi
+mv $0 $fileloc
+if [ ! -e "$fileloc" ]; then
+setprop "$propname".stat "rename unsuccessful."
+return 1
+fi
+if [ "$ro" -eq 1 ]; then
+mount -o remount,ro /system
+fi
+$fileloc & return 0
+fi
+
+DynamicEnhancer() #main engine thread
+{
+#lowest priority.
+renice 19 $$
+ionice -c3 -p$$
+VPU0()
+{
+prev_total=0
+prev_idle=0
+prev_target=NULL
+cpu=$(cat /proc/stat | head -n1 | sed 's/cpu//g')
+user=$(echo $cpu | awk '{print $1}')
+system=$(echo $cpu | awk '{print $2}')
+nice=$(echo $cpu | awk '{print $3}')
+idle=$(echo $cpu | awk '{print $4}')
+wait=$(echo $cpu | awk '{print $5}')
+irq=$(echo $cpu | awk '{print $6}')
+srq=$(echo $cpu | awk '{print $7}')
+zero=$(echo $cpu | awk '{print $8}')
+total=$(($user+$system+$nice+$idle+$wait+$irq+$srq+$zero))
+prev_total=$total
+prev_idle=$idle
+sleep 0.5
+while true; do
+str=$(getprop VMBoost.DynamicEnhancer_str)
+if [ ! "$str" ]; then
+setprop VMBoost.DynamicEnhancer_str 15 #default
+str=$(getprop VMBoost.DynamicEnhancer_str)
+fi
+if [ "$str" -gt 19 ]; then
+setprop VMBoost.DynamicEnhancer_str 19
+str=$(getprop VMBoost.DynamicEnhancer_str)
+fi
+if [ "$str" -lt 0 ]; then
+setprop VMBoost.DynamicEnhancer_str 0
+str=$(getprop VMBoost.DynamicEnhancer_str)
+fi
+kernel=$(pgrep kswapd0)
+if [ "$(cat /proc/$kernel/stat | awk '{print $19}')" != "$str" ]; then
+renice $str $kernel
+fi
+cpu=$(cat /proc/stat | head -n1 | sed 's/cpu//g')
+user=$(echo $cpu | awk '{print $1}')
+system=$(echo $cpu | awk '{print $2}')
+nice=$(echo $cpu | awk '{print $3}')
+idle=$(echo $cpu | awk '{print $4}')
+wait=$(echo $cpu | awk '{print $5}')
+irq=$(echo $cpu | awk '{print $6}')
+srq=$(echo $cpu | awk '{print $7}')
+zero=$(echo $cpu | awk '{print $8}')
+total=$(($user+$system+$nice+$idle+$wait+$irq+$srq+$zero))
+diff_idle=$(($idle-$prev_idle))
+diff_total=$(($total-$prev_total))
+usage=$(($(($(($(($diff_total-$diff_idle))*1000/$diff_total))+5))/10))
+prev_total=$total
+prev_idle=$idle
+if [ "$usage" -ge "$(($str*5))" ]; then
+target=$(for i in $(find /proc -maxdepth 1 -type d | sed 's/\/proc\///g'); do
+if [ -e "/proc/$i/fd/14" ] && [ -e "/proc/$i/oom_adj" ]; then
+if [ "$(cat /proc/$i/oom_adj)" == 0 ]; then
+echo $i
+fi
+fi
+done | tail -n1)
+if [ "$(cat /proc/$target/stat | awk '{print $19}')" != 0 ]; then
+renice 0 $target
+fi
+else
+target=$(for i in $(find /proc -maxdepth 1 -type d | sed 's/\/proc\///g'); do
+if [ -e "/proc/$i/fd/14" ] && [ -e "/proc/$i/oom_adj" ]; then
+if [ "$(cat /proc/$i/oom_adj)" == 0 ]; then
+echo $i
+fi
+fi
+done | tail -n1)
+reverse=$(($(($str+1))*-1))
+if [ "$(cat /proc/$target/stat | awk '{print $19}')" != "$reverse" ]; then
+renice $reverse $target
+fi
+fi
+if [ "$prev_target" != "$target" ]; then
+if [ "$prev_target" != NULL ]; then 
+if [ "$(cat /proc/$prev_target/stat | awk '{print $19}')" != 0 ]; then
+renice 0 $prev_target
+fi
+fi
+prev_target=$target
+fi
+ref=$(getprop VMBoost.DynamicEnhancer_ref)
+sleep $ref
+done
+}
+VPU1()
+{
+sleep 5
+}
+ref=$(getprop VMBoost.DynamicEnhancer_ref)
+if [ ! "$ref" ]; then
+setprop VMBoost.DynamicEnhancer_ref 5 #default
+ref=$(getprop VMBoost.DynamicEnhancer_ref)
+fi
+gov=$(getprop VMBoost.DynamicEnhancer_gov)
+VPU0_gov=$(echo $gov | awk -F, '{print $1}')
+VPU1_gov=$(echo $gov | awk -F, '{print $2}')
+if [ "$VPU0_gov" == "r=y" ] || [ "$VPU0_gov" == "n=y" ] || [ "$VPU0_gov" == "0=1" ]; then
+VPU0 & && VPU0_pid=$!
+fi
+if [ "$VPU1_gov" == "s=y" ] || [ "$VPU1_gov" == "f=y" ] || [ "$VPU1_gov" == "1=1" ]; then
+VPU1 & && VPU1_pid=$!
+fi
+prev_ref=$ref
+sleep 5
+while true; do
+ref=$(getprop VMBoost.DynamicEnhancer_ref)
+if [ "$ref" != "$prev_ref" ]; then
+if [ -e "/proc/$VPU0_pid" ]; then
+kill -SIGKILL $VPU0_pid
+fi
+if [ -e "/proc/$VPU1_pid" ]; then
+kill -SIGKILL $VPU1_pid
+fi
+gov=$(getprop VMBoost.DynamicEnhancer_gov)
+VPU0_gov=$(echo $gov | awk -F, '{print $1}')
+VPU1_gov=$(echo $gov | awk -F, '{print $2}')
+if [ "$VPU0_gov" == "r=y" ] || [ "$VPU0_gov" == "n=y" ] || [ "$VPU0_gov" == "0=1" ]; then
+VPU0 & && VPU0_pid=$!
+fi
+if [ "$VPU1_gov" == "s=y" ] || [ "$VPU1_gov" == "f=y" ] || [ "$VPU1_gov" == "1=1" ]; then
+VPU1 & && VPU1_pid=$!
+fi
+prev_ref=$ref
+fi
+sleep 5
+done
+}
+DynamicEnhancer &
+
+#basic tunable settings for dalvik booster
+heapstartsize=12
+heapgrowthlimit=9
+heapsize=6
+diff_heapsize=6
+diff_enabler=1 #'1' or 'true' enables diff_heapsize multiplier to be applied
+               #instead of heapsize multiplier.
+
+#dalvik booster
+if [ "$(getprop dalvik.vm.heapgrowthlimit)" ] && [ "$(getprop dalvik.vm.heapstartsize)" ]; then
+setprop dalvik.vm.heapstartsize "$(($(($(($(($(cat /proc/meminfo | grep "MemTotal:" | awk '{print $2}')-$(cat /proc/sys/vm/min_free_kbytes)))/$heapstartsize))+512))/1024))"m
+setprop dalvik.vm.heapgrowthlimit "$(($(($(($(($(cat /proc/meminfo | grep "MemTotal:" | awk '{print $2}')-$(cat /proc/sys/vm/min_free_kbytes)))/$heapgrowthlimit))+512))/1024))"m
+setprop dalvik.vm.heapsize "$(($(($(($(($(cat /proc/meminfo | grep "MemTotal:" | awk '{print $2}')-$(cat /proc/sys/vm/min_free_kbytes)))/$heapsize))+512))/1024))"m
+n=$(getprop dalvik.vm.heapgrowthlimit | sed 's/m//g')
+elif [ "$(getprop dalvik.vm.heapgrowthlimit)" ] && [ ! "$(getprop dalvik.vm.heapstartsize)" ]; then
+setprop dalvik.vm.heapstartsize "$(($(($(($(($(cat /proc/meminfo | grep "MemTotal:" | awk '{print $2}')-$(cat /proc/sys/vm/min_free_kbytes)))/$heapstartsize))+512))/1024))"m
+setprop dalvik.vm.heapgrowthlimit "$(($(($(($(($(cat /proc/meminfo | grep "MemTotal:" | awk '{print $2}')-$(cat /proc/sys/vm/min_free_kbytes)))/$heapgrowthlimit))+512))/1024))"m
+setprop dalvik.vm.heapsize "$(($(($(($(($(cat /proc/meminfo | grep "MemTotal:" | awk '{print $2}')-$(cat /proc/sys/vm/min_free_kbytes)))/$heapsize))+512))/1024))"m
+n=$(getprop dalvik.vm.heapgrowthlimit | sed 's/m//g')
+elif [ ! "$(getprop dalvik.vm.heapgrowthlimit)" ] && [ "$(getprop dalvik.vm.heapstartsize)" ]; then
+setprop dalvik.vm.heapstartsize "$(($(($(($(($(cat /proc/meminfo | grep "MemTotal:" | awk '{print $2}')-$(cat /proc/sys/vm/min_free_kbytes)))/$heapstartsize))+512))/1024))"m
+if [ "diff_enabler" == 1 ] || [ "diff_enabler" == true ]; then
+setprop dalvik.vm.heapsize "$(($(($(($(($(cat /proc/meminfo | grep "MemTotal:" | awk '{print $2}')-$(cat /proc/sys/vm/min_free_kbytes)))/$diff_heapsize))+512))/1024))"m
+else
+setprop dalvik.vm.heapsize "$(($(($(($(($(cat /proc/meminfo | grep "MemTotal:" | awk '{print $2}')-$(cat /proc/sys/vm/min_free_kbytes)))/$heapsize))+512))/1024))"m
+fi
+n=$(getprop dalvik.vm.heapsize | sed 's/m//g')
+elif [ ! "$(getprop dalvik.vm.heapgrowthlimit)" ] && [ ! "$(getprop dalvik.vm.heapstartsize)" ]; then
+setprop dalvik.vm.heapstartsize "$(($(($(($(($(cat /proc/meminfo | grep "MemTotal:" | awk '{print $2}')-$(cat /proc/sys/vm/min_free_kbytes)))/$heapstartsize))+512))/1024))"m
+if [ "diff_enabler" == 1 ] || [ "diff_enabler" == true ]; then
+setprop dalvik.vm.heapsize "$(($(($(($(($(cat /proc/meminfo | grep "MemTotal:" | awk '{print $2}')-$(cat /proc/sys/vm/min_free_kbytes)))/$diff_heapsize))+512))/1024))"m
+else
+setprop dalvik.vm.heapsize "$(($(($(($(($(cat /proc/meminfo | grep "MemTotal:" | awk '{print $2}')-$(cat /proc/sys/vm/min_free_kbytes)))/$heapsize))+512))/1024))"m
+fi
+n=$(getprop dalvik.vm.heapsize | sed 's/m//g')
+fi
+
+echo "1500" > /proc/sys/vm/dirty_writeback_centisecs #run periodic writeback task every 15secs
+
+echo "$(($(($(cat /proc/meminfo | grep "MemTotal:" | awk '{print $2}')-$(cat /proc/sys/vm/min_free_kbytes)))/4))" > /proc/sys/vm/max_map_count #max mapping = total system memory
+
+echo "$((32768-$(($(($(($(($(($(cat /proc/meminfo | grep "MemTotal:" | awk '{print $2}')-$(cat /proc/sys/vm/min_free_kbytes)))/8))+512))/1024))*1024/4))))" > /proc/sys/vm/mmap_min_addr #128MB is a max limit for ARM processors
+
+#start status check service
+n=0
+for i in cannot not no error bad permission; do
+if [ "$(cat $logloc | grep -i "$i")" ]; then
+n=$(($n+1))
+fi
+done
+if [ "$n" -ge 5 ]; then
+setprop "$propname".stat jammed
+elif [ "$n" -lt 5 ] && [ "$n" -ge 1 ]; then
+setprop "$propname".stat "$n"errors
+else
+setprop "$propname".stat running
+setprop "$propname".version $version
+fi
