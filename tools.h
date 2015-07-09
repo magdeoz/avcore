@@ -76,27 +76,28 @@ public:
 			}
 			else c[y++]=a[i];
 		}
-		//c[y]='\0'; everythings already nullified. ascii null equals int zero.
+		//c[y]='\0'; everythings already nullified. ascii null equates to int zero.
 		a=c;
-		//printf("%d	%d\n", a, c);
+		//printf("%d\t%d\n", a, c);
 		return EXIT_SUCCESS;
 	}
 	void string_delete(){delete [] c;}
 	//friend void appendtest(char *, char *, int); //WTH?! TODO: figure out why the hell this doesnt let me access private members
-	//~string_tools(){delete [] c;}
+	~string_tools(){delete [] c;}
 };
 
 //still trying to figure out, this is not really a run on exit termination.
-string_tools asdf; //just declare it globally right here,
-void string_delete(int){asdf.string_delete();} // so that we can provoke this.
+string_tools asdf; //***global declaration makes destructor run properly on main() return.***
+void string_delete(int){asdf.string_delete();} //unnecessary but whatever.
+#include<csignal> //unnecessary but whatever.
 void append(char *&a, char *b, int x=0){
 	asdf.append(a, b, x);
+	
+	//unnecessary but whatever.
 	signal(SIGINT, string_delete); //^C politely ask
 	signal(SIGTSTP, string_delete); //^Z pause a process
 	signal(SIGQUIT, string_delete); //^\ mercilessly kill
 	signal(SIGTERM, string_delete); // terminate
-	//asdf.string_delete();
-	//delete [] c;
 }
 
 //fibonacci - a simple fibonacci.
