@@ -20,9 +20,11 @@
 #pragma GCC diagnostic ignored "-Wformat="
 
 //common ascii stuff
-//	0~9 => 48~57
-//	a~z => 97~122
-//	A~Z => 65~90
+/*	0~9 => 48~57
+*	a~z => 97~122
+*	A~Z => 65~90
+*	"carriage return + line feed" or "CR + LF" or "\r + \n" or in ascii: "13 + 10"
+*/
 
 //misc stuff - unsigned
 typedef unsigned char u8;
