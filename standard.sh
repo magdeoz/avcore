@@ -387,16 +387,6 @@ error(){
 # is retained.
 #
 # Changelogs:
-# 0.0.1 - first release
-# 0.0.2 - init.d added
-# 0.0.3 - new bootup tweaks and bugfixes added
-# 0.0.4 - future-proof bugfixes
-# 0.0.5 - more boot tweaks added
-# 0.0.6 - mpengine added for performance
-# 0.0.7 - audiofix added for single core devices
-#       - changed license policy
-#       - tweaked scAudioFix(update1)
-#       - bugfixed scAudioFix(update2)
 
 set +e #error proof
 
@@ -410,10 +400,7 @@ cmd4=grep
 cmd5=head
 cmd6=awk
 cmd7=cat
-cmd8=pgrep
-cmd9=ps
-cmd10=cp
-cmd11=cut
+cmd8=cut
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 
 silent_mode= # enabling this will hide errors.
@@ -628,7 +615,7 @@ Roll_Down $@
 # Your main script here.
 
 
-#Demonstration!
+#Demonstration!(you can delete this.)
 case $1 in
 	1337)
 		leetspeak=1;;
@@ -645,28 +632,5 @@ elif [[ "$leetspeak" == 2 ]]; then
 else
 	echo -e "\e[${color}mHello, World!\e[0m"
 fi
-
-clear
-OX=51
-OY=31
-R=20
-#for ((x=1; x<R+1; x++)); do
-#for ((x=1; x<R*2+1; x++)); do
-for ((x=1; x<R*3/2+1; x++)); do
-  #y=$(bc <<< "sqrt($R^2 - $x^2)")
-  y=$(bc <<< "sqrt($R^2 - ($x/2)^2)")
-  y=${y%.*}
-  echo -ne "\e[$((OY - y));$((OX - x))H1"
-  echo -ne "\e[$((OX - x / 2 - R));$((OY - y * 2 + R))Ha"
- 
-  echo -ne "\e[$((OY - y));$((OX + x))H2"
-  echo -ne "\e[$((OX - x / 2 - R));$((OY + y * 2 + R))Hb"
- 
-  echo -ne "\e[$((OY + y));$((OX - x))H3"
-  echo -ne "\e[$((OX + x / 2 - R));$((OY - y * 2 + R))Hc"
- 
-  echo -ne "\e[$((OY + y));$((OX + x))H4"
-  echo -ne "\e[$((OX + x / 2 - R));$((OY + y * 2 + R))Hd"
-done
 
 exit 0 #EOF
