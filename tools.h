@@ -12,9 +12,31 @@
 *	i*3 = (i<<1) + i
 *	i*10 = (i<<3) + (i<<1)
 */
+
+//kill some warnings
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wparentheses"
+#pragma GCC diagnostic ignored "-Wformat="
+//common ascii stuff
+//0~9 => 48~57
+//a~z => 97~122
+//A~Z => 65~90
+
+//misc stuff - unsigned
+typedef unsigned char u8;
+typedef unsigned short u16;
+typedef unsigned long u32;
+typedef unsigned long long u64;
+//signed
+typedef signed char s8;
+typedef signed short s16;
+typedef signed long s32;
+typedef signed long long s64;
+
 //printbit - char ch -128~127 unsigned 0~255
 #include<cstdio>
-void printbit(unsigned int ch/*prevent overflow*/, int count=8){
+void printbit(u32 ch/*prevent overflow*/, int count=8){
 	int arr[count];
 	for(int i=(count-1);i>=0;i--){
 		arr[i]=ch%2;
@@ -71,9 +93,9 @@ void append(char *&a, char *b, int x=0){
 
 //fibonacci - a simple fibonacci.
 namespace single{
-	int fibonacci(int &n){
-		int i=1;
-		int a=1, b=1, tmp;
+	s32 fibonacci(s32 &n){
+		s32 i=1;
+		s32 a=1, b=1, tmp;
 		for(;i<n;i++){
 			tmp=a;
 			a+=b;
@@ -83,10 +105,10 @@ namespace single{
 	}
 };
 namespace array{
-	int *fibonacci(int &n){
-		int i=1;
-		int a=1, b=1, tmp; //we'll need to make this global if we want to pass the addr as a stack. otherwise, heap is necessary.
-		int *addr=new int[n];
+	s32 *fibonacci(s32 &n){
+		s32 i=1;
+		s32 a=1, b=1, tmp; //we'll need to make this global if we want to pass the addr as a stack. otherwise, heap is necessary.
+		s32 *addr=new s32[n];
 		addr[0]=b;
 		for(;i<n;i++){
 			tmp=a;
