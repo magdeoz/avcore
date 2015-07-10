@@ -338,24 +338,27 @@ install(){
 	fi
 }
 long_line(){
+	if [[ "$1" -gt 1 ]]; then
+		echo -n -e '\e[3m'
+	fi
 	for i in $(seq 1 $(stty size | awk '{print $2}' 2>/dev/null)); do
 		if [[ "$1" -le 1 ]]; then
-			echo -n '-'
+			echo -n '_'
 		else
-			echo -n '='
+			echo -n ' '
 		fi
 	done
 	if [[ "$i" == 1 ]]; then
 		echo -n -e '\r'
 		for j in $(seq 1 80); do # 80 columns
 			if [[ "$1" -le 1 ]]; then
-				echo -n '-'
+				echo -n '_'
 			else
-				echo -n '='
+				echo -n ' '
 			fi
 		done
 	fi
-	echo
+	echo -e '\e[0m'
 }
 error(){
 	message=$@
