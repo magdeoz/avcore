@@ -56,7 +56,7 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 	fi
 	shift
 done
-readonly version="0.0.7 update2"
+readonly version="0.0.8"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -400,6 +400,7 @@ error(){
 #       - changed license policy
 #       - tweaked scAudioFix(update1)
 #       - bugfixed scAudioFix(update2)
+# 0.0.8 - advanced scAudioFix
 
 set +e #error proof
 
@@ -1223,14 +1224,14 @@ q)exit'
 					echo -n press \'q\' to quit.
 				done
 				if [[ ! "$dont" ]]; then
-					echo scAudioFix: how many seconds interval?:
+					echo 'scAudioFix: how many seconds interval?:'
 					read install_time
 				else
 					unset dont
 				fi
 				if [[ ! "$dont" ]]; then
-					echo scAudioFix: Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):
-					echo tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (works best at 10% on Galaxy S)
+					echo 'scAudioFix: Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):'
+					echo 'tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (works best at 10% on Galaxy S)'
 					read custom_usage
 				else
 					unset dont
@@ -1239,7 +1240,7 @@ q)exit'
 					unset return
 					break
 				fi
-				echo -n setting on boot...
+				echo -n 'setting on boot...'
 				initialize
 				unset install_mpengine
 				unset install_singlecorefix
@@ -1266,10 +1267,10 @@ q)exit'
 					kill -9 $(cat $external/singlecorefix_pid)
 					singlecorefix -f
 				else
-					echo how many seconds interval?:
+					echo 'how many seconds interval?:'
 					read time
-					echo Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):
-					echo tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (works best at 10% on Galaxy S)
+					echo 'Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):'
+					echo 'tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (works best at 10% on Galaxy S)'
 					read usage
 					singlecorefix $time $usage 2>/dev/null
 				fi
