@@ -727,7 +727,6 @@ debug_space(){
 task_killer(){
 	backuplmk=$(cat /sys/module/lowmemorykiller/parameters/minfree)
 	echo "0,0,0,0,0,0" > /sys/module/lowmemorykiller/parameters/minfree
-	for i in 
 	trap "echo "$backuplmk" > /sys/module/lowmemorykiller/parameters/minfree; exit" EXIT INT TERM
 	debug=$1
 	if [[ "$debug" == -i ]]; then
