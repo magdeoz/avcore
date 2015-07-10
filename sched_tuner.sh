@@ -636,8 +636,11 @@ if [[ ! -f /sys/kernel/debug/sched_features ]]; then
 		exit 2
 	fi
 	mount -t debugfs none /sys/kernel/debug 2>/dev/null #some kernels have locked debugfs, so we reopen them.(NEED BUSYBOX FOR -t OPTION TO WORK!!!)
-	if [[ "$?" != 0 ]]||[[ ! -f /sys/kernel/debug/sched_features ]]||[[ ! -f /sys/power/wait_for_fb_wake ]]; then #wait_for_fb_wake added for mpengine
+	if [[ "$?" != 0 ]]||[[ ! -f /sys/kernel/debug/sched_features ]]; then
 		notsupported=1 #reg
+	fi
+	if [[ ! -f /sys/power/wait_for_fb_wake ]]; then #wait_for_fb_wake added for mpengine
+		no_wakelock=1
 	fi
 fi
 mount -o remount,rw rootfs 2>/dev/null #remount rootfs to rw
@@ -807,14 +810,27 @@ singlecorefix(){
 			unset applied
 		else
 			kill_garbage &
-			awake=$(cat /sys/power/wait_for_fb_wake)
+			if [[ "$no_wakelock" == 1 ]]; then
+				until [[ "$(cat /sys/class/graphics/fb0/dynamic_fps)" ]]; do
+					sleep 10
+				done
+			else
+				awake=$(cat /sys/power/wait_for_fb_wake)
+			fi
 		fi
 		sleep $sleep
 	done & echo $! > $external/singlecorefix_pid
 }
 mpengine(){
-	while [[ "$(cat /sys/power/wait_for_fb_wake)" ]]; do
+	while true; do
 		sync; echo 1 > /proc/sys/vm/drop_caches #this does wonders to i/o problems.
+		if [[ "$no_wakelock" == 1 ]]; then
+			until [[ "$(cat /sys/class/graphics/fb0/dynamic_fps)" ]]; do
+				sleep 10
+			done
+		else
+			awake=$(cat /sys/power/wait_for_fb_wake)
+		fi
 		sleep 1
 	done & echo $! > $external/mpengine_pid
 }
