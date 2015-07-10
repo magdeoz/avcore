@@ -1145,11 +1145,11 @@ q)exit'
 					stty -cbreak echo
 					echo $f
 					case $f in
-						y* | Y*)
+						y* | Y* | 1)
 							type=1
 							break
 						;;
-						n* | N*)
+						n* | N* | 2)
 							break
 						;;
 						q* | Q*)
@@ -1167,7 +1167,7 @@ q)exit'
 					unset return
 					break
 				fi
-				echo -n 'install mpengine? (not recommended ATM.)'
+				echo -n 'install mpengine? (not recommended for daily use) Y/N:'
 				while true; do
 					stty cbreak -echo
 					f=$(dd bs=1 count=1 2>/dev/null)
@@ -1196,7 +1196,7 @@ q)exit'
 					unset return
 					break
 				fi
-				echo -n 'install scAudioFix?'
+				echo -n 'install scAudioFix? Y/N:'
 				while true; do
 					stty cbreak -echo
 					f=$(dd bs=1 count=1 2>/dev/null)
@@ -1224,7 +1224,7 @@ q)exit'
 					echo -n press \'q\' to quit.
 				done
 				if [[ ! "$dont" ]]; then
-					echo 'scAudioFix: how many seconds interval?:'
+					echo -n 'scAudioFix: how many seconds interval?: >>'
 					read install_time
 				else
 					unset dont
@@ -1232,6 +1232,7 @@ q)exit'
 				if [[ ! "$dont" ]]; then
 					echo 'scAudioFix: Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):'
 					echo 'tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (works best at 10% on Galaxy S)'
+					echo -n '>>'
 					read custom_usage
 				else
 					unset dont
@@ -1267,10 +1268,11 @@ q)exit'
 					kill -9 $(cat $external/singlecorefix_pid)
 					singlecorefix -f
 				else
-					echo 'how many seconds interval?:'
+					echo -n 'how many seconds interval?: >>'
 					read time
 					echo 'Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):'
 					echo 'tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (works best at 10% on Galaxy S)'
+					echo -n '>>'
 					read usage
 					singlecorefix $time $usage 2>/dev/null
 				fi
