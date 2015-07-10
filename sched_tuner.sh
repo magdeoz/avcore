@@ -779,7 +779,7 @@ kill_garbage(){
 	
 	#while $(cat /sys/power/wait_for_fb_sleep); do
 		#asleep=$(cat /sys/power/wait_for_fb_sleep) #this causes fork bomb, dont use this:p
-		garbageprocess=$(top -n1 | grep 'android.process.media' | grep -v grep | awk '{print $1, $(NF-1)}' | cut -d'.' -f1)
+		garbageprocess=$(top -n1 | grep '{d.process.media}' | grep -v grep | awk '{print $1, $(NF-2)}' | cut -d'.' -f1)
 		if [[ "$garbageprocess" ]]&&[[ "$(echo $garbageprocess | awk '{print $2}')" != 0 ]]; then
 			kill -9 $(echo $garbageprocess | awk '{print $1}')
 		fi
