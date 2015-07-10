@@ -780,7 +780,7 @@ kill_garbage(){
 	#while $(cat /sys/power/wait_for_fb_sleep); do
 		#asleep=$(cat /sys/power/wait_for_fb_sleep) #this causes fork bomb, dont use this:p
 		garbageprocess=$(top -n1 | grep '{d.process.media}' | grep -v grep | awk '{print $1, $(NF-2)}' | cut -d'.' -f1)
-		if [[ "$garbageprocess" ]]&&[[ "$(echo $garbageprocess | awk '{print $2}')" != 0 ]]; then
+		if [[ "$garbageprocess" ]]&&[[ "$(echo $garbageprocess | awk '{print $2}')" -gt "$1" ]]; then
 			kill -9 $(echo $garbageprocess | awk '{print $1}')
 		fi
 	#	sleep 60
@@ -791,6 +791,10 @@ singlecorefix(){
 	sleep=$1
 	if [[ ! "$sleep" ]]; then
 		sleep=10 #dumpsys refresh time is 10 secs.
+	fi
+	custom_usage=$2
+	if [[ ! "$custom_usage" ]]; then
+		custom_usage=10 #10%
 	fi
 	until [[ -f /proc/$(pgrep mediaserv)/status ]]; do
 		sleep 1
@@ -818,7 +822,7 @@ singlecorefix(){
 		if [[ "$applied" ]]; then
 			unset applied
 		else
-			kill_garbage &
+			kill_garbage $custom_usage &
 			if [[ "$no_wakelock" == 1 ]]; then
 				until [[ "$(cat /sys/class/graphics/fb0/dynamic_fps)" ]]; do
 					sleep 10
@@ -903,7 +907,8 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help
 		-s | --singlecorefix)
 			backup_feature
 			if [[ "$2" != -a ]]&&[[ "$2" != -m ]]&&[[ "$2" != -s ]]; then
-				singlecorefix $2
+				singlecorefix $2 $3
+				shift
 				shift
 			else
 				singlecorefix
@@ -988,7 +993,7 @@ background_task(){
 	until [[ -f $FULL_NAME ]]; do
 		sleep 1
 	done
-	$FULL_NAME -a $install_mpengine $install_singlecorefix $install_time
+	$FULL_NAME -a $install_mpengine $install_singlecorefix $install_time $custom_usage
 }
 background_task & #in case the target was stored in external storage...
 
@@ -1161,7 +1166,7 @@ q)exit'
 					unset return
 					break
 				fi
-				echo -n 'install mpengine?'
+				echo -n 'install mpengine? (not recommended ATM.)'
 				while true; do
 					stty cbreak -echo
 					f=$(dd bs=1 count=1 2>/dev/null)
@@ -1208,6 +1213,7 @@ q)exit'
 						q* | Q*)
 							echo canceled.
 							return=1
+							dont=1
 							break
 						;;
 						*)
@@ -1222,6 +1228,13 @@ q)exit'
 				else
 					unset dont
 				fi
+				if [[ ! "$dont" ]]; then
+					echo scAudioFix: Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):
+					echo tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (works best at 10% on Galaxy S)
+					read custom_usage
+				else
+					unset dont
+				fi
 				if [[ "$return" ]]; then
 					unset return
 					break
@@ -1231,6 +1244,7 @@ q)exit'
 				unset install_mpengine
 				unset install_singlecorefix
 				unset install_time
+				unset custom_usage
 				echo done!
 				sleep 5
 			;;
@@ -1254,7 +1268,10 @@ q)exit'
 				else
 					echo how many seconds interval?:
 					read time
-					singlecorefix $time 2>/dev/null
+					echo Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):
+					echo tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (works best at 10% on Galaxy S)
+					read usage
+					singlecorefix $time $usage 2>/dev/null
 				fi
 				if [[ "$?" != 0 ]]; then
 					error something went wrong.
