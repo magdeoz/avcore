@@ -725,6 +725,10 @@ debug_space(){
 }
 
 task_killer(){
+	backuplmk=$(cat /sys/module/lowmemorykiller/parameters/minfree)
+	echo "0,0,0,0,0,0" > /sys/module/lowmemorykiller/parameters/minfree
+	for i in 
+	trap "echo "$backuplmk" > /sys/module/lowmemorykiller/parameters/minfree; exit" EXIT INT TERM
 	debug=$1
 	if [[ "$debug" == -i ]]; then
 		shift
@@ -737,7 +741,7 @@ task_killer(){
 	fi
 	memlimit=$2
 	if [[ ! "$memlimit" ]]; then
-		memlimit=$(($(grep -i -e memtotal /proc/meminfo | awk '{print $2}')*16/100))
+		memlimit=$(($(grep -i -e memtotal /proc/meminfo | awk '{print $2}')/2))
 	else
 		memlimit=$((memlimit*1024))
 	fi
@@ -745,7 +749,13 @@ task_killer(){
 	check_launcher
 	debug_space
 	while true; do
-		awake=$(cat /sys/power/wait_for_fb_wake)
+		if [[ "$no_wakelock" == 1 ]]; then
+			until [[ "$(cat /sys/class/graphics/fb0/dynamic_fps)" ]]; do
+				sleep 10
+			done
+		else
+			awake=$(cat /sys/power/wait_for_fb_wake)
+		fi
 		if [[ "$space" -lt "$memlimit" ]]; then
 			target_killer
 			if [[ ! "$(pgrep '' | grep "\<$launcher_pid\>")" ]]; then
