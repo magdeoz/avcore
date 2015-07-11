@@ -1062,13 +1062,13 @@ main(){
 		if [[ "$(($(print_RANDOM_BYTE)%2))" == 0 ]]; then
 			lines=$(stty size | awk '{print $1}')
 			for i in $(seq 1 $lines); do
-				echo -n -e "\e2J\e[$((lines-i));1Hsystem performance enhancer for android v$version"
+				echo -n -e "\e[2J\e[$((lines-i));1Hsystem performance enhancer for android v$version"
 				sleep 0.1
 			done
 		else
 			lines=$(stty size | awk '{print $2}')
 			for i in $(seq 1 $lines); do
-				echo -n -e "\e2J\e[1;$((lines-i))Hsystem performance enhancer for android v$version"
+				echo -n -e "\e[2J\e[1;$((lines-i))Hsystem performance enhancer for android v$version"
 				sleep 0.1
 			done
 		fi
