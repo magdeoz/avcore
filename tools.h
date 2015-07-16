@@ -14,7 +14,7 @@
 */
 
 //kill some warnings
-#pragma GCC diagnostic ignored "-Wwrite-strings"
+/*#pragma GCC diagnostic ignored "-Wwrite-strings" DONT USE 'char *hello="hello"' FORMAT, ITS DEPRECATED AS FUUUUCK!!!!!!*/
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wparentheses"
 #pragma GCC diagnostic ignored "-Wformat="
@@ -36,6 +36,26 @@ typedef signed char s8;
 typedef signed short s16;
 typedef signed long s32;
 typedef signed long long s64;
+
+//i use const when assigning a pointer to prevent memory leaks...
+//const will block these stuff: *(stuff++);, so use stuff[i]; instead.
+void mystrcpy(char *stuff, const char *other){
+	int i=0;
+	int options=2;
+	if(options==1){
+		for(; stuff[0]&&other[i]; i++){
+			*(stuff++)=other[i];
+			//stuff[i]=other[i];
+		}
+		stuff[0]='\0';
+	}else{
+		for(; stuff[i]&&other[i]; i++){
+			stuff[i]=other[i];
+		}
+		stuff[i]='\0';
+	}
+}
+
 
 //printbit - char ch -128~127 unsigned 0~255
 #include<cstdio>
@@ -130,3 +150,4 @@ namespace array{
 		return addr;
 	}
 };
+
