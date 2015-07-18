@@ -50,6 +50,17 @@ typedef signed short s16;
 typedef signed long s32;
 typedef signed long long s64;
 
+
+#include<ctype.h> //overload compensation for original toupper & tolower.
+char toupper(char &ch){
+	if(ch>='a'&&ch<='z') ch-=('a'-'A');
+	return ch;
+}
+char tolower(char &ch){
+	if(ch>='A'&&ch<='Z') ch+=('a'-'A');
+	return ch;
+}
+
 //i use const when assigning a pointer to prevent memory leaks...
 //const will block these stuff: *(stuff++);, so use stuff[i]; instead.
 template<int n/*its called: "instantiation"*/> int mystrcpy(char (&stuff)[n], const char *other){
