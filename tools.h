@@ -13,6 +13,19 @@
 *	i*10 = (i<<3) + (i<<1)
 */
 
+//0 1 2 3 4 5 6 7 8 9 a  b  c  d  e  f
+//0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+
+//0xDEADBEEF
+//Dx16^7+Ex16^6+Ax16^5+Dx16^4+Bx16^3+Ex16^2+Ex16^1+Fx16^0
+//F		E		E		B		D		A			E			D
+//15	14		14		11		13		10			14			13
+//1		16		256		4096	65536	1048576		16777216	268435456
+
+//15	224		3584	45056	851968	10485760	234881024	3489660928
+
+//373598559
+
 //kill some warnings
 /*#pragma GCC diagnostic ignored "-Wwrite-strings" DONT USE 'char *hello="hello"' FORMAT, ITS DEPRECATED AS FUUUUCK!!!!!!*/
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -39,22 +52,51 @@ typedef signed long long s64;
 
 //i use const when assigning a pointer to prevent memory leaks...
 //const will block these stuff: *(stuff++);, so use stuff[i]; instead.
-void mystrcpy(char *stuff, const char *other){
-	int i=0;
+template<int n/*its called: "instantiation"*/> int mystrcpy(char (&stuff)[n], const char *other){
+	//printf("%d\n", sizeof(stuff)); // pass an actual array with reference, and you'll be able to get the real size of it.
+	u32 i=0;
+	if(!other[0]){
+		return 1; //nothing entered.
+	}else if(!stuff[0]){
+		stuff[0]='a'; //reserved to prevent breaks when nothing entered.
+	}
 	int options=2;
 	if(options==1){
-		for(; stuff[0]&&other[i]; i++){
+		/*for(; stuff[0]&&other[i]; i++){
 			*(stuff++)=other[i];
-			//stuff[i]=other[i];
 		}
-		stuff[0]='\0';
+		stuff[0]='\0';*/
+		//this method does not work when the actual array was passed.
 	}else{
-		for(; stuff[i]&&other[i]; i++){
+		for(; other[i]; i++){ //sizeof returns an unsigned integer
 			stuff[i]=other[i];
 		}
 		stuff[i]='\0';
 	}
+	return 0;
 }
+
+// mypow - my power, typing the third parameter to anything other than 0x1337 will return the value directly to the variable itself.
+template<typename T> int mypow(T &x, const int y, int op=0x1337){
+	T a, tmp;
+	switch(op){
+	case 0x1337:
+		a=x, tmp=a;
+		for(int i=1; i<y; i++){
+			a*=tmp;
+		}
+		return a;
+		break;
+	default:
+		tmp=x;
+		for(int i=1; i<y; i++){
+			x*=tmp;
+		}
+		return x;
+		break;
+	}
+}
+
 
 
 //printbit - char ch -128~127 unsigned 0~255
