@@ -87,28 +87,23 @@ template<int n/*its called: "instantiation"*/> int mystrcpy(char (&stuff)[n], co
 	return 0;
 }
 
-// mypow - my power, typing the third parameter to anything other than 0x1337 will return the value directly to the variable itself.
-template<typename T> int mypow(T &x, const int y, int op=0x1337){
-	T a, tmp;
-	switch(op){
-	case 0x1337:
-		a=x, tmp=a;
-		for(int i=1; i<y; i++){
-			a*=tmp;
-		}
-		return a;
-		break;
-	default:
-		tmp=x;
+
+// pow - power
+/***overload works when pairing with pointer and non-pointer***/
+template<typename T> T pow(T x, const int y){
+	T tmp=x;
 		for(int i=1; i<y; i++){
 			x*=tmp;
 		}
 		return x;
-		break;
-	}
 }
-
-
+template<typename T> T pow(T *x, const int y){ //pass an address to use this.
+	T tmp=*x;
+		for(int i=1; i<y; i++){
+			(*x)*=tmp;
+		}
+		return *x;
+}
 
 //printbit - char ch -128~127 unsigned 0~255
 #include<cstdio>
