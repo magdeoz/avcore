@@ -173,6 +173,7 @@ void mappend(char *&a, char *b, int x=0){
 //"blah blah" format used to be rewritable in c, but not anymore in c++. its format is now using 'const char *' as a standard, not 'char *'.
 //if you still assign them like this: 'char str[]="blah blah"', it is converted as rewritable.
 //if you still assign them like this: 'char *str="blah blah"', it is converted as rewritable, BUT IT WILL INTRODUCE SHIT TONS OF ERRORS!!!!
+//best way to get rid of the incompatibility error, is to change '*str' to 'str[]'. NOTE: just dont ever put the string constant as an r-value for 'char *str' format.
 
 //if you want the actual declared array size of the fucking thing, use template and do a reference to an array instead.
 /***demonstration***/
