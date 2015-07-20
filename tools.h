@@ -203,10 +203,10 @@ namespace single{
 	}
 };
 namespace array{
-	s32 *fibonacci(s32 &n){
+	s32 *fibonacci(s32 &n){ //asterisk(*) needed because we're returning an address
 		s32 i=1;
-		s32 a=1, b=1, tmp; //we'll need to make this global if we want to pass the addr as a stack. otherwise, heap is necessary.
-		s32 *addr=new s32[n];
+		s32 a=1, b=1, tmp;
+		s32 *addr=new s32[n]; //we'll need to make addr global if we want to pass it as a stack. otherwise, heap is necessary since it is big and universally accessible.
 		addr[0]=b;
 		for(;i<n;i++){
 			tmp=a;
