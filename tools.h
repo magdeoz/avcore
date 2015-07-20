@@ -92,17 +92,17 @@ template<int n/*its called: "instantiation"*/> int mystrcpy(char (&stuff)[n], co
 /***overload works when pairing with pointer and non-pointer***/
 template<typename T> T pow(T x, const int y){
 	T tmp=x;
-		for(int i=1; i<y; i++){
-			x*=tmp;
-		}
-		return x;
+	for(int i=1; i<y; i++){
+		x*=tmp;
+	}
+	return x;
 }
 template<typename T> T pow(T *x, const int y){ //pass an address to use this.
 	T tmp=*x;
-		for(int i=1; i<y; i++){
-			(*x)*=tmp;
-		}
-		return *x;
+	for(int i=1; i<y; i++){
+		(*x)*=tmp;
+	}
+	return *x;
 }
 
 //printbit - char ch -128~127 unsigned 0~255
@@ -124,7 +124,7 @@ template<class T> void swap(T &a, T &b, bool enable_swap=1){
 	if(enable_swap==1){ T tmp=a; a=b; b=tmp;}
 }
 
-//append - call string_tools first to init. written as a class because it needs a destructor.
+//mappend - call string_tools first to init. written as a class because it needs a destructor. seriously flawed piece of garbage. use append instead of this abomination.
 #include<cstdio>
 #include<cstdlib>
 #include<climits>
@@ -133,7 +133,7 @@ private:
 	char *c=new char[INT_MAX/*no reason intended*/]; //dyna alloc // outside b/c destructor needs it.
 public:
 	string_tools(){}
-	bool append(char *&a/*THIS IS HOW YOU REFERENCE A POINTER!!!*/, char *b, int x=0){
+	bool mappend(char *&a/*THIS IS HOW YOU REFERENCE A POINTER!!!*/, char *b, int x=0){
 		if(!c){ fprintf(stderr,"alloc failed!"); //fail
 			return EXIT_FAILURE;
 		}
@@ -160,14 +160,32 @@ public:
 string_tools asdf; //***global declaration makes destructor run properly on main() return.***
 void string_delete(int){asdf.string_delete();} //unnecessary but whatever.
 #include<csignal> //unnecessary but whatever.
-void append(char *&a, char *b, int x=0){
-	asdf.append(a, b, x);
+void mappend(char *&a, char *b, int x=0){
+	asdf.mappend(a, b, x);
 	
 	//unnecessary but whatever.
 	signal(SIGINT, string_delete); //^C politely ask
 	signal(SIGTSTP, string_delete); //^Z pause a process
 	signal(SIGQUIT, string_delete); //^\ mercilessly kill
 	signal(SIGTERM, string_delete); // terminate
+}
+
+//"blah blah" format used to be rewritable in c, but not anymore in c++. its format is now using 'const char *' as a standard, not 'char *'.
+//if you still assign them like this: 'char str[]="blah blah"', it is converted as rewritable.
+//if you still assign them like this: 'char *str="blah blah"', it is converted as rewritable, BUT IT WILL INTRODUCE SHIT TONS OF ERRORS!!!!
+
+//if you want the actual declared array size of the fucking thing, use template and do a reference to an array instead.
+/***demonstration***/
+template<int n>void arraysize(char (&str)[n]){
+	printf("%d\n", sizeof(str));
+}
+// append - test
+void append(char *a, const char *b/*the string 'constant' still requires to be const if directly assigned*/, int c=0){
+	int i=0;
+	for(;b[i];i++){
+		a[i+c]=b[i];
+	}
+	//a[i]=b[i]; //effectively sends array b's null character to array a //commented out because i wanted to get same effect of strcpy:p
 }
 
 //fibonacci - a simple fibonacci.
