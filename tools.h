@@ -180,14 +180,25 @@ void mappend(char *&a, char *b, int x=0){
 template<int n>void arraysize(char (&str)[n]){
 	printf("%d\n", sizeof(str));
 }
-// append - test
-void append(char *a, const char *b/*the string 'constant' still requires to be const if directly assigned*/, int c=0){
+
+
+/*********************************************************************************************************************/
+// append - combined strcpy and strcat, the most powerful and sophisticated tool i have ever created.
+/*
+*	char str[]="hello";
+*	append(str, ", world!", **option for strncpy**, **option for strncat**);
+*	printf("%s\n", str);
+*/
+
+template<int n, int m>void append(char (&a)[n], const char (&b)[m]/*the string 'constant' still requires to be const if directly assigned*/, int c=n-1/*-1 to remove null at the end*/, int d=m-1){
 	int i=0;
-	for(;b[i];i++){
-		a[i+c]=b[i];
-	}
-	//a[i]=b[i]; //effectively sends array b's null character to array a //commented out because i wanted to get same effect of strcpy:p
+	for(;b[i]&&i<d;i++) a[i+c]=b[i];
+	//a[i+c]=b[i]; //effectively sends array b's null character to array a //commented out because i wanted to get same effect of strcpy:p
+	a[i+c]=0; //null
 }
+/*********************************************************************************************************************/
+
+
 
 //fibonacci - a simple fibonacci.
 namespace single{
