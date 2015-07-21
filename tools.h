@@ -191,7 +191,7 @@ void append(char *a, const char *b/*the string 'constant' still requires to be c
 
 //fibonacci - a simple fibonacci.
 namespace single{
-	s32 fibonacci(s32 &n){
+	s32 fibonacci(s32 n){ //left out ampersand(&) because you can't reference a constant which was implemented on compile time.
 		s32 i=1;
 		s32 a=1, b=1, tmp;
 		for(;i<n;i++){
@@ -201,9 +201,23 @@ namespace single{
 		}
 		return b;
 	}
+	int fibonacci(int *n){ //pass an address to use this.
+		int i=1;
+		int a=1, b=1, tmp;
+		for(;i<*n;i++){
+			tmp=a;
+			a+=b;
+			b=tmp;
+		}
+		*n=b;
+		return *n;
+	}
+	/*dont use int *fibonacci(){return n;}!! its not the same. **just reminding myself in case i become a monkey in the future...**
+	the former returns an actual value, but the latter defines itself as returning an address.
+	if you want to use the latter one, you will have to put asterisk on the front everytime you use it..*/
 };
 namespace array{
-	s32 *fibonacci(s32 &n){ //asterisk(*) needed because we're returning an address
+	s32 *fibonacci(s32 n){ //asterisk(*) needed because we're returning an address
 		s32 i=1;
 		s32 a=1, b=1, tmp;
 		s32 *addr=new s32[n]; //we'll need to make addr global if we want to pass it as a stack. otherwise, heap is necessary since it is big and universally accessible.
