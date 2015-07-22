@@ -56,7 +56,7 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 	fi
 	shift
 done
-readonly version="0.0.8"
+readonly version="0.0.8 update1"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -404,6 +404,7 @@ error(){
 #       - tweaked scAudioFix(update1)
 #       - bugfixed scAudioFix(update2)
 # 0.0.8 - advanced scAudioFix
+#		- tweaked Android startup(update1)
 
 set +e #error proof
 
@@ -1007,7 +1008,7 @@ renice_task(){
 	until [[ \"\$(pgrep zygote)\" ]]; do
 		sleep 0.1
 	done
-	renice 19 \$(pgrep zygote)
+	renice -20 \$(pgrep zygote)
 	until [[ \"\$(pgrep system_server)\" ]]; do
 		sleep 0.1
 	done
