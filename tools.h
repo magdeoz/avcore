@@ -288,3 +288,15 @@ int strlen(const char *str){
 	for(;str[i];i++);
 	return i;
 }
+
+//reverse - esrever
+void strrev(char *str){
+	int i=0, n=strlen(str)-1;
+	char temp;
+	for(; i<(n+1)/2; i++){
+		//printf("%c<->%c\n", str[n-i], str[i]);
+		temp=str[i];
+		str[i]=str[n-i];
+		str[n-i]=temp;
+	}
+}
