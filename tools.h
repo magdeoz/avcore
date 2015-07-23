@@ -282,3 +282,9 @@ template<int n>char *strdup(const char (&str)[n]){
 	for(int i=0; i<n; i++) addr[i]=str[i];
 	return addr;
 }
+
+int strlen(const char *str){
+	int i=0;
+	for(;str[i];i++);
+	return i;
+}
