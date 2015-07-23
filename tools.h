@@ -190,6 +190,11 @@ template<int n>void arraysize(char (&str)[n]){
 *	printf("%s\n", str);
 */
 
+/*
+* option for strcpy - formula is: "sizeof(str)-1"
+* if you opt to use option for strcat, do the same above on option for strcpy.
+*/
+
 template<int n, int m>void append(char (&a)[n], const char (&b)[m]/*the string 'constant' still requires to be const if directly assigned*/, int c=n-1/*-1 to remove null at the end*/, int d=m-1){
 	int i=0;
 	for(;b[i]&&i<d;i++) a[i+c]=b[i];
@@ -243,3 +248,37 @@ namespace array{
 	}
 };
 
+
+//my version of strcmp.
+
+// obey the rulez:
+//same => false, 0
+//not same => true, 1
+
+template<int n>bool strcmp(char *a, const char (&b)[n]){
+	int i=0;
+	for(;i<n&&a[i]==b[i];i++);
+	if(i==n) return false;
+	else return true;
+}
+//no case comparison***
+template<int n, int m>bool strncasecmp(char (&a)[n], const char (&b)[m]){
+	int i=0;
+	for(;i<n||i<m;i++){
+		if(a[i]!=b[i]){
+			if(a[i]>='A'&&a[i]<='Z') a[i]+='a'-'A';
+			else a[i]+='A'-'a';
+			if(a[i]==b[i]) continue;
+			else break;
+		}
+	}
+	if(i==n) return false; //for some reason, 'm' doesnt always work...
+	else return true;
+}
+
+//strdup - make a heap and pass the addr to the target pointer.
+template<int n>char *strdup(const char (&str)[n]){
+	char *addr=new char [n];
+	for(int i=0; i<n; i++) addr[i]=str[i];
+	return addr;
+}
