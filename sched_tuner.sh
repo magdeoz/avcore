@@ -1243,17 +1243,14 @@ q)exit'
 				if [[ ! "$dont" ]]; then
 					echo -n 'scAudioFix: how many seconds interval?: >>'
 					read install_time
-				else
-					unset dont
 				fi
 				if [[ ! "$dont" ]]; then
 					echo 'scAudioFix: Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):'
 					echo 'tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (works best at 10% on Galaxy S)'
 					echo -n '>>'
 					read custom_usage
-				else
-					unset dont
 				fi
+				unset dont
 				if [[ "$return" ]]; then
 					unset return
 					break
