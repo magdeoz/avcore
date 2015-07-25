@@ -300,3 +300,36 @@ void strrev(char *str){
 		str[n-i]=temp;
 	}
 }
+
+//char str[]="blah blah" ==> you can't modify the pointer, for some reason....idk:p
+//char *str="blah blah" ==> you can modify the pointer
+//const char *str="blah blah" ==> you obviously can't modify the pointer.
+
+//tried double pointer, still can't get past the restriction they put in to this compiler....only way is to do 'char *str="blah blah"' format...
+//#pragma GCC diagnostic ignored "-Wwrite-strings"
+/*
+*	char test[]="ABCABCABCABCABCABCABC";
+*	char *str=test; //use this method if you dont want to get some BS.
+*	char *ptr=strchr(str, 'A'); //check from start
+*	char *ptr2=strrchr(str, 'A'); //reverse from end
+*	printf("%s\t%s\t%s\n", ptr, str, ptr2);
+*
+****result: ABCABCABCABCABCABCABC	ABC	ABC
+*/
+
+//if on c compiler, use double pointer and pass an address of that pointer. this won't work.
+char *strchr(char *&str, const char ch){ //disable '-Wwrite-strings' and use 'char *str' format.
+	int i=0, n=strlen(str); //faster
+	for(; i<n&&(str[i]!=ch); i++);
+	str=&str[i];
+	return str;
+}
+//reverse check
+char *strrchr(char *&str, const char ch){
+	int i=strlen(str)-1;
+	for(; i>=0&&(str[i]!=ch); i--);
+	str=&str[i]; //somehow got fixed after separating this....?????
+	return str;
+}
+
+
