@@ -332,4 +332,19 @@ char *strrchr(char *&str, const char ch){
 	return str;
 }
 
-
+//full string check
+/*
+*	printf("%x\n", str); // %x -> hex address
+*/
+template<int x>char *strstr(char *&str, const char (&str2)[x]){
+	int i=0, n=strlen(str)-1, j=0;
+	int x2=x-1; //bugfix, template x is read-only.
+	for(; i<n; i++){
+		j=0;
+		for(; j<x2&&(str[i+j]==str2[j]); j++);
+		//printf("%d %d\n", j, x2); //for debugging
+		if(j>=x2) break;
+	}
+	str=&str[i];
+	return str;
+}
