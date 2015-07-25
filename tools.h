@@ -301,9 +301,12 @@ void strrev(char *str){
 	}
 }
 
-//char str[]="blah blah" ==> you can't modify the pointer, for some reason....idk:p
-//char *str="blah blah" ==> you can modify the pointer
-//const char *str="blah blah" ==> you obviously can't modify the pointer.
+/*
+*	const char *str="hello"; // cant change pointer, cant change stuff in it.
+*	char *str="hello"; // bad assignment of string constant.
+*	char test[]="hello"; char *str=test; // changable pointer, changable data.
+*	char str[]="hello"; // cant change pointer, changable data.
+*/
 
 //tried double pointer, still can't get past the restriction they put in to this compiler....only way is to do 'char *str="blah blah"' format...
 //#pragma GCC diagnostic ignored "-Wwrite-strings"
