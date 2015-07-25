@@ -301,6 +301,8 @@ void strrev(char *str){
 	}
 }
 
+/*********************************************************************************************************************/
+//												pointer modifiers
 /*
 *	const char *str="hello"; // cant change pointer, cant change stuff in it.
 *	char *str="hello"; // bad assignment of string constant.
@@ -364,3 +366,34 @@ template<int x>char *strrstr(char *&str, const char (&str2)[x], int debug=0){
 	str=&str[i];
 	return str;
 }
+//												end.
+/*********************************************************************************************************************/
+
+
+//reminder: to pass an array back to the mother function, either make the array global or static, otherwise heap is necessary.
+char *strpbrk(const char *str, const char *str2){
+	int i=0, j, n;
+	char *addr=new char [0];
+	for(; str[i]; i++){
+		j=0;
+		for(; str2[j]; j++){
+			if(str[i]==str2[j]){
+				n=0;
+				for(; addr[n]&&(addr[n]!=str[i]); n++); //rewrite past same data over and over
+				addr[n]=str[i];
+			}
+		}
+	}
+	return addr;
+}
+
+
+
+
+
+
+
+
+
+
+
