@@ -799,7 +799,7 @@ singlecorefix(){
 	fi
 	custom_usage=$2
 	if [[ ! "$custom_usage" ]]; then
-		custom_usage=10 #10%
+		custom_usage=15 #15%
 	fi
 	until [[ -f /proc/$(pgrep mediaserv)/status ]]; do
 		sleep 1
@@ -840,8 +840,21 @@ singlecorefix(){
 	done & echo $! > $external/singlecorefix_pid
 }
 mpengine(){
+	if [[ ! -f $EXTERNAL_STORAGE/sched_tuner/mpengine_minfree ]]; then
+		cat /sys/module/lowmemorykiller/parameters/minfree > $EXTERNAL_STORAGE/sched_tuner/mpengine_minfree
+	fi
+	if [[ "$1" == -f ]]; then
+		cat $EXTERNAL_STORAGE/sched_tuner/mpengine_minfree > /sys/module/lowmemorykiller/parameters/minfree
+		rm $EXTERNAL_STORAGE/sched_tuner/mpengine_minfree 2>/dev/null
+		return 0
+	fi
+	minfree=$(($(getprop dalvik.vm.heapsize | sed -e 's/m//')*256+$(cat /proc/sys/vm/min_free_kbytes)/4))
 	while true; do
-		sync; echo 1 > /proc/sys/vm/drop_caches #this does wonders to i/o problems.
+		current=$(cat /sys/module/lowmemorykiller/parameters/minfree)
+		if [[ "$current" != "$minfree,$minfree,$minfree,$minfree,$minfree,$minfree" ]]; then
+			echo "$current" > $EXTERNAL_STORAGE/sched_tuner/mpengine_minfree
+			echo "$minfree,$minfree,$minfree,$minfree,$minfree,$minfree" > /sys/module/lowmemorykiller/parameters/minfree
+		fi
 		if [[ "$no_wakelock" == 1 ]]; then
 			until [[ "$(cat /sys/class/graphics/fb0/dynamic_fps)" ]]; do
 				sleep 10
@@ -849,7 +862,7 @@ mpengine(){
 		else
 			awake=$(cat /sys/power/wait_for_fb_wake)
 		fi
-		sleep 1
+		sleep 10
 	done & echo $! > $external/mpengine_pid
 }
 apply_SS(){
@@ -1246,7 +1259,7 @@ q)exit'
 				fi
 				if [[ ! "$dont" ]]; then
 					echo 'scAudioFix: Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):'
-					echo 'tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (works best at 10% on Galaxy S)'
+					echo 'tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (default:15)'
 					echo -n '>>'
 					read custom_usage
 				fi
@@ -1267,6 +1280,7 @@ q)exit'
 			3)
 				if [[ "$(cat $external/mpengine_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/mpengine_pid)" | grep -v grep)" ]]; then
 					kill -9 $(cat $external/mpengine_pid)
+					mpengine -f
 				else
 					mpengine 2>/dev/null
 				fi
@@ -1285,7 +1299,7 @@ q)exit'
 					echo -n 'how many seconds interval?: >>'
 					read time
 					echo 'Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):'
-					echo 'tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (works best at 10% on Galaxy S)'
+					echo 'tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (default:15)'
 					echo -n '>>'
 					read usage
 					singlecorefix $time $usage 2>/dev/null
