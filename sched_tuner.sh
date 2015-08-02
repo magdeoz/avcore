@@ -56,7 +56,7 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 	fi
 	shift
 done
-readonly version="0.0.8 update1"
+readonly version="0.0.9"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -404,7 +404,8 @@ error(){
 #       - tweaked scAudioFix(update1)
 #       - bugfixed scAudioFix(update2)
 # 0.0.8 - advanced scAudioFix
-#		- tweaked Android startup(update1)
+#       - tweaked Android startup(update1)
+# 0.0.9 - rtmixman disguised as mpengine
 
 set +e #error proof
 
@@ -1197,7 +1198,7 @@ q)exit'
 					unset return
 					break
 				fi
-				echo -n 'install mpengine? (not recommended for daily use) Y/N:'
+				echo -n 'install mpengine? Y/N:'
 				while true; do
 					stty cbreak -echo
 					f=$(dd bs=1 count=1 2>/dev/null)
