@@ -405,7 +405,8 @@ error(){
 #       - bugfixed scAudioFix(update2)
 # 0.0.8 - advanced scAudioFix
 #       - tweaked Android startup(update1)
-# 0.0.9 - rtmixman disguised as mpengine
+# 0.0.9 - mpengine removed
+#       - rtmixman added for AMM performance
 
 set +e #error proof
 
@@ -645,7 +646,7 @@ if [[ ! -f /sys/kernel/debug/sched_features ]]; then
 	if [[ "$?" != 0 ]]||[[ ! -f /sys/kernel/debug/sched_features ]]; then
 		notsupported=1 #reg
 	fi
-	if [[ ! -f /sys/power/wait_for_fb_wake ]]; then #wait_for_fb_wake added for mpengine
+	if [[ ! -f /sys/power/wait_for_fb_wake ]]; then #wait_for_fb_wake added for rtmixman
 		no_wakelock=1
 	fi
 fi
@@ -840,20 +841,20 @@ singlecorefix(){
 		sleep $sleep
 	done & echo $! > $external/singlecorefix_pid
 }
-mpengine(){
-	if [[ ! -f $EXTERNAL_STORAGE/sched_tuner/mpengine_minfree ]]; then
-		cat /sys/module/lowmemorykiller/parameters/minfree > $EXTERNAL_STORAGE/sched_tuner/mpengine_minfree
+rtmixman(){
+	if [[ ! -f $EXTERNAL_STORAGE/sched_tuner/rtmixman_minfree ]]; then
+		cat /sys/module/lowmemorykiller/parameters/minfree > $EXTERNAL_STORAGE/sched_tuner/rtmixman_minfree
 	fi
 	if [[ "$1" == -f ]]; then
-		cat $EXTERNAL_STORAGE/sched_tuner/mpengine_minfree > /sys/module/lowmemorykiller/parameters/minfree
-		rm $EXTERNAL_STORAGE/sched_tuner/mpengine_minfree 2>/dev/null
+		cat $EXTERNAL_STORAGE/sched_tuner/rtmixman_minfree > /sys/module/lowmemorykiller/parameters/minfree
+		rm $EXTERNAL_STORAGE/sched_tuner/rtmixman_minfree 2>/dev/null
 		return 0
 	fi
 	minfree=$(($(getprop dalvik.vm.heapsize | sed -e 's/m//')*256+$(cat /proc/sys/vm/min_free_kbytes)/4))
 	while true; do
 		current=$(cat /sys/module/lowmemorykiller/parameters/minfree)
 		if [[ "$current" != "$minfree,$minfree,$minfree,$minfree,$minfree,$minfree" ]]; then
-			echo "$current" > $EXTERNAL_STORAGE/sched_tuner/mpengine_minfree
+			echo "$current" > $EXTERNAL_STORAGE/sched_tuner/rtmixman_minfree
 			echo "$minfree,$minfree,$minfree,$minfree,$minfree,$minfree" > /sys/module/lowmemorykiller/parameters/minfree
 		fi
 		if [[ "$no_wakelock" == 1 ]]; then
@@ -864,7 +865,7 @@ mpengine(){
 			awake=$(cat /sys/power/wait_for_fb_wake)
 		fi
 		sleep 10
-	done & echo $! > $external/mpengine_pid
+	done & echo $! > $external/rtmixman_pid
 }
 apply_SS(){
 	if [[ "$notsupported" == 1 ]]; then
@@ -913,14 +914,14 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help
 			error init complete!
 			loop=1
 		;;
-		-m | --mpengine)
+		-m | --rtmixman)
 			backup_feature
-			mpengine
+			rtmixman
 			if [[ "$?" != 0 ]]; then
 				error something went wrong.
 				exit 1
 			fi
-			error mpengine init complete!
+			error rtmixman init complete!
 			loop=1
 		;;
 		-s | --singlecorefix)
@@ -1012,7 +1013,7 @@ background_task(){
 	until [[ -f $FULL_NAME ]]; do
 		sleep 1
 	done
-	$FULL_NAME -a $install_mpengine $install_singlecorefix $install_time $custom_usage
+	$FULL_NAME -a $install_rtmixman $install_singlecorefix $install_time $custom_usage
 }
 background_task & #in case the target was stored in external storage...
 
@@ -1089,8 +1090,8 @@ main(){
 		fi
 		echo -e "\e[0m"
 		backup_feature
-		if [[ ! -f $external/mpengine_pid ]]; then
-			echo null > $external/mpengine_pid
+		if [[ ! -f $external/rtmixman_pid ]]; then
+			echo null > $external/rtmixman_pid
 		fi
 		if [[ ! -f $external/singlecorefix_pid ]]; then
 			echo null > $external/singlecorefix_pid
@@ -1100,14 +1101,14 @@ main(){
 			exit 1
 		fi
 		appliedonboot=$(ps | grep '{sched_tuner_tas}' | grep -v grep | awk '{print $1}') #good fix for multiple tasks.
-		if [[ "$appliedonboot" ]]&&[[ ! -s $external/mpengine_pid ]]&&[[ ! -s $external/singlecorefix_pid ]]; then
-			echo $(echo $appliedonboot | awk '{print $1}') > $external/mpengine_pid
+		if [[ "$appliedonboot" ]]&&[[ ! -s $external/rtmixman_pid ]]&&[[ ! -s $external/singlecorefix_pid ]]; then
+			echo $(echo $appliedonboot | awk '{print $1}') > $external/rtmixman_pid
 			echo $(echo $appliedonboot | awk '{print $2}') > $external/singlecorefix_pid
 		fi
-		if [[ "$(cat $external/mpengine_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/mpengine_pid)" | grep -v grep)" ]]; then
-			echo -e 'mpengine status: \e[1;32mrunning\e[0m'
+		if [[ "$(cat $external/rtmixman_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/rtmixman_pid)" | grep -v grep)" ]]; then
+			echo -e 'rtmixman status: \e[1;32mrunning\e[0m'
 		else
-			echo -e 'mpengine status: \e[1;31mnot running\e[0m'
+			echo -e 'rtmixman status: \e[1;31mnot running\e[0m'
 		fi
 		if [[ "$(cat $external/singlecorefix_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/singlecorefix_pid)" | grep -v grep)" ]]; then
 			echo -e 'audiofix status: \e[1;32mrunning\e[0m'
@@ -1135,11 +1136,11 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 		long_line 1
 		echo 'select an option:
 1)disable everything(speedhack!)
-2)set the tweak on boot(init with few extra tweaks & mpengine)'
-		if [[ "$(cat $external/mpengine_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/mpengine_pid)" | grep -v grep)" ]]; then
-			echo '3)stop mpengine'
+2)set the tweak on boot(init with few extra tweaks & rtmixman)'
+		if [[ "$(cat $external/rtmixman_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/rtmixman_pid)" | grep -v grep)" ]]; then
+			echo '3)stop rtmixman'
 		else
-			echo '3)run mpengine in the background'
+			echo '3)run rtmixman in the background'
 		fi
 		if [[ "$(cat $external/singlecorefix_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/singlecorefix_pid)" | grep -v grep)" ]]; then
 			echo '4)stop audiofix'
@@ -1198,7 +1199,7 @@ q)exit'
 					unset return
 					break
 				fi
-				echo -n 'install mpengine? Y/N:'
+				echo -n 'install rtmixman? Y/N:'
 				while true; do
 					stty cbreak -echo
 					f=$(dd bs=1 count=1 2>/dev/null)
@@ -1206,7 +1207,7 @@ q)exit'
 					echo $f
 					case $f in
 						y* | Y*)
-							install_mpengine="-m"
+							install_rtmixman="-m"
 							break
 						;;
 						n* | N*)
@@ -1271,7 +1272,7 @@ q)exit'
 				fi
 				echo -n 'setting on boot...'
 				initialize
-				unset install_mpengine
+				unset install_rtmixman
 				unset install_singlecorefix
 				unset install_time
 				unset custom_usage
@@ -1279,17 +1280,17 @@ q)exit'
 				sleep 5
 			;;
 			3)
-				if [[ "$(cat $external/mpengine_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/mpengine_pid)" | grep -v grep)" ]]; then
-					kill -9 $(cat $external/mpengine_pid)
-					mpengine -f
+				if [[ "$(cat $external/rtmixman_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/rtmixman_pid)" | grep -v grep)" ]]; then
+					kill -9 $(cat $external/rtmixman_pid)
+					rtmixman -f
 				else
-					mpengine 2>/dev/null
+					rtmixman 2>/dev/null
 				fi
 				if [[ "$?" != 0 ]]; then
 					error something went wrong.
 					exit 1
 				fi
-				error mpengine init complete!
+				error rtmixman init complete!
 				sleep 5
 			;;
 			4)
