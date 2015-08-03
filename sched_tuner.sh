@@ -56,7 +56,7 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 	fi
 	shift
 done
-readonly version="0.0.9"
+readonly version="0.0.9 update1"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -407,6 +407,8 @@ error(){
 #       - tweaked Android startup(update1)
 # 0.0.9 - mpengine removed
 #       - rtmixman added for AMM performance
+#       - tweaked Android startup(update1)
+#       - tweaked rtmixman(update1)
 
 set +e #error proof
 
