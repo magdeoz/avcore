@@ -851,11 +851,19 @@ rtmixman(){
 		return 0
 	fi
 	minfree=$(($(getprop dalvik.vm.heapsize | sed -e 's/m//')*256+$(cat /proc/sys/vm/min_free_kbytes)/4))
+	mfslot1=$(cat /sys/module/lowmemorykiller/parameters/minfree | cut -d',' -f1)
+	mfslot2=$((minfree+$(cat /sys/module/lowmemorykiller/parameters/minfree | cut -d',' -f2)-mfslot1))
+	mfslot3=$((minfree+$(cat /sys/module/lowmemorykiller/parameters/minfree | cut -d',' -f3)-mfslot1))
+	mfslot4=$((minfree+$(cat /sys/module/lowmemorykiller/parameters/minfree | cut -d',' -f4)-mfslot1))
+	mfslot5=$((minfree+$(cat /sys/module/lowmemorykiller/parameters/minfree | cut -d',' -f5)-mfslot1))
+	mfslot6=$((minfree+$(cat /sys/module/lowmemorykiller/parameters/minfree | cut -d',' -f6)-mfslot1))
+	mfslot1=$minfree
+	final="$mfslot1,mfslot2,mfslot3,mfslot4,mfslot5,mfslot6"
 	while true; do
 		current=$(cat /sys/module/lowmemorykiller/parameters/minfree)
-		if [[ "$current" != "$minfree,$minfree,$minfree,$minfree,$minfree,$minfree" ]]; then
+		if [[ "$current" != "$final" ]]; then
 			echo "$current" > $EXTERNAL_STORAGE/sched_tuner/rtmixman_minfree
-			echo "$minfree,$minfree,$minfree,$minfree,$minfree,$minfree" > /sys/module/lowmemorykiller/parameters/minfree
+			echo "$final" > /sys/module/lowmemorykiller/parameters/minfree
 		fi
 		if [[ "$no_wakelock" == 1 ]]; then
 			until [[ "$(cat /sys/class/graphics/fb0/dynamic_fps)" ]]; do
@@ -1018,7 +1026,7 @@ background_task(){
 background_task & #in case the target was stored in external storage...
 
 renice_task(){
-	renice -20 \$(pgrep kswapd0) #renice kernel mm thread
+	renice 19 \$(pgrep kswapd0) #renice kernel mm thread
 	#set system_server in lowest priority.
 	until [[ \"\$(pgrep zygote)\" ]]; do
 		sleep 0.1
