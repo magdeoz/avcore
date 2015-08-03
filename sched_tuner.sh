@@ -858,7 +858,7 @@ rtmixman(){
 	mfslot5=$((minfree+$(cat /sys/module/lowmemorykiller/parameters/minfree | cut -d',' -f5)-mfslot1))
 	mfslot6=$((minfree+$(cat /sys/module/lowmemorykiller/parameters/minfree | cut -d',' -f6)-mfslot1))
 	mfslot1=$minfree
-	final="$mfslot1,mfslot2,mfslot3,mfslot4,mfslot5,mfslot6"
+	final="$mfslot1,$mfslot2,$mfslot3,$mfslot4,$mfslot5,$mfslot6"
 	while true; do
 		current=$(cat /sys/module/lowmemorykiller/parameters/minfree)
 		if [[ "$current" != "$final" ]]; then
