@@ -701,6 +701,13 @@ wakelock_sheriff(){
 				kill -9 $i
 			fi
 		done
+		if [[ "$no_wakelock" == 1 ]]; then
+			until [[ ! "$(cat /sys/class/graphics/fb0/dynamic_fps)" ]]; do
+				sleep 10
+			done
+		else
+			asleep=$(cat /sys/power/wait_for_fb_sleep)
+		fi
 		sleep $sleep
 	done
 }
