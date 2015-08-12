@@ -685,6 +685,27 @@ list_feature(){
 	fi
 }
 
+wakelock_sheriff(){
+	sleep=$1
+	if [[ ! "$sleep" ]]; then
+		sleep=10 #dumpsys refresh time is 10 secs.
+	fi
+	target_usage=$2
+	if [[ ! "$target_usage" ]]; then
+		target_usage=0 #0%
+	fi
+	while true; do
+		usage=$(top -n1)
+		IFS=''
+		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e ':remote\|android.process.media' | awk '{print $1}'); do
+			if [[ "$(echo $usage | grep $i | awk '{print $(NF-2)}' | cut -d'.' -f1)" -gt "$target_usage" ]]; then
+				kill -9 $i
+			fi
+		done
+		sleep $sleep
+	done
+}
+
 # Task Killer 1.0
 # this program includes:
 # target_killer - reads 'exclude_target' and kills the desired ones.
