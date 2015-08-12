@@ -696,9 +696,8 @@ wakelock_sheriff(){
 	fi
 	while true; do
 		usage=$(top -n1)
-		IFS=''
 		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e ':remote\|android.process.media' | awk '{print $1}'); do
-			if [[ "$(echo $usage | grep $i | awk '{print $(NF-2)}' | cut -d'.' -f1)" -gt "$target_usage" ]]; then
+			if [[ "$(IFS=''; echo $usage | grep $i | awk '{print $(NF-2)}' | cut -d'.' -f1)" -gt "$target_usage" ]]; then
 				kill -9 $i
 			fi
 		done
