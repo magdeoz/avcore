@@ -56,7 +56,7 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 	fi
 	shift
 done
-readonly version="0.0.9 update2"
+readonly version="1.0.0"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -410,6 +410,7 @@ error(){
 #       - tweaked Android startup(update1)
 #       - tweaked rtmixman(update1)
 #       - rtmixman heapgrowthlimit support(update2)
+# 1.0.0 - wakelock_sheriff added for battery life
 
 set +e #error proof
 
@@ -685,6 +686,33 @@ list_feature(){
 	fi
 }
 
+wakelock_sheriff(){
+	sleep=$1
+	if [[ ! "$sleep" ]]; then
+		sleep=10 #dumpsys refresh time is 10 secs.
+	fi
+	target_usage=$2
+	if [[ ! "$target_usage" ]]; then
+		target_usage=0 #0%
+	fi
+	while true; do
+		usage=$(top -n1)
+		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e ':remote\|android.process.media' | awk '{print $1}'); do
+			if [[ "$(IFS=''; echo $usage | grep $i | awk '{print $(NF-2)}' | cut -d'.' -f1)" -gt "$target_usage" ]]; then
+				kill -9 $i
+			fi
+		done
+		if [[ "$no_wakelock" == 1 ]]; then
+			until [[ ! "$(cat /sys/class/graphics/fb0/dynamic_fps)" ]]; do
+				sleep 10
+			done
+		else
+			asleep=$(cat /sys/power/wait_for_fb_sleep)
+		fi
+		sleep $sleep
+	done & echo $! > $external/wakelocksheriff_pid
+}
+
 # Task Killer 1.0
 # this program includes:
 # target_killer - reads 'exclude_target' and kills the desired ones.
@@ -802,9 +830,9 @@ singlecorefix(){
 	if [[ ! "$sleep" ]]; then
 		sleep=10 #dumpsys refresh time is 10 secs.
 	fi
-	custom_usage=$2
-	if [[ ! "$custom_usage" ]]; then
-		custom_usage=15 #15%
+	singlecorefix_usage=$2
+	if [[ ! "$singlecorefix_usage" ]]; then
+		singlecorefix_usage=15 #15%
 	fi
 	until [[ -f /proc/$(pgrep mediaserv)/status ]]; do
 		sleep 1
@@ -832,7 +860,7 @@ singlecorefix(){
 		if [[ "$applied" ]]; then
 			unset applied
 		else
-			kill_garbage $custom_usage &
+			kill_garbage $singlecorefix_usage &
 			if [[ "$no_wakelock" == 1 ]]; then
 				until [[ "$(cat /sys/class/graphics/fb0/dynamic_fps)" ]]; do
 					sleep 10
@@ -913,7 +941,7 @@ while [[ "$1" ]]; do
 		-h | --help)
 			echo "$BASE_NAME v$version
 Copyright (C) 2013-2015 hoholee12@naver.com
-Usage: $BASE_NAME -a | --activate [on/off] -h | --help
+Usage: $BASE_NAME -a | --activate [on/off] -h | --help | -a -m -s -w
        $BASE_NAME -l lists all sched_features.
 "
 			shift
@@ -941,7 +969,7 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help
 		;;
 		-s | --singlecorefix)
 			backup_feature
-			if [[ "$2" != -a ]]&&[[ "$2" != -m ]]&&[[ "$2" != -s ]]; then
+			if [[ "$2" != -a ]]&&[[ "$2" != -m ]]&&[[ "$2" != -s ]]&&[[ "$2" != -w ]]&&[[ "$3" != -a ]]&&[[ "$3" != -m ]]&&[[ "$3" != -s ]]&&[[ "$3" != -w ]]; then
 				singlecorefix $2 $3
 				if [[ "$?" != 0 ]]; then
 					error something went wrong.
@@ -957,6 +985,26 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help
 				fi
 			fi
 			error singlecorefix init complete!
+			loop=1
+		;;
+		-w | --wakelock_sheriff)
+			backup_feature
+			if [[ "$2" != -a ]]&&[[ "$2" != -m ]]&&[[ "$2" != -s ]]&&[[ "$2" != -w ]]&&[[ "$3" != -a ]]&&[[ "$3" != -m ]]&&[[ "$3" != -s ]]&&[[ "$3" != -w ]]; then
+				wakelock_sheriff $2 $3
+				if [[ "$?" != 0 ]]; then
+					error something went wrong.
+					exit 1
+				fi
+				shift
+				shift
+			else
+				wakelock_sheriff
+				if [[ "$?" != 0 ]]; then
+					error something went wrong.
+					exit 1
+				fi
+			fi
+			error wakelock_sheriff init complete!
 			loop=1
 		;;
 		-l | --list)
@@ -1032,7 +1080,7 @@ background_task(){
 	until [[ -f $FULL_NAME ]]; do
 		sleep 1
 	done
-	$FULL_NAME -a $install_rtmixman $install_singlecorefix $install_time $custom_usage
+	$FULL_NAME -a $install_rtmixman $install_singlecorefix $singlecorefix_time $singlecorefix_usage $install_wakelock_sheriff $wakelock_sheriff_time $wakelock_sheriff_usage
 }
 background_task & #in case the target was stored in external storage...
 
@@ -1115,15 +1163,20 @@ main(){
 		if [[ ! -f $external/singlecorefix_pid ]]; then
 			echo null > $external/singlecorefix_pid
 		fi
+		if [[ ! -f $external/wakelocksheriff_pid ]]; then
+			echo null > $external/wakelocksheriff_pid
+		fi
 		if [[ "$?" != 0 ]]; then
 			error something went wrong.
 			exit 1
 		fi
 		appliedonboot=$(ps | grep '{sched_tuner_tas}' | grep -v grep | awk '{print $1}') #good fix for multiple tasks.
-		if [[ "$appliedonboot" ]]&&[[ ! -s $external/rtmixman_pid ]]&&[[ ! -s $external/singlecorefix_pid ]]; then
+		if [[ "$appliedonboot" ]]&&[[ ! -s $external/rtmixman_pid ]]&&[[ ! -s $external/singlecorefix_pid ]]&&[[ ! -s $external/wakelocksheriff_pid ]]; then
 			echo $(echo $appliedonboot | awk '{print $1}') > $external/rtmixman_pid
 			echo $(echo $appliedonboot | awk '{print $2}') > $external/singlecorefix_pid
+			echo $(echo $appliedonboot | awk '{print $3}') > $external/wakelocksheriff_pid
 		fi
+		long_line 2
 		if [[ "$(cat $external/rtmixman_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/rtmixman_pid)" | grep -v grep)" ]]; then
 			echo -e 'rtmixman status: \e[1;32mrunning\e[0m'
 		else
@@ -1134,6 +1187,12 @@ main(){
 		else
 			echo -e 'audiofix status: \e[1;31mnot running\e[0m'
 		fi
+		if [[ "$(cat $external/wakelocksheriff_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/wakelocksheriff_pid)" | grep -v grep)" ]]; then
+			echo -e 'wakelock sheriff status: \e[1;32mrunning\e[0m'
+		else
+			echo -e 'wakelock sheriff status: \e[1;31mnot running\e[0m'
+		fi
+		long_line 1
 		echo current scheduling features list:
 		detect_feature $(cat /sys/kernel/debug/sched_features) #recycled crap
 		list_feature
@@ -1166,14 +1225,19 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 		else
 			echo '4)run audiofix in the background'
 		fi
-echo '5)restore list/uninstall
-6)refresh list
+		if [[ "$(cat $external/wakelocksheriff_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/wakelocksheriff_pid)" | grep -v grep)" ]]; then
+			echo '5)stop wakelock sheriff'
+		else
+			echo '5)run wakelock sheriff in the background'
+		fi
+echo '6)restore list/uninstall
+7)refresh list
 q)exit'
 		stty cbreak -echo
 		f=$(dd bs=1 count=1 2>/dev/null)
 		stty -cbreak echo
 		echo $f
-		long_line 2
+		long_line 1
 		case $f in
 			1)
 				echo -n applying tweaks...
@@ -1218,6 +1282,7 @@ q)exit'
 					unset return
 					break
 				fi
+				long_line 1
 				echo -n 'install rtmixman? Y/N:'
 				while true; do
 					stty cbreak -echo
@@ -1247,6 +1312,7 @@ q)exit'
 					unset return
 					break
 				fi
+				long_line 1
 				echo -n 'install scAudioFix? Y/N:'
 				while true; do
 					stty cbreak -echo
@@ -1276,25 +1342,72 @@ q)exit'
 				done
 				if [[ ! "$dont" ]]; then
 					echo -n 'scAudioFix: how many seconds interval?: >>'
-					read install_time
+					read singlecorefix_time
 				fi
 				if [[ ! "$dont" ]]; then
 					echo 'scAudioFix: Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):'
 					echo 'tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (default:15)'
 					echo -n '>>'
-					read custom_usage
+					read singlecorefix_usage
 				fi
 				unset dont
 				if [[ "$return" ]]; then
 					unset return
 					break
 				fi
+				long_line 1
+				echo -n 'install wakelock sheriff? Y/N:'
+				while true; do
+					stty cbreak -echo
+					f=$(dd bs=1 count=1 2>/dev/null)
+					stty -cbreak echo
+					echo $f
+					case $f in
+						y* | Y*)
+							install_wakelock_sheriff="-w"
+							break
+						;;
+						n* | N*)
+							dont=1
+							break
+						;;
+						q* | Q*)
+							echo canceled.
+							return=1
+							dont=1
+							break
+						;;
+						*)
+							checkers
+						;;
+					esac
+					echo -n press \'q\' to quit.
+				done
+				if [[ ! "$dont" ]]; then
+					echo -n 'wakelock sheriff: how many seconds interval?: >>'
+					read wakelock_sheriff_time
+				fi
+				if [[ ! "$dont" ]]; then
+					echo 'wakelock sheriff: Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):'
+					echo 'tip - LOWEST IS THE BEST.(default:0)'
+					echo -n '>>'
+					read wakelock_sheriff_usage
+				fi
+				unset dont
+				if [[ "$return" ]]; then
+					unset return
+					break
+				fi
+				long_line 1
 				echo -n 'setting on boot...'
 				initialize
 				unset install_rtmixman
 				unset install_singlecorefix
-				unset install_time
-				unset custom_usage
+				unset singlecorefix_time
+				unset singlecorefix_usage
+				unset install_wakelock_sheriff
+				unset wakelock_sheriff_time
+				unset wakelock_sheriff_usage
 				echo done!
 				sleep 5
 			;;
@@ -1329,10 +1442,33 @@ q)exit'
 					error something went wrong.
 					exit 1
 				fi
+				unset time
+				unset usage
 				error singlecorefix init complete!
 				sleep 5
 			;;
 			5)
+				if [[ "$(cat $external/wakelocksheriff_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/wakelocksheriff_pid)" | grep -v grep)" ]]; then
+					kill -9 $(cat $external/wakelocksheriff_pid)
+				else
+					echo -n 'how many seconds interval?: >>'
+					read time
+					echo 'Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):'
+					echo 'tip - LOWEST IS THE BEST.(default:0)'
+					echo -n '>>'
+					read usage
+					wakelock_sheriff $time $usage 2>/dev/null
+				fi
+				if [[ "$?" != 0 ]]; then
+					error something went wrong.
+					exit 1
+				fi
+				unset time
+				unset usage
+				error wakelock_sheriff init complete!
+				sleep 5
+			;;
+			6)
 				echo -n restoring backup...
 				apply_backup
 				if [[ "$?" != 0 ]]; then
@@ -1347,11 +1483,11 @@ q)exit'
 				fi
 				sleep 5
 			;;
-			6)
+			7)
 				echo refreshing...
 				sleep 0.1
 			;;
-			7| q |Q)
+			8| q |Q)
 				echo check out \'flag_tuner\' by Pizza_Dox@xda, highly recommended for perfect combination!:D
 				return 0
 			;;
