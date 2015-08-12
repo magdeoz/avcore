@@ -1364,7 +1364,7 @@ q)exit'
 					echo $f
 					case $f in
 						y* | Y*)
-							install_wakelock_sheriff="-s"
+							install_wakelock_sheriff="-w"
 							break
 						;;
 						n* | N*)
