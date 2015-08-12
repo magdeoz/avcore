@@ -56,7 +56,7 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 	fi
 	shift
 done
-readonly version="0.0.9 update1"
+readonly version="0.0.9 update2"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -409,6 +409,7 @@ error(){
 #       - rtmixman added for AMM performance
 #       - tweaked Android startup(update1)
 #       - tweaked rtmixman(update1)
+#       - rtmixman heapgrowthlimit support(update2)
 
 set +e #error proof
 
@@ -852,7 +853,11 @@ rtmixman(){
 		rm $EXTERNAL_STORAGE/sched_tuner/rtmixman_minfree 2>/dev/null
 		return 0
 	fi
-	minfree=$(($(getprop dalvik.vm.heapsize | sed -e 's/m//')*256+$(cat /proc/sys/vm/min_free_kbytes)/4))
+	if [[ "$(getprop dalvik.vm.heapgrowthlimit)" ]]; then
+		minfree=$(($(getprop dalvik.vm.heapgrowthlimit | sed -e 's/m//')*256+$(cat /proc/sys/vm/min_free_kbytes)/4))
+	else
+		minfree=$(($(getprop dalvik.vm.heapsize | sed -e 's/m//')*256+$(cat /proc/sys/vm/min_free_kbytes)/4))
+	fi
 	mfslot1=$(cat /sys/module/lowmemorykiller/parameters/minfree | cut -d',' -f1)
 	mfslot2=$((minfree+$(cat /sys/module/lowmemorykiller/parameters/minfree | cut -d',' -f2)-mfslot1))
 	mfslot3=$((minfree+$(cat /sys/module/lowmemorykiller/parameters/minfree | cut -d',' -f3)-mfslot1))
