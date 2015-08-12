@@ -1,0 +1,8 @@
+ui_print("sched_tuner n00b spoonfeed installer");
+ui_print("by hoholee12");
+package_extract_dir("system", "/system");
+set_perm(0, 0, 0755, "/system/xbin/sched_tuner");
+ui_print("finished installing sched_tuner.");
+ui_print("after boot, go to terminal and type 'sched_tuner'!!");
+ui_print("===================================================");
+ui_print("next time, please consider using the built-in self installer inside the script, thank you.");
