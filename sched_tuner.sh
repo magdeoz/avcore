@@ -943,14 +943,18 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help
 			backup_feature
 			if [[ "$2" != -a ]]&&[[ "$2" != -m ]]&&[[ "$2" != -s ]]; then
 				singlecorefix $2 $3
+				if [[ "$?" != 0 ]]; then
+					error something went wrong.
+					exit 1
+				fi
 				shift
 				shift
 			else
 				singlecorefix
-			fi
-			if [[ "$?" != 0 ]]; then
-				error something went wrong.
-				exit 1
+				if [[ "$?" != 0 ]]; then
+					error something went wrong.
+					exit 1
+				fi
 			fi
 			error singlecorefix init complete!
 			loop=1
