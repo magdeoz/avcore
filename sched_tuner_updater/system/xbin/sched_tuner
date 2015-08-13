@@ -702,6 +702,7 @@ wakelock_sheriff(){
 				kill -9 $i
 			fi
 		done
+		sleep $sleep
 		if [[ "$no_wakelock" == 1 ]]; then
 			until [[ ! "$(cat /sys/class/graphics/fb0/dynamic_fps)" ]]; do
 				sleep 10
@@ -709,7 +710,6 @@ wakelock_sheriff(){
 		else
 			asleep=$(cat /sys/power/wait_for_fb_sleep)
 		fi
-		sleep $sleep
 	done & echo $! > $external/wakelocksheriff_pid
 }
 
