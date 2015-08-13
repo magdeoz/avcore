@@ -56,7 +56,7 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 	fi
 	shift
 done
-readonly version="1.0.0"
+readonly version="1.0.1"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -411,6 +411,7 @@ error(){
 #       - tweaked rtmixman(update1)
 #       - rtmixman heapgrowthlimit support(update2)
 # 1.0.0 - wakelock_sheriff added for battery life
+# 1.0.1 - more details & potential bugfixes
 
 set +e #error proof
 
@@ -1176,7 +1177,7 @@ main(){
 			echo $(echo $appliedonboot | awk '{print $2}') > $external/singlecorefix_pid
 			echo $(echo $appliedonboot | awk '{print $3}') > $external/wakelocksheriff_pid
 		fi
-		long_line 2
+		echo "realtime engines list>>"
 		if [[ "$(cat $external/rtmixman_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/rtmixman_pid)" | grep -v grep)" ]]; then
 			echo -e 'rtmixman status: \e[1;32mrunning\e[0m'
 		else
@@ -1193,12 +1194,21 @@ main(){
 			echo -e 'wakelock sheriff status: \e[1;31mnot running\e[0m'
 		fi
 		long_line 1
+		echo -n "boot tweaks status: "
+		if [[ "$(ps -o nice,comm | grep kswapd0 | awk '{print $1}')" == 19 ]]&&[[ "$(ps -o nice,comm | grep system_server | awk '{print $1}')" == -20 ]]; then
+			echo -e "\e[1;32mapplied!\e[0m"
+			boottweak=1
+		else
+			echo -e "\e[1;31mnot applied!\e[0m"
+		fi
+		long_line 1
 		echo current scheduling features list:
 		detect_feature $(cat /sys/kernel/debug/sched_features) #recycled crap
 		list_feature
+		long_line 1
 		if [[ -f /system/etc/sched_tuner_task ]]||[[ -f /system/etc/init.d/sched_tuner_task ]]; then
 			echo -n -e '\e[1;33mlooks like the mod is already installed\e[0m'
-			if [[ "$notapplied" ]]; then
+			if [[ "$notapplied" ]]&&[[ ! "$notsupported" ]]&&[[ ! "$boottweak" ]]; then
 				echo -e '\e[1;33m,\e[1;31m but it did not run on boot.\e[0m
 
 reminder: if you did not apply the first option before setting the tweak on boot, this message may appear.'
@@ -1214,7 +1224,7 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 		long_line 1
 		echo 'select an option:
 1)disable everything(speedhack!)
-2)set the tweak on boot(init with few extra tweaks & rtmixman)'
+2)set the MOD to run on boot & install boot tweaks'
 		if [[ "$(cat $external/rtmixman_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/rtmixman_pid)" | grep -v grep)" ]]; then
 			echo '3)stop rtmixman'
 		else
@@ -1231,7 +1241,8 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 			echo '5)run wakelock sheriff in the background'
 		fi
 echo '6)restore list/uninstall
-7)refresh list
+7)what does it do?(help)
+8)refresh list
 q)exit'
 		stty cbreak -echo
 		f=$(dd bs=1 count=1 2>/dev/null)
@@ -1484,10 +1495,45 @@ q)exit'
 				sleep 5
 			;;
 			7)
+				echo -e '-the first mod(scheduling features list "disable everything(speedhack!)") \e[1;33mturns off\e[0m all extra scheduling features that OEMs included for better performance.
+why should i disable it when it is supposed to be a good thing?>>
+because \e[1;31mIT DOESNT PLAY NICE MOST OF THE TIME & MAY ACTUALLY CREATE A HUGE OVERHEAD!!\e[0m(my Galaxy S does this:()
+better to just disable \e[1;34mALL OF THEM\e[0m and make stuff work as intended.
+
+-scAudioFix:  this is a new engine i have developed since v0.0.6(released as a working state on v0.0.7). it controls cpu clock speed to avoid throttling when mediaserver process bursts out for resources, therefore it has an effect of killing audio skipping, or audio stutters when playback.
+\e[1;36mdo NOT get confused over its name, its more than just lagfixing audios. it also saves battery by monitoring mediaserver process in realtime!\e[0m
+
+-rtmixman: continuation of my older project that has been widely used and loved by android community.
+it adjusts minfree values so that heap allocation will be faster and supposedly boost general performance.
+mpengine entry was replaced by rtmixman in v0.0.9
+
+-boot tweaks: literally boot tweaks. these are the tweaks that cannot be done after boot.(such as changing system_server priority)(i am the only one who discovered this exploit, yay me!:D)
+just changing the system_server priority to the top makes the overall system:
+\e[1;35m>>have much more responsive touch screen
+>>have faster load time(almost instant) on network related applications(e.g. tapatalk, twitter, facebook)
+>>have much less jitter
+>>etc...\e[0m
+\e[1;33myou will have to make the script to run on boot in order to make boot tweaks work.\e[0m
+
+-wakelock sheriff: a relatively new engine, introduced in v1.0.0(at the time i wrote this)
+when your device goes to sleep, this will detect any processes that are hogging up the cpu and end them silently. thus prolonging battery life.
+similar mechanism as scAudioFix, except:
+\e[1;35m>>tracks all applications than just one
+>>faster cycle thanks to my own advanced algorithm(completes cycle in less than quarter a second!)
+>>etc...\e[0m
+\e[1;33meven if the cycle is fast enough, cpu may wake up periodically from this engine too.
+its recommended to set a longer sleep time(default: 10 secs)\e[0m'
+			long_line 1
+			echo -n press enter to continue:
+			stty cbreak -echo
+			f=$(dd bs=1 count=1 2>/dev/null)
+			stty -cbreak echo
+			;;
+			8)
 				echo refreshing...
 				sleep 0.1
 			;;
-			8| q |Q)
+			9| q |Q)
 				echo check out \'flag_tuner\' by Pizza_Dox@xda, highly recommended for perfect combination!:D
 				return 0
 			;;
