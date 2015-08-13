@@ -1524,7 +1524,7 @@ similar mechanism as scAudioFix, except:
 \e[1;33meven if the cycle is fast enough, cpu may wake up periodically from this engine too.
 its recommended to set a longer sleep time(default: 10 secs)\e[0m'
 			long_line 1
-			echo -n press enter to continue:
+			echo -n press any key to continue...
 			stty cbreak -echo
 			f=$(dd bs=1 count=1 2>/dev/null)
 			stty -cbreak echo
