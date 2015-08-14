@@ -56,7 +56,7 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 	fi
 	shift
 done
-readonly version="1.0.1"
+readonly version="1.0.2"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -412,6 +412,7 @@ error(){
 #       - rtmixman heapgrowthlimit support(update2)
 # 1.0.0 - wakelock_sheriff added for battery life
 # 1.0.1 - more details & potential bugfixes
+# 1.0.2 - more critical bugfixes
 
 set +e #error proof
 
@@ -705,7 +706,7 @@ wakelock_sheriff(){
 		done
 		sleep $sleep
 		if [[ "$no_wakelock" == 1 ]]; then
-			while [[ "$(cat /sys/class/graphics/fb0/dynamic_fps)" ]]; do #opposite
+			until [[ "$(cat /sys/class/graphics/fb0/show_blank_event)" == "panel_power_on = 0" ]]; do #opposite
 				sleep 10
 			done
 		else
@@ -788,7 +789,7 @@ task_killer(){
 	debug_space
 	while true; do
 		if [[ "$no_wakelock" == 1 ]]; then
-			until [[ "$(cat /sys/class/graphics/fb0/dynamic_fps)" ]]; do
+			until [[ "$(cat /sys/class/graphics/fb0/show_blank_event)" == "panel_power_on = 1" ]]; do
 				sleep 10
 			done
 		else
@@ -863,7 +864,7 @@ singlecorefix(){
 		else
 			kill_garbage $singlecorefix_usage &
 			if [[ "$no_wakelock" == 1 ]]; then
-				until [[ "$(cat /sys/class/graphics/fb0/dynamic_fps)" ]]; do
+				until [[ "$(cat /sys/class/graphics/fb0/show_blank_event)" == "panel_power_on = 1" ]]; do
 					sleep 10
 				done
 			else
@@ -902,7 +903,7 @@ rtmixman(){
 			echo "$final" > /sys/module/lowmemorykiller/parameters/minfree
 		fi
 		if [[ "$no_wakelock" == 1 ]]; then
-			until [[ "$(cat /sys/class/graphics/fb0/dynamic_fps)" ]]; do
+			until [[ "$(cat /sys/class/graphics/fb0/show_blank_event)" == "panel_power_on = 1" ]]; do
 				sleep 10
 			done
 		else
