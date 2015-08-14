@@ -690,7 +690,7 @@ list_feature(){
 wakelock_sheriff(){
 	sleep=$1
 	if [[ ! "$sleep" ]]; then
-		sleep=10 #dumpsys refresh time is 10 secs.
+		sleep=60 #one-minute.
 	fi
 	target_usage=$2
 	if [[ ! "$target_usage" ]]; then
@@ -1145,17 +1145,20 @@ main(){
 		echo -n -e '\e[3m'
 		if [[ "$(($(print_RANDOM_BYTE)%2))" == 0 ]]; then
 			lines=$(stty size | awk '{print $1}')
-			for i in $(seq 1 $lines); do
-				echo -n -e "\e[2J\e[$((lines-i));1Hsystem performance enhancer for android v$version"
+			skip=$((lines/10))
+			for i in $(seq 1 10); do
+				echo -n -e "\e[2J\e[$((lines-i*skip));1Hsystem performance enhancer for android v$version"
 				sleep 0.1
 			done
 		else
 			lines=$(stty size | awk '{print $2}')
-			for i in $(seq 1 $lines); do
-				echo -n -e "\e[2J\e[1;$((lines-i))Hsystem performance enhancer for android v$version"
+			skip=$((lines/10))
+			for i in $(seq 1 10); do
+				echo -n -e "\e[2J\e[1;$((lines-i*skip))Hsystem performance enhancer for android v$version"
 				sleep 0.1
 			done
 		fi
+		echo -n -e "\e[2J\e[0;0Hsystem performance enhancer for android v$version"
 		echo -e "\e[0m"
 		backup_feature
 		if [[ ! -f $external/rtmixman_pid ]]; then
