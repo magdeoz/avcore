@@ -705,7 +705,7 @@ wakelock_sheriff(){
 		done
 		sleep $sleep
 		if [[ "$no_wakelock" == 1 ]]; then
-			until [[ ! "$(cat /sys/class/graphics/fb0/dynamic_fps)" ]]; do
+			while [[ "$(cat /sys/class/graphics/fb0/dynamic_fps)" ]]; do #opposite
 				sleep 10
 			done
 		else
