@@ -1146,6 +1146,9 @@ main(){
 		if [[ "$(($(print_RANDOM_BYTE)%2))" == 0 ]]; then
 			lines=$(stty size | awk '{print $1}')
 			skip=$((lines/10))
+			if [[ "$skip" == 0 ]]; then
+				skip=1
+			fi
 			for i in $(seq 1 10); do
 				echo -n -e "\e[2J\e[$((lines-i*skip));1Hsystem performance enhancer for android v$version"
 				sleep 0.1
@@ -1153,6 +1156,9 @@ main(){
 		else
 			lines=$(stty size | awk '{print $2}')
 			skip=$((lines/10))
+			if [[ "$skip" == 0 ]]; then
+				skip=1
+			fi
 			for i in $(seq 1 10); do
 				echo -n -e "\e[2J\e[1;$((lines-i*skip))Hsystem performance enhancer for android v$version"
 				sleep 0.1
@@ -1525,7 +1531,7 @@ similar mechanism as scAudioFix, except:
 >>faster cycle thanks to my own advanced algorithm(completes cycle in less than quarter a second!)
 >>etc...\e[0m
 \e[1;33meven if the cycle is fast enough, cpu may wake up periodically from this engine too.
-its recommended to set a longer sleep time(default: 10 secs)\e[0m'
+its recommended to set a longer sleep time(default: 1 min)\e[0m'
 			long_line 1
 			echo -n press any key to continue...
 			stty cbreak -echo
