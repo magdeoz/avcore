@@ -360,6 +360,13 @@ long_line(){
 	fi
 	echo -e '\e[0m'
 }
+part_line(){
+	count=$(echo $@ | wc -c)
+	for i in $(seq 1 $(($(stty size | awk '{print $2}' 2>/dev/null)-count))); do
+		echo -n '_'
+	done
+	echo $@
+}
 error(){
 	message=$@
 	if [[ "$(echo $message | grep \")" ]]; then
@@ -654,6 +661,11 @@ if [[ ! -f /sys/kernel/debug/sched_features ]]; then
 	fi
 	if [[ ! -f /sys/power/wait_for_fb_wake ]]; then #wait_for_fb_wake added for rtmixman
 		no_wakelock=1
+		error uh oh, looks like your device doesnt have necessary api to support some mods here. if you are lucky, it might work, otherwise it might glitch out.
+		part_line press any key to continue...
+		stty cbreak -echo
+		f=$(dd bs=1 count=1 2>/dev/null)
+		stty -cbreak echo
 	fi
 fi
 mount -o remount,rw rootfs 2>/dev/null #remount rootfs to rw
@@ -688,7 +700,14 @@ list_feature(){
 	fi
 }
 
+
+
+
 wakelock_sheriff(){
+	if [[ "$1" == -f ]]; then
+		rm $external/wakelock_sheriff.cfg
+		return 0
+	fi
 	sleep=$1
 	if [[ ! "$sleep" ]]; then
 		sleep=60 #one-minute.
@@ -697,9 +716,18 @@ wakelock_sheriff(){
 	if [[ ! "$target_usage" ]]; then
 		target_usage=0 #0%
 	fi
+	if [[ ! -f $external/wakelock_sheriff.cfg ]]; then
+		echo '#wakelock sheriff custom whitelist config file
+#how to use:
+#-use \| as delimiter
+#-e.g.) :remote\|android
+#-only one line permitted. no newlines!!(former settings will be overwritten by new settings)
+:remote\|android' > $external/wakelock_sheriff.cfg
+	fi
+	custom_sheriff=$(cat $external/wakelock_sheriff.cfg | grep -v -e '#' | tail -n1)
 	while true; do
 		usage=$(top -n1)
-		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e ':remote\|android.process.media' | awk '{print $1}'); do
+		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e $custom_sheriff | awk '{print $1}'); do
 			if [[ "$(IFS=''; echo $usage | grep $i | awk '{print $(NF-2)}' | cut -d'.' -f1)" -gt "$target_usage" ]]; then
 				kill -9 $i
 			fi
@@ -712,7 +740,7 @@ wakelock_sheriff(){
 		else
 			asleep=$(cat /sys/power/wait_for_fb_sleep)
 		fi
-	done & echo $! > $external/wakelocksheriff_pid
+	done & echo $! > $external/wakelock_sheriff_pid
 }
 
 # Task Killer 1.0
@@ -1178,18 +1206,18 @@ main(){
 		if [[ ! -f $external/singlecorefix_pid ]]; then
 			echo null > $external/singlecorefix_pid
 		fi
-		if [[ ! -f $external/wakelocksheriff_pid ]]; then
-			echo null > $external/wakelocksheriff_pid
+		if [[ ! -f $external/wakelock_sheriff_pid ]]; then
+			echo null > $external/wakelock_sheriff_pid
 		fi
 		if [[ "$?" != 0 ]]; then
 			error something went wrong.
 			exit 1
 		fi
 		appliedonboot=$(ps | grep '{sched_tuner_tas}' | grep -v grep | awk '{print $1}') #good fix for multiple tasks.
-		if [[ "$appliedonboot" ]]&&[[ ! -s $external/rtmixman_pid ]]&&[[ ! -s $external/singlecorefix_pid ]]&&[[ ! -s $external/wakelocksheriff_pid ]]; then
+		if [[ "$appliedonboot" ]]&&[[ ! -s $external/rtmixman_pid ]]&&[[ ! -s $external/singlecorefix_pid ]]&&[[ ! -s $external/wakelock_sheriff_pid ]]; then
 			echo $(echo $appliedonboot | awk '{print $1}') > $external/rtmixman_pid
 			echo $(echo $appliedonboot | awk '{print $2}') > $external/singlecorefix_pid
-			echo $(echo $appliedonboot | awk '{print $3}') > $external/wakelocksheriff_pid
+			echo $(echo $appliedonboot | awk '{print $3}') > $external/wakelock_sheriff_pid
 		fi
 		echo "realtime engines list>>"
 		if [[ "$(cat $external/rtmixman_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/rtmixman_pid)" | grep -v grep)" ]]; then
@@ -1202,7 +1230,7 @@ main(){
 		else
 			echo -e 'audiofix status: \e[1;31mnot running\e[0m'
 		fi
-		if [[ "$(cat $external/wakelocksheriff_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/wakelocksheriff_pid)" | grep -v grep)" ]]; then
+		if [[ "$(cat $external/wakelock_sheriff_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/wakelock_sheriff_pid)" | grep -v grep)" ]]; then
 			echo -e 'wakelock sheriff status: \e[1;32mrunning\e[0m'
 		else
 			echo -e 'wakelock sheriff status: \e[1;31mnot running\e[0m'
@@ -1249,7 +1277,7 @@ generally, \e[1;32mGREEN\e[0m is considered OK, while \e[1;31mRED\e[0m is NOT OK
 		else
 			echo '4)run audiofix in the background'
 		fi
-		if [[ "$(cat $external/wakelocksheriff_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/wakelocksheriff_pid)" | grep -v grep)" ]]; then
+		if [[ "$(cat $external/wakelock_sheriff_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/wakelock_sheriff_pid)" | grep -v grep)" ]]; then
 			echo '5)stop wakelock sheriff'
 		else
 			echo '5)run wakelock sheriff in the background'
@@ -1473,8 +1501,9 @@ q)exit'
 				sleep 5
 			;;
 			5)
-				if [[ "$(cat $external/wakelocksheriff_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/wakelocksheriff_pid)" | grep -v grep)" ]]; then
-					kill -9 $(cat $external/wakelocksheriff_pid)
+				if [[ "$(cat $external/wakelock_sheriff_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/wakelock_sheriff_pid)" | grep -v grep)" ]]; then
+					kill -9 $(cat $external/wakelock_sheriff_pid)
+					wakelock_sheriff -f
 				else
 					echo -n 'how many seconds interval?: >>'
 					read time
@@ -1537,8 +1566,8 @@ similar mechanism as scAudioFix, except:
 >>etc...\e[0m
 \e[1;33meven if the cycle is fast enough, cpu may wake up periodically from this engine too.
 its recommended to set a longer sleep time(default: 1 min)\e[0m'
-			long_line 1
-			echo -n press any key to continue...
+			echo -e "wakelock_sheriff.cfg whitelist can be found on $external: most configuration files can be found in this directory. \e[1;31mDO NOT DELETE!!\e[0m"
+			part_line press any key to continue...
 			stty cbreak -echo
 			f=$(dd bs=1 count=1 2>/dev/null)
 			stty -cbreak echo
