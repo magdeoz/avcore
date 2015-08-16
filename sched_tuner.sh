@@ -662,7 +662,7 @@ if [[ ! -f /sys/kernel/debug/sched_features ]]; then
 	if [[ ! -f /sys/power/wait_for_fb_wake ]]; then #wait_for_fb_wake added for rtmixman
 		no_wakelock=1
 		error uh oh, looks like your device doesnt have necessary api to support some mods here. if you are lucky, it might work, otherwise it might glitch out.
-		echo -n press any key to continue...
+		part_line press any key to continue...
 		stty cbreak -echo
 		f=$(dd bs=1 count=1 2>/dev/null)
 		stty -cbreak echo
@@ -1567,8 +1567,7 @@ similar mechanism as scAudioFix, except:
 \e[1;33meven if the cycle is fast enough, cpu may wake up periodically from this engine too.
 its recommended to set a longer sleep time(default: 1 min)\e[0m'
 			echo -e "wakelock_sheriff.cfg whitelist can be found on $external: most configuration files can be found in this directory. \e[1;31mDO NOT DELETE!!\e[0m"
-			long_line 1
-			echo -n press any key to continue...
+			part_line press any key to continue...
 			stty cbreak -echo
 			f=$(dd bs=1 count=1 2>/dev/null)
 			stty -cbreak echo
