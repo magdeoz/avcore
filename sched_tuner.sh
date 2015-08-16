@@ -56,7 +56,7 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 	fi
 	shift
 done
-readonly version="1.0.2"
+readonly version="1.0.3"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -420,6 +420,8 @@ error(){
 # 1.0.0 - wakelock_sheriff added for battery life
 # 1.0.1 - more details & potential bugfixes
 # 1.0.2 - more critical bugfixes
+# 1.0.3 - more error msgs for debugging
+#       - wakelock_sheriff whitelist enabled
 
 set +e #error proof
 
