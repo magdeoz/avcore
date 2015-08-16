@@ -360,6 +360,13 @@ long_line(){
 	fi
 	echo -e '\e[0m'
 }
+part_line(){
+	count=$(echo $@ | wc -c)
+	for i in $(seq 1 $(($(stty size | awk '{print $2}' 2>/dev/null)-count))); do
+		echo -n '_'
+	done
+	echo $@
+}
 error(){
 	message=$@
 	if [[ "$(echo $message | grep \")" ]]; then
