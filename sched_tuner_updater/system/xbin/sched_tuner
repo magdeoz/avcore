@@ -1509,10 +1509,10 @@ q)exit'
 					kill -9 $(cat $external/singlecorefix_pid)
 					singlecorefix -f
 				else
-					echo -n 'how many seconds interval?: >>'
+					echo -n 'how many seconds interval?: (press return for default setting: 10secs)>>'
 					read time
 					echo 'Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):'
-					echo 'tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (default:15)'
+					echo 'tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (press return for default setting: 15%)'
 					echo -n '>>'
 					read usage
 					singlecorefix $time $usage 2>/dev/null
@@ -1531,10 +1531,10 @@ q)exit'
 					kill -9 $(cat $external/wakelock_sheriff_pid)
 					wakelock_sheriff -f
 				else
-					echo -n 'how many seconds interval?: >>'
+					echo -n 'how many seconds interval?: (press return for default setting: 1min)>>'
 					read time
 					echo 'Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):'
-					echo 'tip - LOWEST IS THE BEST.(default:0)'
+					echo 'tip - LOWEST IS THE BEST. (press return for default setting: 0%)'
 					echo -n '>>'
 					read usage
 					wakelock_sheriff $time $usage 2>/dev/null
