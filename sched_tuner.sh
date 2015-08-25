@@ -56,7 +56,7 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 	fi
 	shift
 done
-readonly version="1.0.3"
+readonly version="1.0.4"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -422,6 +422,7 @@ error(){
 # 1.0.2 - more critical bugfixes
 # 1.0.3 - more error msgs for debugging
 #       - wakelock_sheriff whitelist enabled
+# 1.0.4 - more clear instructions on how to whitelist apps added
 
 set +e #error proof
 
@@ -601,7 +602,7 @@ bash_only(){
 		bashloc=$(which bash)
 		if [[ "$bashloc" ]]; then
 			$bashloc $FULL_NAME $@
-			exit 0
+			exit $?
 		fi
 		bash_check=1
 		error Please re-run this program with BASH. \"error code 1\" #to pass the double-quote character to the error function, you must use the inverted-slash character.
@@ -720,16 +721,32 @@ wakelock_sheriff(){
 	fi
 	if [[ ! -f $external/wakelock_sheriff.cfg ]]; then
 		echo '#wakelock sheriff custom whitelist config file
+
 #how to use:
 #-use \| as delimiter
 #-e.g.) :remote\|android
+#-to add more apps, like com.android.phone for example...
+#-e.g.) :remote\|android\|com.android.phone
+#-to add more stuff,
+#-e.g.) :remote\|android\|com.android.phone\|com.android.launcher\|com.android.blahblahblah.....
+#-but guess what? this list is called by grep, so basically you dont need to write any apps that start with "com.android.blahblah..."
+#-because it is already whitelisted by this one word: "android"
+#-lets say we want to have facebook app whitelisted. but you cannot know what the facebook apps real name is,
+#-well you can just write like this: ":remote\|android\|facebook" since it might have "facebook" in that name...
+#-e.g.) :remote\|android\|facebook
 #-only one line permitted. no newlines!!(former settings will be overwritten by new settings)
+#-dont do this!! e.g.)
+# :remote\|android
+# facebook\|twitter
+# ...
+#-only "..." will be read!
+
 :remote\|android' > $external/wakelock_sheriff.cfg
 	fi
 	custom_sheriff=$(cat $external/wakelock_sheriff.cfg | grep -v -e '#' | tail -n1)
 	while true; do
 		usage=$(top -n1)
-		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e $custom_sheriff | awk '{print $1}'); do
+		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -i -e $custom_sheriff | awk '{print $1}'); do
 			if [[ "$(IFS=''; echo $usage | grep $i | awk '{print $(NF-2)}' | cut -d'.' -f1)" -gt "$target_usage" ]]; then
 				kill -9 $i
 			fi
@@ -1153,8 +1170,8 @@ initialize(){
 		init_data /system/etc/init.d/sched_tuner_task
 		chmod 755 /system/etc/init.d/sched_tuner_task
 	else
-		init_data /system/etc/sched_tuner_task
-		chmod 755 /system/etc/sched_tuner_task
+		init_data /system/etc/init.d/sched_tuner_task
+		chmod 755 /system/etc/init.d/sched_tuner_task
 		chmod 755 /init.rc
 		if [[ ! -f $external/init.rc.bak ]]; then
 			cp /init.rc $external/init.rc.bak
@@ -1568,7 +1585,8 @@ similar mechanism as scAudioFix, except:
 >>etc...\e[0m
 \e[1;33meven if the cycle is fast enough, cpu may wake up periodically from this engine too.
 its recommended to set a longer sleep time(default: 1 min)\e[0m'
-			echo -e "wakelock_sheriff.cfg whitelist can be found on $external: most configuration files can be found in this directory. \e[1;31mDO NOT DELETE!!\e[0m"
+			echo -e "wakelock_sheriff.cfg whitelist can be found on $external, please read the instructions there. :3
+most important configuration files also can be found in the same directory. \e[1;31mDO NOT CORRUPT OR DELETE!!\e[0m"
 			part_line press any key to continue...
 			stty cbreak -echo
 			f=$(dd bs=1 count=1 2>/dev/null)

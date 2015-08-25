@@ -576,7 +576,7 @@ bash_only(){
 		bashloc=$(which bash)
 		if [[ "$bashloc" ]]; then
 			$bashloc $FULL_NAME $@
-			exit 0
+			exit $?
 		fi
 		bash_check=1
 		error Please re-run this program with BASH. \"error code 1\" #to pass the double-quote character to the error function, you must use the inverted-slash character.
