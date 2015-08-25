@@ -1256,9 +1256,15 @@ main(){
 		fi
 		long_line 1
 		echo -n "boot tweaks status: "
-		if [[ "$(ps -o nice,comm | grep kswapd0 | awk '{print $1}')" == 19 ]]&&[[ "$(ps -o nice,comm | grep system_server | awk '{print $1}')" == -20 ]]; then
-			echo -e "\e[1;32mapplied!\e[0m"
-			boottweak=1
+		if [[ "$(ps -o nice,comm | grep kswapd0 | awk '{print $1}')" == 19 ]]; then
+			if [[ "$(ps -o nice,comm | grep system_server | awk '{print $1}')" == -20 ]]; then
+				echo -e "\e[1;32mapplied!\e[0m"
+				boottweak=1
+			else
+				echo -e "\e[1;33partially applied!\e[0m
+
+one of these may have happened: your kernel runs this MOD too late, or newer Android versions have blocked this exploit attempt."
+			fi
 		else
 			echo -e "\e[1;31mnot applied!\e[0m"
 		fi
