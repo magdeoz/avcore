@@ -1261,7 +1261,7 @@ main(){
 				echo -e "\e[1;32mapplied!\e[0m"
 				boottweak=1
 			else
-				echo -e "\e[1;33partially applied!\e[0m
+				echo -e "\e[1;33mpartially applied!\e[0m
 
 one of these may have happened: your kernel runs this MOD too late, or newer Android versions have blocked this exploit attempt.
 or simply it could just be the result of 'soft' rebooting Android system..."
