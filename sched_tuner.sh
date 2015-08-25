@@ -1263,7 +1263,8 @@ main(){
 			else
 				echo -e "\e[1;33partially applied!\e[0m
 
-one of these may have happened: your kernel runs this MOD too late, or newer Android versions have blocked this exploit attempt."
+one of these may have happened: your kernel runs this MOD too late, or newer Android versions have blocked this exploit attempt.
+or simply it could just be the result of 'soft' rebooting Android system..."
 			fi
 		else
 			echo -e "\e[1;31mnot applied!\e[0m"
