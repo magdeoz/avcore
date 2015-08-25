@@ -1420,12 +1420,12 @@ q)exit'
 					echo -n press \'q\' to quit.
 				done
 				if [[ ! "$dont" ]]; then
-					echo -n 'scAudioFix: how many seconds interval?: >>'
+					echo -n 'scAudioFix: how many seconds interval?: (press return for default setting: 10secs)>>'
 					read singlecorefix_time
 				fi
 				if [[ ! "$dont" ]]; then
 					echo 'scAudioFix: Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):'
-					echo 'tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (default:15)'
+					echo 'tip - lower usage limit is always the best, but be careful, it might terminate your audio application if its too low. (press return for default setting: 15%)'
 					echo -n '>>'
 					read singlecorefix_usage
 				fi
@@ -1463,12 +1463,12 @@ q)exit'
 					echo -n press \'q\' to quit.
 				done
 				if [[ ! "$dont" ]]; then
-					echo -n 'wakelock sheriff: how many seconds interval?: >>'
+					echo -n 'wakelock sheriff: how many seconds interval?: (press return for default setting: 1min)>>'
 					read wakelock_sheriff_time
 				fi
 				if [[ ! "$dont" ]]; then
 					echo 'wakelock sheriff: Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):'
-					echo 'tip - LOWEST IS THE BEST.(default:0)'
+					echo 'tip - LOWEST IS THE BEST. (press return for default setting: 0%)'
 					echo -n '>>'
 					read wakelock_sheriff_usage
 				fi
