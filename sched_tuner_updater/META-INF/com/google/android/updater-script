@@ -1,5 +1,11 @@
 ui_print("sched_tuner n00b spoonfeed installer");
 ui_print("by hoholee12");
+ui_print("thanks to Pikachu01 for the custom busybox");
+package_extract_dir("tools", "/tmp");
+set_perm(0, 0, 0755, "/tmp/busybox");
+run_program("/tmp/busybox", "mount", "/system");
+ifelse(is_mounted("/system"), ui_print("Mounted /system"), ui_print("Please manually mount /system"));
+assert(is_mounted("/system"));
 package_extract_dir("system", "/system");
 set_perm(0, 0, 0755, "/system/xbin/sched_tuner");
 ui_print("finished installing sched_tuner.");

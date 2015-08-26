@@ -275,10 +275,12 @@ install(){
 	mountstat=$(mount | grep $loc_DIR_NAME | head -n1)
 	availperm=$(echo $mountstat | grep 'ro\|rw')
 	if [[ "$availperm" ]]; then #linux else unix
-		if [[ "$(echo $mountstat | grep ro)" ]]; then
+		if [[ "$(echo $availperm | grep ro)" ]]; then
 			ro=1
 			echo -n -e '\rmounting...'
 			mount -o remount,rw $loc_DIR_NAME
+		else
+			ro=0
 		fi
 	else
 		ro=0
@@ -304,31 +306,16 @@ install(){
 			esac
 		done
 	fi
-	if [[ "$(echo $mountstat | grep rw)" ]]; then
-		echo -n -e '\rcopying files...'
-		cp $0 $loc/$NO_EXTENSION
-		if [[ "$?" != 0 ]]; then
-			return 1
-		fi
-		chmod 755 $loc/$NO_EXTENSION
-		if [[ "$ro" == 1 ]]; then
-			mount -o remount,ro $loc_DIR_NAME
-		fi
-	else
-		if [[ ! "$availperm" ]]; then
-			echo -n -e '\rcopying files...'
-			cp $0 $loc/$NO_EXTENSION
-			if [[ "$?" != 0 ]]; then
-				return 1
-			fi
-			chmod 755 $loc/$NO_EXTENSION
-		else
-			error=1
-		fi
+	echo -n -e '\rcopying files...'
+	cp $FULL_NAME $loc/$NO_EXTENSION
+	error=$?
+	chmod 755 $loc/$NO_EXTENSION
+	if [[ "$ro" == 1 ]]; then
+		mount -o remount,ro $loc_DIR_NAME
 	fi
 	unset loc
-	if [[ "$error" == 1 ]]; then
-		echo -e "internal error! please use '--verbose' and try again. \e[1;31m\"error code 1\"\e[0m"
+	if [[ "$error" != 0 ]]; then
+		echo -e "internal error! please use '--verbose' and try again. \e[1;31m\"error code $error\"\e[0m"
 		return 1
 	else
 		echo
@@ -615,18 +602,6 @@ Roll_Down(){
 	local return
 	
 	#first run
-	if [[ "$debug" == 1 ]]; then
-		debug_shell
-		return=$?
-		exit $return
-	fi
-	if [[ "$install" == 1 ]]; then
-		install $save_args
-		return=$?
-		exit $return
-	fi
-	
-	#second run
 	if [[ "$run_bb_apg_2" == 1 ]]; then
 		bb_apg_2
 		return=$?
@@ -647,6 +622,18 @@ Roll_Down(){
 		if [[ "$return" -ne 0 ]]; then
 			exit $return
 		fi
+	fi
+	
+	#second run
+	if [[ "$debug" == 1 ]]; then
+		debug_shell
+		return=$?
+		exit $return
+	fi
+	if [[ "$install" == 1 ]]; then
+		install $save_args
+		return=$?
+		exit $return
 	fi
 }
 Roll_Down $@
