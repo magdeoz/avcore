@@ -700,7 +700,7 @@ list_feature(){
 thread_booster(){
 	sleep=$1
 	if [[ ! "$sleep" ]]; then
-		sleep=1
+		sleep=10
 	fi
 	if [[ "$1" == -f ]]; then
 		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e 'android\.' | awk '{print $1}'); do
@@ -1595,7 +1595,7 @@ q)exit'
 					echo -n press \'q\' to quit.
 				done
 				if [[ ! "$dont" ]]; then
-					echo -n 'thread booster: how many seconds interval?: (press return for default setting: 1secs)>>'
+					echo -n 'thread booster: how many seconds interval?: (press return for default setting: 10secs)>>'
 					read thread_booster_time
 				fi
 				unset dont
