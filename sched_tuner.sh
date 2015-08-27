@@ -711,7 +711,7 @@ thread_booster(){
 	if [[ ! -f $external/thread_booster.cfg ]]; then
 		echo '#thread booster config file
 
-settings' > $external/thread_booster.cfg
+settings\|vending' > $external/thread_booster.cfg
 	fi
 	custom_booster=$(cat $external/thread_booster.cfg | grep -v -e '#' | tail -n1)
 	while true; do
@@ -1733,7 +1733,14 @@ similar mechanism as scAudioFix, except:
 >>faster cycle thanks to my own advanced algorithm(completes cycle in less than quarter a second!)
 >>etc...\e[0m
 \e[1;33meven if the cycle is fast enough, cpu may wake up periodically from this engine too.
-its recommended to set a longer sleep time(default: 1 min)\e[0m'
+its recommended to set a longer sleep time(default: 1 min)\e[0m
+
+-thread booster: continuation of my older project(thread priority booster beta: http://forum.xda-developers.com/showthread.php?t=2076101)
+this will boost foreground applications to have more cpu resources than any other, resulting in smoother and less laggy performance!'
+			long_line 1
+			echo -e "thread booster \e[1;31mCANNOT\e[0m be launched directly, it must be set to run \e[1;33mON BOOT\e[0m.
+this is because thread booster may have settings that conflict with boot tweaks.
+"
 			echo -e "wakelock_sheriff.cfg whitelist can be found on $external, please read the instructions there. :3
 most important configuration files also can be found in the same directory. \e[1;31mDO NOT CORRUPT OR DELETE!!\e[0m"
 			part_line press any key to continue...
@@ -1747,6 +1754,7 @@ most important configuration files also can be found in the same directory. \e[1
 			;;
 			9| q |Q)
 				echo check out \'flag_tuner\' by Pizza_Dox@xda, highly recommended for perfect combination!:D
+				echo official forum: http://forum.xda-developers.com/android/software-hacking/script-scheduling-performance-tuner-t3029984 i dont fuck with trolls.
 				return 0
 			;;
 			*)
