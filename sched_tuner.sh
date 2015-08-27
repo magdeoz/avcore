@@ -708,8 +708,14 @@ thread_booster(){
 		done
 		return 0
 	fi
+	if [[ ! -f $external/thread_booster.cfg ]]; then
+		echo '#thread booster config file
+
+settings' > $external/thread_booster.cfg
+	fi
+	custom_booster=$(cat $external/thread_booster.cfg | grep -v -e '#' | tail -n1)
 	while true; do
-		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e 'android\.' | awk '{print $1}'); do
+		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -i -e $custom_booster | awk '{print $1}'); do
 			niceness=$(cat /proc/$i/stat)
 			niceness=${niceness#*)}
 			niceness=$(echo $niceness | awk '{print $17}')
@@ -1604,7 +1610,23 @@ q)exit'
 				unset wakelock_sheriff_usage
 				unset install_thread_booster
 				unset thread_booster_time
-				echo done!
+				echo done! reboot system to take effect!!
+				echo would you like to reboot? Y/N:
+				stty cbreak -echo
+				f=$(dd bs=1 count=1 2>/dev/null)
+				stty -cbreak echo
+				echo $f
+				case $f in
+					y* | Y*)
+						echo 16 > /proc/sys/kernel/sysrq 2>/dev/null # 0x10 //sync
+						echo s > /proc/sysrq-trigger 2>/dev/null
+						sync 2>/dev/null
+						echo 128 > /proc/sys/kernel/sysrq 2>/dev/null # 0x80 //reboot
+						echo b > /proc/sysrq-trigger 2>/dev/null
+						reboot 2>/dev/null
+						error something went wrong, please reboot manually!
+					;;
+				esac
 				sleep 5
 			;;
 			3)
