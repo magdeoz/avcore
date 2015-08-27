@@ -1562,7 +1562,7 @@ q)exit'
 					echo $f
 					case $f in
 						y* | Y*)
-							install_thread_booster="-s"
+							install_thread_booster="-b"
 							thread_booster_compat=0 #compat
 							break
 						;;
