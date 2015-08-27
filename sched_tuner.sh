@@ -707,6 +707,7 @@ thread_booster(){
 				renice 0 $i
 			fi
 		done
+		rm $external/thread_booster.cfg
 		return 0
 	fi
 	if [[ ! -f $external/thread_booster.cfg ]]; then
