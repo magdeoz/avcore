@@ -1431,7 +1431,7 @@ q)exit'
 				done
 				if [[ "$return" ]]; then
 					unset return
-					sleep 5
+					sleep 1
 					continue
 				fi
 				long_line 1
@@ -1462,7 +1462,7 @@ q)exit'
 				done
 				if [[ "$return" ]]; then
 					unset return
-					sleep 5
+					sleep 1
 					continue
 				fi
 				long_line 1
@@ -1506,7 +1506,7 @@ q)exit'
 				unset dont
 				if [[ "$return" ]]; then
 					unset return
-					sleep 5
+					sleep 1
 					continue
 				fi
 				long_line 1
@@ -1550,7 +1550,7 @@ q)exit'
 				unset dont
 				if [[ "$return" ]]; then
 					unset return
-					sleep 5
+					sleep 1
 					continue
 				fi
 				long_line 1
@@ -1589,7 +1589,7 @@ q)exit'
 				unset dont
 				if [[ "$return" ]]; then
 					unset return
-					sleep 5
+					sleep 1
 					continue
 				fi
 				long_line 1
