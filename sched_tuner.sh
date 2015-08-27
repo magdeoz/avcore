@@ -1694,6 +1694,7 @@ q)exit'
 			6)
 				echo -n restoring backup...
 				apply_backup
+				thread_booster -f
 				if [[ "$?" != 0 ]]; then
 					echo -e '\rcould not restore backup.'
 					return 1
