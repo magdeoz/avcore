@@ -692,6 +692,48 @@ list_feature(){
 
 
 
+thread_booster(){
+	sleep=$1
+	if [[ ! "$sleep" ]]; then
+		sleep=1
+	fi
+	if [[ "$1" == -f ]]; then
+		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e 'android' | awk '{print $1}'); do
+			niceness=$(cat /proc/$i/stat)
+			niceness=${niceness#*)}
+			niceness=$(echo $niceness | awk '{print $17}')
+			if [[ "$niceness" == -20 ]]; then
+				renice 0 $i
+			fi
+		done
+		return 0
+	fi
+	while true; do
+		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e 'android' | awk '{print $1}'); do
+			niceness=$(cat /proc/$i/stat)
+			niceness=${niceness#*)}
+			niceness=$(echo $niceness | awk '{print $17}')
+			if [[ "$(cat /proc/$i/oom_adj)" == 0 ]]; then
+				if [[ "$niceness" != -20 ]]; then
+					renice -20 $i
+				fi
+			else
+				if [[ "$niceness" == -20 ]]; then
+					renice 0 $i
+				fi
+			fi
+		done
+		sleep $sleep
+		if [[ "$no_wakelock" == 1 ]]; then
+			until [[ "$(cat /sys/class/graphics/fb0/show_blank_event)" == "panel_power_on = 1" ]]; do
+				sleep 10
+			done
+		else
+			awake=$(cat /sys/power/wait_for_fb_wake)
+		fi
+	done & echo $! > $external/thread_booster_pid
+}
+
 
 wakelock_sheriff(){
 	if [[ "$1" == -f ]]; then
@@ -1005,7 +1047,7 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help | -a -m -s -w
 		;;
 		-s | --singlecorefix)
 			backup_feature
-			if [[ "$2" != -a ]]&&[[ "$2" != -m ]]&&[[ "$2" != -s ]]&&[[ "$2" != -w ]]&&[[ "$3" != -a ]]&&[[ "$3" != -m ]]&&[[ "$3" != -s ]]&&[[ "$3" != -w ]]; then
+			if [[ "$2" != -a ]]&&[[ "$2" != -m ]]&&[[ "$2" != -s ]]&&[[ "$2" != -w ]]&&[[ "$2" != -b ]]&&[[ "$3" != -a ]]&&[[ "$3" != -m ]]&&[[ "$3" != -s ]]&&[[ "$3" != -w ]]&&[[ "$3" != -b ]]; then
 				singlecorefix $2 $3
 				if [[ "$?" != 0 ]]; then
 					error something went wrong.
@@ -1025,7 +1067,7 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help | -a -m -s -w
 		;;
 		-w | --wakelock_sheriff)
 			backup_feature
-			if [[ "$2" != -a ]]&&[[ "$2" != -m ]]&&[[ "$2" != -s ]]&&[[ "$2" != -w ]]&&[[ "$3" != -a ]]&&[[ "$3" != -m ]]&&[[ "$3" != -s ]]&&[[ "$3" != -w ]]; then
+			if [[ "$2" != -a ]]&&[[ "$2" != -m ]]&&[[ "$2" != -s ]]&&[[ "$2" != -w ]]&&[[ "$2" != -b ]]&&[[ "$3" != -a ]]&&[[ "$3" != -m ]]&&[[ "$3" != -s ]]&&[[ "$3" != -w ]]&&[[ "$3" != -b ]]; then
 				wakelock_sheriff $2 $3
 				if [[ "$?" != 0 ]]; then
 					error something went wrong.
@@ -1041,6 +1083,25 @@ Usage: $BASE_NAME -a | --activate [on/off] -h | --help | -a -m -s -w
 				fi
 			fi
 			error wakelock_sheriff init complete!
+			loop=1
+		;;
+		-b | --thread_booster)
+			backup_feature
+			if [[ "$2" != -a ]]&&[[ "$2" != -m ]]&&[[ "$2" != -s ]]&&[[ "$2" != -w ]]&&[[ "$2" != -b ]]; then
+				thread_booster $2
+				if [[ "$?" != 0 ]]; then
+					error something went wrong.
+					exit 1
+				fi
+				shift
+			else
+				thread_booster
+				if [[ "$?" != 0 ]]; then
+					error something went wrong.
+					exit 1
+				fi
+			fi
+			error thread_booster init complete!
 			loop=1
 		;;
 		-l | --list)
@@ -1116,7 +1177,7 @@ background_task(){
 	until [[ -f $FULL_NAME ]]; do
 		sleep 1
 	done
-	$FULL_NAME -a $install_rtmixman $install_singlecorefix $singlecorefix_time $singlecorefix_usage $install_wakelock_sheriff $wakelock_sheriff_time $wakelock_sheriff_usage
+	$FULL_NAME -a $install_rtmixman $install_singlecorefix $singlecorefix_time $singlecorefix_usage $install_wakelock_sheriff $wakelock_sheriff_time $wakelock_sheriff_usage $install_thread_booster $thread_booster_time
 }
 background_task & #in case the target was stored in external storage...
 
@@ -1126,7 +1187,7 @@ renice_task(){
 	until [[ \"\$(pgrep zygote)\" ]]; do
 		sleep 0.1
 	done
-	renice -20 \$(pgrep zygote)
+	renice $thread_booster_compat \$(pgrep zygote)
 	until [[ \"\$(pgrep system_server)\" ]]; do
 		sleep 0.1
 	done
@@ -1173,6 +1234,9 @@ service sched_tuner_task /system/etc/init.d/sched_tuner_task
 		fi
 	fi
 }
+
+thread_booster_compat=-20 #compat
+
 main(){
 	while true; do
 		clear
@@ -1215,15 +1279,19 @@ main(){
 		if [[ ! -f $external/wakelock_sheriff_pid ]]; then
 			echo null > $external/wakelock_sheriff_pid
 		fi
+		if [[ ! -f $external/thread_booster_pid ]]; then
+			echo null > $external/thread_booster_pid
+		fi
 		if [[ "$?" != 0 ]]; then
 			error something went wrong.
 			exit 1
 		fi
 		appliedonboot=$(ps | grep '{sched_tuner_tas}' | grep -v grep | awk '{print $1}') #good fix for multiple tasks.
-		if [[ "$appliedonboot" ]]&&[[ ! -s $external/rtmixman_pid ]]&&[[ ! -s $external/singlecorefix_pid ]]&&[[ ! -s $external/wakelock_sheriff_pid ]]; then
+		if [[ "$appliedonboot" ]]&&[[ ! -s $external/rtmixman_pid ]]&&[[ ! -s $external/singlecorefix_pid ]]&&[[ ! -s $external/wakelock_sheriff_pid ]]&&[[ ! -s $external/thread_booster_pid ]]; then
 			echo $(echo $appliedonboot | awk '{print $1}') > $external/rtmixman_pid
 			echo $(echo $appliedonboot | awk '{print $2}') > $external/singlecorefix_pid
 			echo $(echo $appliedonboot | awk '{print $3}') > $external/wakelock_sheriff_pid
+			echo $(echo $appliedonboot | awk '{print $4}') > $external/thread_booster_pid
 		fi
 		echo "realtime engines list>>"
 		if [[ "$(cat $external/rtmixman_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/rtmixman_pid)" | grep -v grep)" ]]; then
@@ -1241,17 +1309,34 @@ main(){
 		else
 			echo -e 'wakelock sheriff status: \e[1;31mnot running\e[0m'
 		fi
+		if [[ "$(cat $external/thread_booster_pid)" != null ]]&&[[ "$(ps | grep "$(cat $external/thread_booster_pid)" | grep -v grep)" ]]; then
+			thread_booster_status=1
+			echo -e 'thread booster status: \e[1;32mrunning\e[0m'
+		else
+			echo -e 'thread booster status: \e[1;31mnot running\e[0m'
+			unset thread_booster_status
+		fi
 		long_line 1
 		echo -n "boot tweaks status: "
 		if [[ "$(ps -o nice,comm | grep kswapd0 | awk '{print $1}')" == 19 ]]; then
 			if [[ "$(ps -o nice,comm | grep system_server | awk '{print $1}')" == -20 ]]; then
-				echo -e "\e[1;32mapplied!\e[0m"
+				if [[ "$thread_booster_status" == 1 ]]; then
+					echo -e "\e[1;31merror!!\e[0m
+\e[1;33mboot tweak settings are not properly configured and is causing conflicts with the following MOD:\e[0m thread_booster\e[1;33m
+please reinstall and try again.\e[0m"
+				else
+					echo -e "\e[1;32mapplied!\e[0m"
+				fi
 				boottweak=1
 			else
-				echo -e "\e[1;33mpartially applied!\e[0m
+				if [[ "$thread_booster_status" == 1 ]]; then
+					echo -e "\e[1;32musing thread booster\e[0m"
+				else
+					echo -e "\e[1;33mpartially applied!\e[0m
 
 one of these may have happened: your kernel runs this MOD too late, or newer Android versions have blocked this exploit attempt.
 or simply it could just be the result of 'soft' rebooting Android system..."
+				fi
 			fi
 		else
 			echo -e "\e[1;31mnot applied!\e[0m"
@@ -1450,7 +1535,7 @@ q)exit'
 					echo -n press \'q\' to quit.
 				done
 				if [[ ! "$dont" ]]; then
-					echo -n 'wakelock sheriff: how many seconds interval?: (press return for default setting: 1min)>>'
+					echo -n 'wakelock sheriff: how many seconds interval?: (press return for default setting: 60secs)>>'
 					read wakelock_sheriff_time
 				fi
 				if [[ ! "$dont" ]]; then
@@ -1458,6 +1543,44 @@ q)exit'
 					echo 'tip - LOWEST IS THE BEST. (press return for default setting: 0%)'
 					echo -n '>>'
 					read wakelock_sheriff_usage
+				fi
+				unset dont
+				if [[ "$return" ]]; then
+					unset return
+					break
+				fi
+				long_line 1
+				echo -n 'install thread booster? Y/N:'
+				while true; do
+					stty cbreak -echo
+					f=$(dd bs=1 count=1 2>/dev/null)
+					stty -cbreak echo
+					echo $f
+					case $f in
+						y* | Y*)
+							install_thread_booster="-s"
+							thread_booster_compat=0 #compat
+							break
+						;;
+						n* | N*)
+							dont=1
+							break
+						;;
+						q* | Q*)
+							echo canceled.
+							return=1
+							dont=1
+							break
+						;;
+						*)
+							checkers
+						;;
+					esac
+					echo -n press \'q\' to quit.
+				done
+				if [[ ! "$dont" ]]; then
+					echo -n 'thread booster: how many seconds interval?: (press return for default setting: 1secs)>>'
+					read thread_booster_time
 				fi
 				unset dont
 				if [[ "$return" ]]; then
@@ -1474,6 +1597,8 @@ q)exit'
 				unset install_wakelock_sheriff
 				unset wakelock_sheriff_time
 				unset wakelock_sheriff_usage
+				unset install_thread_booster
+				unset thread_booster_time
 				echo done!
 				sleep 5
 			;;
@@ -1518,7 +1643,7 @@ q)exit'
 					kill -9 $(cat $external/wakelock_sheriff_pid)
 					wakelock_sheriff -f
 				else
-					echo -n 'how many seconds interval?: (press return for default setting: 1min)>>'
+					echo -n 'how many seconds interval?: (press return for default setting: 60secs)>>'
 					read time
 					echo 'Garbageprocess Disposer - in how much cpu usage should the Disposer limit?(out of 100% cpu usage):'
 					echo 'tip - LOWEST IS THE BEST. (press return for default setting: 0%)'
