@@ -1699,8 +1699,8 @@ q)exit'
 			6)
 				echo -n restoring backup...
 				apply_backup
-				kill -9 $(cat $external/thread_booster_pid)
-				thread_booster -f
+				kill -9 $(cat $external/thread_booster_pid) 2>/dev/null
+				thread_booster -f 2>/dev/null
 				if [[ "$?" != 0 ]]; then
 					echo -e '\rcould not restore backup.'
 					return 1
