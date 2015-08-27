@@ -1626,6 +1626,9 @@ q)exit'
 						reboot 2>/dev/null
 						error something went wrong, please reboot manually!
 					;;
+					*)
+						echo canceled.
+					;;
 				esac
 				sleep 5
 			;;
