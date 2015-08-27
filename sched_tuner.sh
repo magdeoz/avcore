@@ -698,7 +698,7 @@ thread_booster(){
 		sleep=1
 	fi
 	if [[ "$1" == -f ]]; then
-		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e 'android' | awk '{print $1}'); do
+		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e 'android\.' | awk '{print $1}'); do
 			niceness=$(cat /proc/$i/stat)
 			niceness=${niceness#*)}
 			niceness=$(echo $niceness | awk '{print $17}')
@@ -709,7 +709,7 @@ thread_booster(){
 		return 0
 	fi
 	while true; do
-		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e 'android' | awk '{print $1}'); do
+		for i in $(pgrep -l '' | grep '\<org\.\|\<app\.\|\<com\.\|\<android\.' | grep -v -e 'android\.' | awk '{print $1}'); do
 			niceness=$(cat /proc/$i/stat)
 			niceness=${niceness#*)}
 			niceness=$(echo $niceness | awk '{print $17}')
