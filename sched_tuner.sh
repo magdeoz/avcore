@@ -1431,7 +1431,8 @@ q)exit'
 				done
 				if [[ "$return" ]]; then
 					unset return
-					break
+					sleep 5
+					continue
 				fi
 				long_line 1
 				echo -n 'install rtmixman? Y/N:'
@@ -1461,7 +1462,8 @@ q)exit'
 				done
 				if [[ "$return" ]]; then
 					unset return
-					break
+					sleep 5
+					continue
 				fi
 				long_line 1
 				echo -n 'install scAudioFix? Y/N:'
@@ -1504,7 +1506,8 @@ q)exit'
 				unset dont
 				if [[ "$return" ]]; then
 					unset return
-					break
+					sleep 5
+					continue
 				fi
 				long_line 1
 				echo -n 'install wakelock sheriff? Y/N:'
@@ -1547,7 +1550,8 @@ q)exit'
 				unset dont
 				if [[ "$return" ]]; then
 					unset return
-					break
+					sleep 5
+					continue
 				fi
 				long_line 1
 				echo -n 'install thread booster? Y/N:'
@@ -1585,7 +1589,8 @@ q)exit'
 				unset dont
 				if [[ "$return" ]]; then
 					unset return
-					break
+					sleep 5
+					continue
 				fi
 				long_line 1
 				echo -n 'setting on boot...'
