@@ -13,7 +13,7 @@ install=0
 # launch debug_shell() at start.
 debug=0
 # Bourne-again Shell only.
-bash_only=1
+bash_only=
 until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]] && [[ "$1" != --bbpass ]] && [[ "$1" != --urand ]] && [[ "$1" != --invrand ]] && [[ "$1" != --renice ]] && [[ "$1" != --install ]]; do
 	if [[ "$1" == --debug ]]; then
 		if [[ "$install" == 1 ]]; then

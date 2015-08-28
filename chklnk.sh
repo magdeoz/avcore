@@ -29,6 +29,9 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 			break
 		fi
 		readonly install=1
+		shift
+		save_args=$@
+		break
 	elif [[ "$1" == --supass ]] && [[ "$run_as_root" != 0 ]]; then
 		readonly run_as_root=0
 	elif [[ "$1" == --bbpass ]] && [[ "$run_bb_apg_2" != 0 ]]; then
@@ -53,7 +56,7 @@ until [[ "$1" != --debug ]] && [[ "$1" != --verbose ]] && [[ "$1" != --supass ]]
 	fi
 	shift
 done
-readonly version=0.0.3
+readonly version="0.0.3"
 readonly BASE_NAME=$(basename $0)
 readonly NO_EXTENSION=$(echo $BASE_NAME | sed 's/\..*//')
 readonly backup_PATH=$PATH
@@ -103,6 +106,26 @@ print_RANDOM_BYTE(){
 		echo $rand #output
 	fi
 }
+
+# Checkers 1.0
+# You can type in any strings you would want it to print when called.
+# It will start by checking from chk1, and its limit is up to chk20.
+chk1=what?
+chk2="i dont understand!"
+chk3=pardon?
+chk4="are you retarded?"
+checkers(){
+	for i in $(seq 1 20); do
+		if [[ ! "$(eval echo \$chk$i)" ]]; then
+			i=$((i-1))
+			break
+		fi
+	done
+	random=$(print_RANDOM_BYTE)
+	random=$((random%i+1))
+	echo -n -e "\r$(eval echo \$chk$random) "
+}
+
 debug_shell(){
 	echo "welcome to the debug_shell program! type in: 'help' for more information."
 	echo  -e -n "\e[1;32mdebug-\e[1;33m$version\e[0m"
@@ -200,6 +223,16 @@ install(){
 		for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
 			eval echo $i
 		done
+		return 0
+	elif [[ "$1" == -s ]]; then
+		shift
+		for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
+			if [[ "$(eval echo $i)" == "$1" ]]; then
+				echo found it!
+				loc=$1
+				break
+			fi
+		done
 	else
 		echo $n hits.
 		for i in $(seq -s ' $slot' 0 $n | sed 's/^0//'); do
@@ -223,17 +256,7 @@ install(){
 						return 0
 					;;
 					*)
-						random=$(print_RANDOM_BYTE)
-						random=$((random%4+1))
-						if [[ "$random" -eq 1 ]]; then
-							echo -n -e '\rwhat? '
-						elif [[ "$random" -eq 2 ]]; then
-							echo -n -e '\ri dont understand. '
-						elif [[ "$random" -eq 3 ]]; then
-							echo -n -e '\rcome on mate, you could do better than that! '
-						elif [[ "$random" -eq 4 ]]; then
-							echo -n -e '\rif i were you, i would choose the broccoli. '
-						fi
+						checkers
 					;;
 				esac
 				echo -n press \'q\' to quit.
@@ -242,106 +265,98 @@ install(){
 				break
 			fi
 		done
-		if [[ ! "$loc" ]]; then
-			echo couldnt install, sorry. :p
-			return 1
-		fi
-		echo -e '\rplease wait...'
-		loc_DIR_NAME=$(echo $loc | sed 's/\//\n/g' | head -n2 | sed ':a;N;s/\n/\//g;ba')
-		mountstat=$(mount | grep $loc_DIR_NAME | head -n1)
-		availperm=$(echo $mountstat | grep 'ro\|rw')
-		if [[ "$availperm" ]]; then #linux else unix
-			if [[ "$(echo $mountstat | grep ro)" ]]; then
-				ro=1
-				echo -n -e '\rmounting...'
-				mount -o remount,rw $loc_DIR_NAME
-			fi
+	fi
+	if [[ ! "$loc" ]]; then
+		echo couldnt install, sorry. :p
+		return 1
+	fi
+	echo -e '\rplease wait...'
+	loc_DIR_NAME=$(echo $loc | sed 's/\//\n/g' | head -n2 | sed ':a;N;s/\n/\//g;ba')
+	mountstat=$(mount | grep $loc_DIR_NAME | head -n1)
+	availperm=$(echo $mountstat | grep 'ro\|rw')
+	if [[ "$availperm" ]]; then #linux else unix
+		if [[ "$(echo $availperm | grep ro)" ]]; then
+			ro=1
+			echo -n -e '\rmounting...'
+			mount -o remount,rw $loc_DIR_NAME
 		else
 			ro=0
 		fi
-		if [[ -f "$loc/$NO_EXTENSION" ]]; then
-			echo -n 'program file already exists. overwrite? (y/n) '
-			while true; do
-				stty cbreak -echo
-				f=$(dd bs=1 count=1 2>/dev/null)
-				stty -cbreak echo
-				echo $f
-				case $f in
-					y* | Y*)
-						break
-					;;
-					n* | N* | q* | Q*)
-						echo canceled.
-						return 0
-					;;
-					*)
-						random=$(print_RANDOM_BYTE)
-						random=$((random%4+1))
-						if [[ "$random" -eq 1 ]]; then
-							echo -n -e '\rwhat? '
-						elif [[ "$random" -eq 2 ]]; then
-							echo -n -e '\ri really dont understand. '
-						elif [[ "$random" -eq 3 ]]; then
-							echo -n -e '\rtry again. '
-						elif [[ "$random" -eq 4 ]]; then
-							echo -n -e '\rnya~ '
-						fi
-					;;
-				esac
-			done
-		fi
-		if [[ "$(echo $mountstat | grep rw)" ]]; then
-			echo -n -e '\rcopying files...'
-			cp $0 $loc/$NO_EXTENSION
-			if [[ "$?" != 0 ]]; then
-				return 1
-			fi
-			chmod 755 $loc/$NO_EXTENSION
-			if [[ "$ro" == 1 ]]; then
-				mount -o remount,ro $loc_DIR_NAME
-			fi
-		else
-			if [[ ! "$availperm" ]]; then
-				echo -n -e '\rcopying files...'
-				cp $0 $loc/$NO_EXTENSION
-				if [[ "$?" != 0 ]]; then
-					return 1
-				fi
-				chmod 755 $loc/$NO_EXTENSION
-			else
-				error=1
-			fi
-		fi
-		if [[ "$error" == 1 ]]; then
-			echo -e "internal error! please use '--verbose' and try again. \e[1;31m\"error code 1\"\e[0m"
-			return 1
-		else
-			echo
-			long_line 2
-			echo install complete!
-			echo type \'$NO_EXTENSION\' to run the program!
-		fi
+	else
+		ro=0
+	fi
+	if [[ -f "$loc/$NO_EXTENSION" ]]; then
+		echo -n 'program file already exists. overwrite? (y/n) '
+		while true; do
+			stty cbreak -echo
+			f=$(dd bs=1 count=1 2>/dev/null)
+			stty -cbreak echo
+			echo $f
+			case $f in
+				y* | Y*)
+					break
+				;;
+				n* | N* | q* | Q*)
+					echo canceled.
+					return 0
+				;;
+				*)
+					checkers
+				;;
+			esac
+		done
+	fi
+	echo -n -e '\rcopying files...'
+	if [[ "$DIR_NAME" == NULL ]]; then
+		cp $0 $loc/$NO_EXTENSION
+	else
+		cp $FULL_NAME $loc/$NO_EXTENSION
+	fi
+	error=$?
+	chmod 755 $loc/$NO_EXTENSION
+	if [[ "$ro" == 1 ]]; then
+		mount -o remount,ro $loc_DIR_NAME
+	fi
+	unset loc
+	if [[ "$error" != 0 ]]; then
+		echo -e "internal error! please use '--verbose' and try again. \e[1;31m\"error code $error\"\e[0m"
+		return 1
+	else
+		echo
+		long_line 2
+		echo install complete!
+		echo type \'$NO_EXTENSION\' to run the program!
 	fi
 }
 long_line(){
+	if [[ "$1" -gt 1 ]]; then
+		echo -n -e '\e[3m'
+	fi
 	for i in $(seq 1 $(stty size | awk '{print $2}' 2>/dev/null)); do
 		if [[ "$1" -le 1 ]]; then
-			echo -n '-'
+			echo -n '_'
 		else
-			echo -n '='
+			echo -n ' '
 		fi
 	done
 	if [[ "$i" == 1 ]]; then
 		echo -n -e '\r'
 		for j in $(seq 1 80); do # 80 columns
 			if [[ "$1" -le 1 ]]; then
-				echo -n '-'
+				echo -n '_'
 			else
-				echo -n '='
+				echo -n ' '
 			fi
 		done
 	fi
-	echo
+	echo -e '\e[0m'
+}
+part_line(){
+	count=$(echo $@ | wc -c)
+	for i in $(seq 1 $(($(stty size | awk '{print $2}' 2>/dev/null)-count))); do
+		echo -n '_'
+	done
+	echo $@
 }
 error(){
 	message=$@
@@ -367,12 +382,7 @@ error(){
 		date '+date: %m/%d/%y%ttime: %H:%M:%S ->'"$message"'' >> $DIR_NAME/$NO_EXTENSION.log
 	fi
 }
-if [[ "$bash_only" == 1 ]]; then
-	if [[ ! "$BASH" ]]; then
-		error Please re-run this program with BASH. \"error code 1\" #to pass the double-quote character to the error function, you must use the inverted-slash character.
-		exit 1
-	fi
-fi
+
 # chklnk.sh
 #
 # Copyright (C) 2013-2015  hoholee12@naver.com
@@ -399,10 +409,7 @@ cmd4=grep
 cmd5=head
 cmd6=awk
 cmd7=cat
-cmd8=pgrep
-cmd9=ps
-cmd10=cp
-cmd11=cut
+cmd8=cut
 cmd= # It notifies the generator how many cmds are available for check. Leave it as blank.
 
 silent_mode= # enabling this will hide errors.
@@ -558,9 +565,26 @@ as_root(){
 	fi
 }
 
+bash_check=
+bash_only(){
+	bash_check=0
+	if [[ ! "$BASH" ]]; then
+		bashloc=$(which bash)
+		if [[ "$bashloc" ]]; then
+			$bashloc $FULL_NAME $@
+			exit $?
+		fi
+		bash_check=1
+		error Please re-run this program with BASH. \"error code 1\" #to pass the double-quote character to the error function, you must use the inverted-slash character.
+		exit 1
+	fi
+}
+
 # Session behaviour
 Roll_Down(){
 	local return
+	
+	#first run
 	if [[ "$run_bb_apg_2" == 1 ]]; then
 		bb_apg_2
 		return=$?
@@ -575,18 +599,27 @@ Roll_Down(){
 			exit $return
 		fi
 	fi
+	if [[ "$bash_only" == 1 ]]; then
+		bash_only $@
+		return=$?
+		if [[ "$return" -ne 0 ]]; then
+			exit $return
+		fi
+	fi
+	
+	#second run
 	if [[ "$debug" == 1 ]]; then
 		debug_shell
 		return=$?
 		exit $return
 	fi
 	if [[ "$install" == 1 ]]; then
-		install
+		install $save_args
 		return=$?
 		exit $return
 	fi
 }
-Roll_Down
+Roll_Down $@
 
 # Main script
 case $1 in
